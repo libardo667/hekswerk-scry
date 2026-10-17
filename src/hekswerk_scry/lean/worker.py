@@ -7,6 +7,11 @@ a file's imports. A later file with exactly the same import lines starts from it
 still starts from the environment right after its imports, so nothing one check declares,
 and no option it sets, is visible to the next (`lean/ScryExport/Load.lean`).
 
+One process holds one set of imports: loading a second set into the same process breaks
+Lean v4.34.1's environment. So Scry keeps a few processes, one per set of import lines, and
+Lean itself refuses a file whose imports differ from what its process loaded. Scry then
+restarts that process with the file's own imports.
+
 A `check` reply holds Lean's messages exactly as `lean --json` prints them, and the runner
 judges them with the same code as a fresh run. A test runs a set of files both ways and
 requires identical results (`lean_tests/test_lean_worker.py`).
@@ -32,9 +37,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
 
+from hekswerk_scry.lean.processes import stop_group
 from hekswerk_scry.lean.workspace import LeanWorkspace
 
 REPLY_PREFIX = "scry-reply "
+# The exact text `scry-export` refuses a file with (ScryLoad.otherImports).
+OTHER_IMPORTS = "scry: this Lean process has other imports loaded"
+# Each process can hold all of Mathlib (about 5 GB of memory), so only a few are kept.
+MAX_PROCESSES = 2
 SWITCH = "SCRY_LEAN_WORKER"
 LOG_NAME = "lean-worker.log"
 
@@ -86,6 +96,9 @@ class LeanWorker:
             process = subprocess.Popen(
                 self.command, cwd=self.workspace.root, env=self.workspace.environment(),
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log, bufsize=0,
+                # Its own process group, so stopping it also stops the Lean program that
+                # `lake env` starts underneath it.
+                start_new_session=True,
             )
         self._buffer = b""
         return process
@@ -99,21 +112,34 @@ class LeanWorker:
                 process.stdin.close()
             process.wait(timeout=5)
         except (OSError, subprocess.TimeoutExpired):
-            process.kill()
-            process.wait()
+            stop_group(process)
         _close_pipes(process)
 
     def _kill(self) -> None:
         process, self._process = self._process, None
         if process is not None:
-            process.kill()
-            process.wait()
+            stop_group(process)
             _close_pipes(process)
 
     # --- requests ------------------------------------------------------------------
 
     def ask(self, mode: str, path: Path, theorem: str, *, timeout: float) -> WorkerReply:
-        """Send one request and wait for its reply. A timeout stops the process."""
+        """Send one request and wait for its reply. A timeout stops the process.
+
+        If Lean refuses the file because this process loaded other imports, the process is
+        restarted with the file's own imports. A new process has nothing loaded, so it
+        can't refuse again.
+        """
+        try:
+            return self._ask_once(mode, path, theorem, timeout=timeout)
+        except _OtherImportsError:
+            self.close()
+        try:
+            return self._ask_once(mode, path, theorem, timeout=timeout)
+        except _OtherImportsError as exc:
+            raise LeanWorkerError("Scry bug: a new Lean process refused a file's imports.") from exc
+
+    def _ask_once(self, mode: str, path: Path, theorem: str, *, timeout: float) -> WorkerReply:
         stamp = self._current_stamp()
         if self._process is not None and (stamp != self._stamp or self._process.poll() is not None):
             self.close()
@@ -155,6 +181,8 @@ class LeanWorker:
             break
         seconds = time.monotonic() - started
         printed = (*stray, *str(reply.get("printed", "")).splitlines())
+        if reply.get("error") == OTHER_IMPORTS:
+            raise _OtherImportsError
         if "error" in reply:
             raise LeanWorkerError(f"Lean couldn't process the file: {reply['error']}")
         result = reply.get("result")
@@ -186,17 +214,37 @@ class LeanWorker:
         return f"Its last output: {tail}" if tail else ""
 
 
-_workers: dict[tuple[Path, Path], LeanWorker] = {}
+class _OtherImportsError(Exception):
+    """Lean refused the file: its process has other imports loaded."""
 
 
-def worker_for(workspace: LeanWorkspace) -> LeanWorker | None:
-    """The kept-running Lean for this project and exporter, or None if switched off."""
+_workers: dict[tuple[Path, Path, tuple[str, ...]], LeanWorker] = {}
+
+
+def import_lines(path: Path) -> tuple[str, ...]:
+    """The file's import lines, which decide which process it goes to. Lean makes the final
+    call on whether two files' imports match; this only picks the likely process."""
+    lines: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("import ", "prelude")):
+            lines.append(" ".join(stripped.split()))
+        elif stripped and not stripped.startswith("--"):
+            break
+    return tuple(lines)
+
+
+def worker_for(workspace: LeanWorkspace, path: Path) -> LeanWorker | None:
+    """The kept-running Lean for this project, exporter and set of imports, or None if
+    switched off. Keeps at most MAX_PROCESSES running, stopping the least recently used."""
     if not enabled() or not workspace.exporter.is_file():
         return None
-    key = (workspace.root.resolve(), workspace.exporter.resolve())
-    if key not in _workers:
-        _workers[key] = LeanWorker(workspace)
-    return _workers[key]
+    key = (workspace.root.resolve(), workspace.exporter.resolve(), import_lines(path))
+    worker = _workers.pop(key, None) or LeanWorker(workspace)
+    _workers[key] = worker  # now the most recently used
+    while len(_workers) > MAX_PROCESSES:
+        _workers.pop(next(iter(_workers))).close()
+    return worker
 
 
 def close_all() -> None:

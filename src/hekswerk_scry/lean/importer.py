@@ -19,13 +19,13 @@ justification (as `have` and `suffices` do). This module turns that trace into s
 """
 
 import json
-import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from hekswerk_scry.checker.wiring import check_wiring
+from hekswerk_scry.lean.processes import run_program
 from hekswerk_scry.lean.runner import file_sha256
 from hekswerk_scry.lean.worker import LeanWorkerError, worker_for
 from hekswerk_scry.lean.workspace import LeanWorkspace
@@ -93,7 +93,7 @@ def run_exporter(
             f"Scry's exporter for {workspace.toolchain} isn't built (expected "
             f"{workspace.exporter}). Run `make lean-setup`."
         )
-    worker = worker_for(workspace)
+    worker = worker_for(workspace, path)
     if worker is not None:
         try:
             reply = worker.ask("export", path, theorem, timeout=timeout)
@@ -105,21 +105,13 @@ def run_exporter(
             )
         return _checked_trace(reply.result)
     command = [str(workspace.lake), "env", str(workspace.exporter), str(path.resolve()), theorem]
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=workspace.root,
-            env=workspace.environment(),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=False,
-        )
-    except subprocess.TimeoutExpired as exc:
+    completed = run_program(command, cwd=workspace.root, env=workspace.environment(),
+                            timeout=timeout)
+    if completed.timed_out:
         raise LeanImportError(
             f"The Lean exporter took longer than {timeout:.0f} seconds and was stopped."
-        ) from exc
-    if completed.returncode != 0:
+        )
+    if completed.exit_code != 0:
         details = (completed.stderr.strip() or completed.stdout.strip())[-2000:]
         raise LeanImportError(f"The Lean exporter failed: {details}")
     last_line = completed.stdout.strip().splitlines()[-1] if completed.stdout.strip() else ""

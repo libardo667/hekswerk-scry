@@ -20,9 +20,10 @@ import json
 import os
 import re
 import shutil
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+
+from hekswerk_scry.lean.processes import run_program
 
 REPOSITORY = Path(__file__).resolve().parents[3]
 
@@ -123,16 +124,13 @@ class LeanWorkspace:
             built = {}
         if built.get(key) == stamp:
             return
-        try:
-            completed = subprocess.run(
-                [str(self.lake), "build", *modules], cwd=self.root, env=self.environment(),
-                capture_output=True, text=True, timeout=timeout, check=False,
-            )
-        except subprocess.TimeoutExpired as exc:
+        completed = run_program([str(self.lake), "build", *modules], cwd=self.root,
+                                env=self.environment(), timeout=timeout)
+        if completed.timed_out:
             raise LeanSetupError(
                 f"Building the files {path.name} imports took longer than {timeout:.0f} seconds."
-            ) from exc
-        if completed.returncode != 0:
+            )
+        if completed.exit_code != 0:
             tail = (completed.stdout + completed.stderr).strip()[-1500:]
             raise LeanSetupError(f"Couldn't build the files {path.name} imports: {tail}")
         record.parent.mkdir(parents=True, exist_ok=True)

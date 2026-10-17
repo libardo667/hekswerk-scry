@@ -142,6 +142,15 @@ scry audit-statement TruffetCounterexample # the AI helper lines it up against t
 
 Details: [`docs/decisions/0005-statement-checking.md`](docs/decisions/0005-statement-checking.md).
 
+## Lean checks that cost seconds
+
+Loading Mathlib takes Lean a minute or more, so Scry keeps a Lean process running with a
+file's imports loaded. Later checks of files with the same imports take seconds, and each
+still starts from a clean slate: nothing one check declares carries over to the next. A
+test requires identical results to a fresh `lean` run, and the check that applies a change
+always uses a fresh one. Set `SCRY_LEAN_WORKER=off` to run a fresh `lean` every time.
+Details: [`docs/decisions/0006-kept-running-lean.md`](docs/decisions/0006-kept-running-lean.md).
+
 ## The AI helper
 
 ```bash

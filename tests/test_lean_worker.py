@@ -15,7 +15,15 @@ from pathlib import Path
 from unittest import mock
 
 from hekswerk_scry.lean import worker as worker_module
-from hekswerk_scry.lean.worker import LeanWorker, LeanWorkerError, worker_for
+from hekswerk_scry.lean.worker import (
+    MAX_PROCESSES,
+    OTHER_IMPORTS,
+    LeanWorker,
+    LeanWorkerError,
+    close_all,
+    import_lines,
+    worker_for,
+)
 from hekswerk_scry.lean.workspace import LeanWorkspace
 
 STAND_IN = f"""#!{sys.executable}
@@ -24,9 +32,21 @@ if sys.argv[1:2] == ["build"]:
     with open(os.path.join(os.path.dirname(sys.argv[0]), "builds.txt"), "a") as log:
         log.write(" ".join(sys.argv[2:]) + "\\n")
     sys.exit(0)
+if sys.argv[-1] == "--serve":
+    # Like `lake env`, start the real program as a child process.
+    import subprocess
+    sys.exit(subprocess.run([sys.executable, __file__, "child"]).returncode)
+loaded = None
 for line in sys.stdin:
     request = json.loads(line)
     reply = {{"id": request["id"], "result": {{"pid": os.getpid()}}, "printed": ""}}
+    # Like the real exporter: one set of import lines per process (see ScryLoad).
+    with open(request["file"]) as source:
+        imports = [l for l in source.read().splitlines() if l.startswith("import")]
+    if loaded is None:
+        loaded = imports
+    elif imports != loaded:
+        reply = {{"id": request["id"], "error": "{OTHER_IMPORTS}", "printed": ""}}
     theorem = request["theorem"]
     if theorem == "slow":
         time.sleep(30)
@@ -95,7 +115,14 @@ class TestKeptRunningLean(WorkerTestCase):
         reply = self.worker.ask("check", self.file, "slow", timeout=0.5)
         self.assertTrue(reply.timed_out)
         self.assertIsNone(reply.result)
+        # Not just `lake`: the Lean program it started must be gone too.
+        self.assertFalse(_alive(first))
         self.assertNotEqual(self.pid(), first)
+
+    def test_closing_leaves_no_lean_running(self) -> None:
+        running = self.pid()
+        self.worker.close()
+        self.assertFalse(_alive(running))
 
     def test_printed_output_is_kept_apart_from_the_reply(self) -> None:
         reply = self.worker.ask("check", self.file, "prints", timeout=20)
@@ -110,10 +137,60 @@ class TestKeptRunningLean(WorkerTestCase):
             self.worker.ask("check", self.file, "wrong-id", timeout=20)
 
     def test_it_can_be_switched_off(self) -> None:
-        self.assertIsNotNone(worker_for(self.ws))
+        self.assertIsNotNone(worker_for(self.ws, self.file))
         with mock.patch.dict(os.environ, {worker_module.SWITCH: "off"}):
-            self.assertIsNone(worker_for(self.ws))
-        worker_module.close_all()
+            self.assertIsNone(worker_for(self.ws, self.file))
+        close_all()
+
+    def test_a_file_with_other_imports_gets_a_process_of_its_own(self) -> None:
+        # Same process for files Scry thinks share imports; Lean disagrees, so the process
+        # is restarted with the new file's imports, and the check still succeeds.
+        first = self.pid()
+        other = self.root / "Other.lean"
+        other.write_text("import Mathlib\n\ntheorem t : True := trivial\n", encoding="utf-8")
+        reply = self.worker.ask("check", other, "t", timeout=20)
+        assert reply.result is not None
+        self.assertNotEqual(reply.result["pid"], first)
+        self.assertFalse(_alive(first))
+
+
+class TestProcessPool(WorkerTestCase):
+    def tearDown(self) -> None:
+        close_all()
+
+    def file_importing(self, name: str) -> Path:
+        path = self.root / f"{name}.lean"
+        path.write_text(f"import {name}\n\ntheorem t : True := trivial\n", encoding="utf-8")
+        return path
+
+    def pid_for(self, path: Path) -> int:
+        worker = worker_for(self.ws, path)
+        assert worker is not None
+        reply = worker.ask("check", path, "t", timeout=20)
+        assert reply.result is not None
+        return int(reply.result["pid"])
+
+    def test_each_set_of_imports_keeps_its_own_process(self) -> None:
+        a, b = self.file_importing("A"), self.file_importing("B")
+        first_a, first_b = self.pid_for(a), self.pid_for(b)
+        self.assertNotEqual(first_a, first_b)
+        self.assertEqual((self.pid_for(a), self.pid_for(b)), (first_a, first_b))
+
+    def test_the_least_recently_used_process_is_stopped(self) -> None:
+        self.assertEqual(MAX_PROCESSES, 2)
+        a, b, c = (self.file_importing(n) for n in "ABC")
+        pid_a = self.pid_for(a)
+        pid_b = self.pid_for(b)
+        self.pid_for(a)  # A is now more recent than B
+        self.pid_for(c)
+        self.assertFalse(_alive(pid_b))
+        self.assertEqual(self.pid_for(a), pid_a)
+
+    def test_import_lines(self) -> None:
+        path = self.root / "Lines.lean"
+        path.write_text("-- a comment\nimport  Mathlib.Tactic\n\nimport B\n/-! doc -/\n"
+                        "import NotAnImport\n", encoding="utf-8")
+        self.assertEqual(import_lines(path), ("import Mathlib.Tactic", "import B"))
 
 
 class TestSkippedBuilds(WorkerTestCase):
@@ -148,6 +225,22 @@ class TestSkippedBuilds(WorkerTestCase):
         (self.root / "lake-manifest.json").write_text(json.dumps({}), encoding="utf-8")
         self.ws.build_imports(checked)
         self.assertEqual(len(self.builds()), 4)
+
+
+def _alive(pid: int) -> bool:
+    """Whether a process is still running (waiting briefly for it to finish stopping)."""
+    for _ in range(50):
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        try:
+            if Path(f"/proc/{pid}/stat").read_text().split()[2] == "Z":
+                return False  # stopped; only its exit status is left to collect
+        except FileNotFoundError:
+            return False
+        time.sleep(0.1)
+    return True
 
 
 if __name__ == "__main__":

@@ -36,7 +36,7 @@ unsafe def handle (loaded : ScryLoad.Loaded) (request : Json) : IO Json := do
   | other => throw <| IO.userError s!"unknown mode '{other}'"
 
 unsafe def serve : IO UInt32 := do
-  let loaded : ScryLoad.Loaded ← IO.mkRef []
+  let loaded : ScryLoad.Loaded ← IO.mkRef none
   let stdin ← IO.getStdin
   let stdout ← IO.getStdout
   repeat

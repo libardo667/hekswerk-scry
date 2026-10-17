@@ -413,6 +413,7 @@ def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected
 unsafe def exportTheorem (path : System.FilePath) (thm : Name)
     (loaded : Option ScryLoad.Loaded := none) : IO Json := do
   let done ← ScryLoad.elaborate loaded path (info := true)
+  ScryLoad.requireNoErrors done
   let (inputCtx, source, s) := (done.inputCtx, done.source, done.state)
   let (_, collected) ← (s.commandState.infoState.trees.toList.forM
     (collect thm none none false #[])).run {}

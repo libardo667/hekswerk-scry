@@ -246,6 +246,7 @@ unsafe def run (path : System.FilePath) (thm : Name) (probes : Bool)
   -- The statement needs only the finished environment, not Lean's record of how each
   -- command was elaborated, so that record is switched off (it is slow to build).
   let done ← ScryLoad.elaborate loaded path (info := false)
+  ScryLoad.requireNoErrors done
   let (inputCtx, s, opts) := (done.inputCtx, done.state, ScryLoad.options)
   let env := s.commandState.env
   -- Print names as a reader of the theorem's own namespace would write them.

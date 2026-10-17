@@ -15,12 +15,12 @@ you trust, or run Scry somewhere isolated.
 import hashlib
 import json
 import re
-import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
 from hekswerk_scry.core.hashing import fingerprint_data
+from hekswerk_scry.lean.processes import run_program
 from hekswerk_scry.lean.worker import worker_for
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.receipts import LeanRunEvidence, Receipt
@@ -98,7 +98,7 @@ def check_file(
     run_file = run_dir / "Check.lean"
     run_file.write_text(f"{text.rstrip()}\n\n#print axioms {theorem}\n", encoding="utf-8")
 
-    worker = None if fresh else worker_for(workspace)
+    worker = None if fresh else worker_for(workspace, run_file)
     command: list[str] = [str(workspace.lake), "env", "lean", "--json", *LEAN_OPTIONS,
                           str(run_file)]
     started = time.monotonic()
@@ -125,21 +125,9 @@ def check_file(
 def _run_fresh(
     workspace: LeanWorkspace, command: list[str], timeout: float
 ) -> tuple[str, str, bool, int | None]:
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=workspace.root,
-            env=workspace.environment(),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            check=False,
-        )
-        return completed.stdout, completed.stderr, False, completed.returncode
-    except subprocess.TimeoutExpired as exc:
-        stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-        stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-        return stdout, stderr, True, None
+    done = run_program(command, cwd=workspace.root, env=workspace.environment(),
+                       timeout=timeout)
+    return done.stdout, done.stderr, done.timed_out, done.exit_code
 
 
 def _judged(

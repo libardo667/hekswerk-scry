@@ -16,10 +16,10 @@ answer key for judging how well statement checking works.
 import json
 import os
 import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from hekswerk_scry.lean.processes import run_program
 from hekswerk_scry.lean.workspace import REPOSITORY
 
 CLONE_URL = "https://github.com/openai/math.git"
@@ -56,9 +56,10 @@ def fetch(*, timeout: float = 1800) -> Path:
         ["git", "clone", "--filter=blob:none", "--sparse", "--depth", "1", CLONE_URL, str(target)],
         ["git", "-C", str(target), "sparse-checkout", "set", "lean"],
     ):
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout,
-                                   check=False)
-        if completed.returncode != 0:
+        completed = run_program(command, timeout=timeout)
+        if completed.timed_out:
+            raise OpenAIMathError(f"`{' '.join(command[:3])}` took longer than {timeout:.0f} s.")
+        if completed.exit_code != 0:
             raise OpenAIMathError(f"`{' '.join(command[:3])}` failed: {completed.stderr.strip()}")
     return target
 
@@ -132,11 +133,11 @@ def paper_source(paper: str, *, timeout: float = 600) -> list[Path]:
     """The LaTeX files of one paper, fetched on first use. Returns them in a stable order."""
     folder = root() / "preprints" / paper / "build"
     if not folder.is_dir():
-        completed = subprocess.run(
+        completed = run_program(
             ["git", "-C", str(root()), "sparse-checkout", "add", f"preprints/{paper}/build"],
-            capture_output=True, text=True, timeout=timeout, check=False,
+            timeout=timeout,
         )
-        if completed.returncode != 0 or not folder.is_dir():
+        if completed.exit_code != 0 or not folder.is_dir():
             raise OpenAIMathError(
                 f"Couldn't fetch the LaTeX source of '{paper}': {completed.stderr.strip()}"
             )

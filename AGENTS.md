@@ -64,6 +64,13 @@ conversation history is append-only.
   separate question. A statement probe counts only when the kernel accepts its proof.
 - OpenAI's scope notes are the answer key for statement audits. Never give them to the AI
   helper, in prompts or tools.
+- Lean usually runs in a kept-running process (`lean/worker.py`, see
+  `docs/decisions/0006-kept-running-lean.md`). It must judge every file exactly as a fresh
+  `lean` run does; `lean_tests/test_lean_worker.py` checks that. One process holds one set
+  of imports. The check that lets `apply_lean_card` change anything always runs a fresh
+  `lean`.
+- Run outside programs (Lean, Lake, git) only through `lean/processes.py`, so that a
+  timeout stops them and everything they started.
 - There is one exporter source per supported Lean version (`lean/ScryExport`,
   `lean-exporters/<version>/ScryExport`). Change them together; they may differ only where
   the Lean versions' APIs differ. `make openai-test` checks that both versions make the same

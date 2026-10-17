@@ -127,6 +127,11 @@ MUTATIONS = [
      '".scry-runs"})',
      '            subfolders[:] = sorted(s for s in subfolders if s not in {".lake"})',
      "every check rebuilds imports because Scry's own scratch files changed"),
+    ("src/hekswerk_scry/lean/processes.py",
+     "    with contextlib.suppress(ProcessLookupError):\n"
+     "        os.killpg(process.pid, signal.SIGKILL)",
+     "    with contextlib.suppress(ProcessLookupError):\n        process.kill()",
+     "a timeout stops lake but leaves the Lean it started running"),
     ("src/hekswerk_scry/lean/runner.py",
      '        if "sorryAx" in extra and not errors and not any("sorry" in p for p in problems):',
      '        if False:',

@@ -20,13 +20,13 @@ of the Lean run it came from.
 
 import hashlib
 import json
-import subprocess
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
 from hekswerk_scry.core.hashing import fingerprint_data
+from hekswerk_scry.lean.processes import run_program
 from hekswerk_scry.lean.worker import LeanWorkerError, worker_for
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.receipts import LeanRunEvidence, Receipt
@@ -146,7 +146,7 @@ def _run_lean(
     workspace: LeanWorkspace, mode: str, path: Path, theorem: str, timeout: float
 ) -> tuple[Any, LeanRunEvidence]:
     """Run the exporter's statement mode, in the kept-running Lean if there is one."""
-    worker = worker_for(workspace)
+    worker = worker_for(workspace, path)
     started = time.monotonic()
     if worker is not None:
         try:
@@ -160,15 +160,11 @@ def _run_lean(
     else:
         command = (str(workspace.lake), "env", str(workspace.exporter), f"--{mode}",
                    str(path.resolve()), theorem)
-        try:
-            completed = subprocess.run(command, cwd=workspace.root, env=workspace.environment(),
-                                       capture_output=True, text=True, timeout=timeout,
-                                       check=False)
-        except subprocess.TimeoutExpired as exc:
-            raise StatementError(
-                f"Lean took longer than {timeout:.0f} seconds and was stopped."
-            ) from exc
-        if completed.returncode != 0:
+        completed = run_program(command, cwd=workspace.root, env=workspace.environment(),
+                                timeout=timeout)
+        if completed.timed_out:
+            raise StatementError(f"Lean took longer than {timeout:.0f} seconds and was stopped.")
+        if completed.exit_code != 0:
             details = (completed.stderr.strip() or completed.stdout.strip())[-2000:]
             raise StatementError(f"Lean couldn't report on '{theorem}': {details}")
         lines = completed.stdout.strip().splitlines()
