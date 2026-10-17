@@ -35,7 +35,8 @@ Every claim Scry shows must say who made it. Step statuses use exactly these lab
 
 | Status | Label shown to people | Who can produce it |
 |---|---|---|
-| `LEAN_CHECKED` | Lean-checked | Only the Lean runner (Checkpoint 2) |
+| `LEAN_CHECKED` | Lean-checked | Only a real Lean run (`hekswerk_scry/lean/runner.py`) |
+| `LEAN_REJECTED` | Lean found an error | Only a real Lean run |
 | `WIRING_CHECKED` | Wiring checked (not proven) | The built-in wiring check |
 | `WIRING_BROKEN` | Wiring broken | The built-in wiring check |
 | `NOT_CHECKED` | Not checked | Anything that could not run a check |
@@ -48,6 +49,14 @@ they rest on (Checkpoint 4).
 - Do not add regex or keyword "checks" of math, code, or prose that present their
   results as verification. That was tried in the first draft and approved broken
   proofs (see `docs/decisions/0001-only-lean-says-proven.md`).
+- A theorem is Lean-checked only when Lean reports no errors, no `sorry`, and no axioms
+  beyond the standard three (propext, Classical.choice, Quot.sound). Results labelled
+  `CheckKind.LEAN` may only come from `lean/runner.py` actually running Lean; a test
+  enforces this.
+- A Lean-backed map records the fingerprint of the file it came from. Never check a map
+  against a file that has changed since; re-import instead.
+- The arrows of a Lean-backed map come from Lean's own record of the finished proof (see
+  `docs/decisions/0002-proof-maps-from-lean.md`), never from reading the tactic text.
 
 ## 3. Never swap steps without re-checking at the moment of the swap
 
@@ -68,8 +77,13 @@ the hunch breaks something, report the breakage instead of agreeing.
 ## 5. Standard library only at runtime
 
 The `hekswerk_scry` package uses only the Python 3.13 standard library. Development
-tools (ruff, mypy) are fine. Lean will be an external program Scry runs, not a
-Python dependency. No FastAPI, Pydantic, SQLAlchemy, LangChain, or npm bundlers.
+tools (ruff, mypy) are fine. Lean is an external program Scry runs, not a Python
+dependency; its workspace lives in `lean/`, pinned to Lean v4.10.0-rc2 and the Mathlib
+release of the same name (the versions AlphaProof's published proofs compile on). No
+FastAPI, Pydantic, SQLAlchemy, LangChain, or npm bundlers.
+
+**Lean files are programs.** Compiling one can run code written in it. Only run Scry's
+Lean features on files you trust, or somewhere isolated.
 
 ## 6. Fail closed, in plain words
 
@@ -92,3 +106,7 @@ make check
 It runs ruff, `mypy --strict`, and the full test suite. All three must pass with no
 warnings. If a tool is missing, `make check` fails and says how to install it; it
 never skips silently.
+
+When you change anything under `src/hekswerk_scry/lean/` or `lean/`, also run
+`make lean-test` (it needs Lean; see `make lean-setup`). It runs real Lean, including on
+the three AlphaProof proofs, and takes a few minutes.

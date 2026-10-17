@@ -1,0 +1,2 @@
+{"severity":"warning","pos":{"line":11,"column":8},"keepFullRange":false,"fileName":"Check.lean","endPos":{"line":11,"column":31},"data":"declaration uses 'sorry'","caption":""}
+{"severity":"information","pos":{"line":23,"column":0},"keepFullRange":false,"fileName":"Check.lean","endPos":{"line":23,"column":6},"data":"'shifted_fraction_ne_one' depends on axioms: [propext, sorryAx, Classical.choice, Quot.sound]","caption":""}

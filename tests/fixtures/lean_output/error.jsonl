@@ -1,0 +1,2 @@
+{"severity":"error","pos":{"line":12,"column":49},"keepFullRange":false,"fileName":"Check.lean","endPos":{"line":12,"column":57},"data":"linarith failed to find a contradiction\ncase h\nx : ℝ\nhx : x ≥ 0\na✝ : 0 ≥ ?m.488\n⊢ False\nfailed","caption":""}
+{"severity":"information","pos":{"line":23,"column":0},"keepFullRange":false,"fileName":"Check.lean","endPos":{"line":23,"column":6},"data":"'shifted_fraction_ne_one' depends on axioms: [propext, sorryAx, Classical.choice, Quot.sound]","caption":""}

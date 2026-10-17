@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from hekswerk_scry.models.proof_map import (
+    LeanRange,
+    LeanSource,
     ProofMap,
     ProofStep,
     StepContract,
@@ -24,9 +26,11 @@ FORMAT_VERSION = 1
 _MAP_REQUIRED = frozenset(
     {"format", "version", "map_id", "title", "starting_facts", "goal", "goal_step_id", "steps"}
 )
-_MAP_OPTIONAL = frozenset({"archived_steps", "history"})
+_MAP_OPTIONAL = frozenset({"archived_steps", "history", "lean_source"})
 _STEP_REQUIRED = frozenset({"id", "title", "assumes", "proves"})
-_STEP_OPTIONAL = frozenset({"depends_on", "views"})
+_STEP_OPTIONAL = frozenset({"depends_on", "views", "lean_range"})
+_LEAN_SOURCE_KEYS = frozenset({"file", "theorem", "file_sha256"})
+_LEAN_RANGE_KEYS = frozenset({"start_line", "start_column", "end_line", "end_column"})
 _VIEW_KEYS = frozenset({"plain_english", "math", "code"})
 _HISTORY_KEYS = frozenset(
     {"card_id", "card_title", "removed_step_ids", "added_step_ids", "receipt_id"}
@@ -73,6 +77,8 @@ def proof_map_to_dict(proof_map: ProofMap) -> dict[str, Any]:
         data["archived_steps"] = [_step_to_dict(s) for s in proof_map.archived_steps.values()]
     if proof_map.history:
         data["history"] = [record.to_dict() for record in proof_map.history]
+    if proof_map.lean_source:
+        data["lean_source"] = proof_map.lean_source.to_dict()
     return data
 
 
@@ -101,7 +107,10 @@ def proof_map_from_dict(data: object, source: str = "The proof map") -> ProofMap
             steps=steps,
             archived_steps=archived,
             history=history,
+            lean_source=_lean_source(top.get("lean_source"), f"{source}, 'lean_source'"),
         )
+    except MapFileError:
+        raise
     except ValueError as exc:
         raise MapFileError(f"{source}: {exc}") from exc
 
@@ -118,6 +127,8 @@ def _step_to_dict(step: ProofStep) -> dict[str, Any]:
     views = {key: value for key, value in step.views.to_dict().items() if value is not None}
     if views:
         data["views"] = views
+    if step.lean_range:
+        data["lean_range"] = step.lean_range.to_dict()
     return data
 
 
@@ -151,6 +162,7 @@ def _step(raw: object, where: str) -> ProofStep:
                 }
             ),
             depends_on=_text_list(obj.get("depends_on", []), f"{where}, 'depends_on'"),
+            lean_range=_lean_range(obj.get("lean_range"), f"{where}, 'lean_range'"),
         )
     except MapFileError:
         raise
@@ -168,6 +180,33 @@ def _history_record(raw: object, where: str) -> SwapRecord:
         added_step_ids=_text_list(obj["added_step_ids"], f"{where}, 'added_step_ids'"),
         receipt_id=_text(obj["receipt_id"], f"{where}, 'receipt_id'"),
     )
+
+
+def _lean_source(raw: object, where: str) -> LeanSource | None:
+    if raw is None:
+        return None
+    obj = _object(raw, where)
+    _check_keys(obj, where, _LEAN_SOURCE_KEYS, frozenset())
+    return LeanSource(
+        file=_text(obj["file"], f"{where}, 'file'"),
+        theorem=_text(obj["theorem"], f"{where}, 'theorem'"),
+        file_sha256=_text(obj["file_sha256"], f"{where}, 'file_sha256'"),
+    )
+
+
+def _lean_range(raw: object, where: str) -> LeanRange | None:
+    if raw is None:
+        return None
+    obj = _object(raw, where)
+    _check_keys(obj, where, _LEAN_RANGE_KEYS, frozenset())
+    numbers = {key: _whole_number(obj[key], f"{where}, '{key}'") for key in _LEAN_RANGE_KEYS}
+    return LeanRange(**numbers)
+
+
+def _whole_number(value: object, where: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise MapFileError(f"{where} should be a whole number.")
+    return value
 
 
 def _object(value: object, where: str) -> dict[str, Any]:

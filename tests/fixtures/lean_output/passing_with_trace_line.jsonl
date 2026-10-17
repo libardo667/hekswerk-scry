@@ -1,0 +1,3 @@
+Error in Linarith.normalizeDenominatorsLHS: Expr.rewrite may not produce subgoals.
+{"severity":"warning","pos":{"line":18,"column":7},"keepFullRange":false,"fileName":"Check.lean","endPos":{"line":18,"column":18},"data":"unused variable `sq_nonneg_x`\nnote: this linter can be disabled with `set_option linter.unusedVariables false`","caption":""}
+{"severity":"information","pos":{"line":23,"column":0},"keepFullRange":false,"fileName":"Check.lean","endPos":{"line":23,"column":6},"data":"'shifted_fraction_ne_one' depends on axioms: [propext, Classical.choice, Quot.sound]","caption":""}

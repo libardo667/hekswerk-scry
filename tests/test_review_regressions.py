@@ -10,6 +10,7 @@ import dataclasses
 import inspect
 import unittest
 from dataclasses import replace
+from pathlib import Path
 
 from hekswerk_scry.checker import (
     CardRejectedError,
@@ -19,7 +20,7 @@ from hekswerk_scry.checker import (
     check_wiring,
     run_what_if,
 )
-from hekswerk_scry.core.enums import CardStatus, CheckKind, ProblemKind, StepStatus, WhatIfKind
+from hekswerk_scry.core.enums import CardStatus, ProblemKind, StepStatus, WhatIfKind
 from hekswerk_scry.models import ProofMap, SimplificationCard, StepContract, StepViews, WhatIfChange
 from tests.helpers import KNOT_STEPS, direct_shift_step, example, make_map, make_step
 
@@ -148,7 +149,18 @@ class TestReviewRegressions(unittest.TestCase):
         self.assertIs(check_card(example(), card).status, CardStatus.REJECTED)
 
     def test_p9_receipts_cannot_unlock_a_swap_or_pretend_to_be_lean(self) -> None:
-        self.assertEqual([kind.value for kind in CheckKind], ["wiring"])
+        # Only the module that actually runs the Lean program may create Lean results.
+        package = Path(__file__).parents[1] / "src" / "hekswerk_scry"
+        creators = {
+            path.relative_to(package).as_posix()
+            for path in package.rglob("*.py")
+            if "CheckKind.LEAN" in path.read_text(encoding="utf-8")
+        }
+        allowed = {"core/enums.py", "lean/runner.py", "lean/what_if.py", "text_reports.py"}
+        self.assertTrue(creators <= allowed, creators)
+        what_if_text = (package / "lean" / "what_if.py").read_text(encoding="utf-8")
+        self.assertIn("check_file(", what_if_text)  # its Lean results come from running Lean
+        self.assertNotIn("Receipt.create", what_if_text)
         self.assertEqual(list(inspect.signature(apply_card).parameters), ["proof_map", "card"])
         # A check that passed earlier counts for nothing once the map has changed.
         proof_map = example()

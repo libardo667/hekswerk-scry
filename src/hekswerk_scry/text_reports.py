@@ -5,6 +5,8 @@ import textwrap
 from hekswerk_scry.checker.cards import CardCheck
 from hekswerk_scry.checker.scanner import MapScan
 from hekswerk_scry.checker.wiring import WiringReport
+from hekswerk_scry.core.enums import CheckKind, StepStatus
+from hekswerk_scry.lean.checks import LeanMapReport
 from hekswerk_scry.models.cards import SimplificationCard
 from hekswerk_scry.models.proof_map import ProofMap
 from hekswerk_scry.models.what_if import BreakageReport
@@ -71,6 +73,23 @@ def render_scan(scan: MapScan) -> str:
 
 
 def render_breakage(report: BreakageReport) -> str:
+    if report.checked_by is CheckKind.LEAN:
+        lines = [
+            f"What if step '{report.change.target}' did nothing?  (checked by Lean)",
+            _wrap(report.headline),
+        ]
+        if not report.goal_reached_after:
+            lines.extend(_wrap(line, "    - ") for line in report.explanation.splitlines())
+        if report.already_broken_step_ids:
+            lines.append(
+                _wrap(
+                    "Lean already reported errors here before the change: "
+                    + ", ".join(report.already_broken_step_ids),
+                    "    ",
+                )
+            )
+        lines.append(_wrap(f"Note: {report.caveat}", "    "))
+        return "\n".join(lines)
     lines = [f"What if: {report.change.describe()}?", _wrap(report.headline)]
     for item in report.broken_steps:
         how = "lost a fact it needs" if item.hit_directly else "relies on a step that broke"
@@ -135,3 +154,33 @@ def render_history(proof_map: ProofMap) -> str:
         _wrap(f"Archived steps kept for inspection: {', '.join(proof_map.archived_steps)}")
     )
     return "\n".join(lines)
+
+
+def render_lean_report(proof_map: ProofMap, report: LeanMapReport) -> str:
+    check = report.check
+    lines = [
+        f"Lean check: {proof_map.title}",
+        _wrap(check.receipt.summary),
+        _wrap(f"Lean took {check.seconds:.0f} seconds. Axioms used: "
+              + (", ".join(check.axioms) if check.axioms else "(not reported)")),
+    ]
+    for problem in check.problems[1:]:
+        lines.append(_wrap(problem, "  ! "))
+    counts: dict[StepStatus, int] = {}
+    for verdict in report.verdicts.values():
+        counts[verdict.status] = counts.get(verdict.status, 0) + 1
+    lines.append(
+        _wrap(
+            "Steps: " + ", ".join(f"{n} {status.label}" for status, n in counts.items())
+        )
+    )
+    for step_id, verdict in report.verdicts.items():
+        if verdict.status is StepStatus.LEAN_REJECTED:
+            lines.append(f"  [{verdict.status.label}] {step_id}: {proof_map.steps[step_id].title}")
+            for error in verdict.lean_errors:
+                lines.append(_wrap(error, "      - "))
+    for error in report.errors_outside_steps:
+        lines.append(_wrap(f"Outside every step: {error}", "  ! "))
+    lines.append(_wrap(f"Receipt {check.receipt.receipt_id} ({check.receipt.checked_by.label})"))
+    return "\n".join(lines)
+

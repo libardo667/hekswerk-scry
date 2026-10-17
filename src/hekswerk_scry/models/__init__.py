@@ -3,6 +3,8 @@
 from hekswerk_scry.models.cards import SimplificationCard
 from hekswerk_scry.models.proof_map import (
     DependencyLoopError,
+    LeanRange,
+    LeanSource,
     ProofMap,
     ProofStep,
     StepContract,
@@ -15,6 +17,8 @@ from hekswerk_scry.models.what_if import BreakageReport, StepBreakage, WhatIfCha
 __all__ = [
     "BreakageReport",
     "DependencyLoopError",
+    "LeanRange",
+    "LeanSource",
     "ProofMap",
     "ProofStep",
     "Receipt",

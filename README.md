@@ -8,9 +8,10 @@ map of steps, shows you where to look first, lets you poke at it to see what rel
 what, and lets you safely swap a tangled group of steps for a shorter route. It never
 claims more than it has actually checked.
 
-> **Status: Checkpoint 1 of 6.** Everything Scry can check today is *wiring*: whether
-> the facts feed into each other correctly. It does not read the math yet, so nothing
-> it shows counts as proven. Lean arrives in Checkpoint 2.
+> **Status: Checkpoint 2 of 6.** Scry can turn a Lean proof into a proof map, ask Lean
+> whether the theorem is proven, and run What-If tests that Lean judges. Maps written by
+> hand (without Lean) can still only be *wiring checked*: Scry follows how the facts feed
+> into each other but does not read the math, so nothing in them counts as proven.
 
 ## Try it
 
@@ -29,6 +30,17 @@ scry check  path/to/map.json
 scry scan   path/to/map.json
 scry what-if path/to/map.json --remove-step cube-split
 scry what-if path/to/map.json --drop-fact "x >= 0"
+```
+
+With Lean installed (see [Setting up Lean](#setting-up-lean)):
+
+```bash
+make lean-demo                 # the same example as a real Lean proof, checked by Lean
+scry fetch-alphaproof          # download DeepMind's AlphaProof proofs from IMO 2024
+scry lean-import lean/fetched/alphaproof/P2.lean imo_2024_p2 -o p2.json
+scry lean-check p2.json        # is the theorem proven? (Lean decides)
+scry scan p2.json
+scry what-if p2.json --remove-step s7 --lean   # make step s7 do nothing; Lean judges
 ```
 
 The bundled example is in
@@ -56,9 +68,44 @@ long way round, through cubes and squares.
   the proof needs, or targets steps that have changed since it was drafted. It is
   re-checked at the moment of the swap. Swapped-out steps are archived, not deleted.
 
-Every result says who produced it. Step statuses are **Lean-checked**, **Wiring checked
-(not proven)**, **Wiring broken**, or **Not checked**. AI-produced claims will be
-labelled **AI's reading** and must cite their evidence.
+Every result says who produced it. Step statuses are **Lean-checked**, **Lean found an
+error**, **Wiring checked (not proven)**, **Wiring broken**, or **Not checked**.
+AI-produced claims will be labelled **AI's reading** and must cite their evidence.
+
+## Proofs from Lean
+
+`scry lean-import` asks Lean itself how a tactic proof fits together. For every tactic it
+records which goal the tactic worked on, which goals it left for later, and which
+hypotheses its piece of the *finished* proof really uses. So the arrows show what the
+proof actually relies on, not what the tactic text appears to mention. Each `have`-style
+hypothesis gets its own small "Why h holds" step, so a lemma that is proved but never
+used shows up as an unused step. The details and known limitations are in
+[`docs/decisions/0002-proof-maps-from-lean.md`](docs/decisions/0002-proof-maps-from-lean.md).
+
+- **Lean-checked** means Lean accepts the theorem with no errors, no `sorry`, and no
+  axioms beyond Lean's standard three (propext, Classical.choice, Quot.sound).
+- **Lean What-If tests** replace a step with `skip` (a tactic that does nothing) in a
+  copy of the file and re-run Lean. "Not needed" means Lean still accepts the whole proof.
+- **Unused**, for a Lean map, means Lean's finished proof doesn't rely on the step's
+  result. The code may still need it to compile (a hint that has to be proved even though
+  the tactic it was given to didn't use it); a Lean What-If test settles that.
+
+**Lean files are programs.** Compiling one can run code written in it. Only use Scry's
+Lean features on files you trust, or somewhere isolated.
+
+## Setting up Lean
+
+1. Install [elan](https://github.com/leanprover/elan), Lean's installer. The `lean/`
+   folder pins the exact Lean version (v4.10.0-rc2), and elan fetches it automatically.
+2. From the repository root, run `make lean-setup`. It downloads Mathlib's prebuilt files
+   (about 4.5 GB) and builds Scry's Lean exporter.
+3. Run `make lean-test` to confirm everything works. It runs real Lean, including on the
+   three AlphaProof proofs, and takes a few minutes.
+
+Network access needed for setup: `release.lean-lang.org`, `github.com`, and
+`lakecache.blob.core.windows.net`. Fetching the AlphaProof proofs needs
+`storage.googleapis.com`. The AlphaProof archive is not stored in this repository; Scry
+downloads it and checks its fingerprint before using it.
 
 ## Proof map files
 
@@ -93,9 +140,9 @@ different facts. Deciding when two formulas mean the same thing is Lean's job.
 
 | # | What you get | Status |
 |---|---|---|
-| 1 | Proof maps, wiring check, scanner, What-If tests, Simplification cards, receipts, CLI | Done (this checkpoint) |
-| 2 | Lean runner and exporter: a Lean file in, a proof map out; What-If tests re-checked by Lean | Next |
-| 3 | Simplification cards checked by Lean before any swap | |
+| 1 | Proof maps, wiring check, scanner, What-If tests, Simplification cards, receipts, CLI | Done |
+| 2 | Lean runner and exporter: a Lean file in, a proof map out; What-If tests re-checked by Lean | Done (this checkpoint) |
+| 3 | Simplification cards checked by Lean before any swap | Next |
 | 4 | AI helper via OpenRouter that tests your hunches before answering | |
 | 5 | Three-pane browser workbench | |
 | 6 | Importing written proofs and finding where English and code disagree | |
@@ -103,4 +150,4 @@ different facts. Deciding when two formulas mean the same thing is Lean's job.
 ## For contributors and coding agents
 
 Read [`AGENTS.md`](AGENTS.md) first. Run `make check` (ruff, `mypy --strict`, tests)
-before finishing any change.
+before finishing any change, and `make lean-test` too when you touch anything Lean.

@@ -78,11 +78,7 @@ def scan_proof_map(proof_map: ProofMap, *, min_knot_steps: int = 3) -> MapScan:
         UnusedStep(
             step_id=step_id,
             step_title=proof_map.steps[step_id].title,
-            explanation=(
-                f"Nothing on the way to the goal uses what this step proves "
-                f"('{proof_map.steps[step_id].contract.proves}'). It may be leftover "
-                "searching, or the map may be missing an arrow."
-            ),
+            explanation=_unused_explanation(proof_map, step_id),
         )
         for step_id in order
         if step_id not in useful
@@ -102,6 +98,20 @@ def scan_proof_map(proof_map: ProofMap, *, min_knot_steps: int = 3) -> MapScan:
         knots=knots,
         unused_steps=unused,
         overview=overview,
+    )
+
+
+def _unused_explanation(proof_map: ProofMap, step_id: str) -> str:
+    proves = proof_map.steps[step_id].contract.proves
+    if proof_map.lean_source is not None:
+        return (
+            f"Lean's finished proof doesn't rely on what this step proves ('{proves}'). The "
+            "code may still need it in order to compile (for example, a hint another tactic "
+            "was given but didn't use). A Lean What-If test can tell."
+        )
+    return (
+        f"Nothing on the way to the goal uses what this step proves ('{proves}'). It may be "
+        "leftover searching, or the map may be missing an arrow."
     )
 
 

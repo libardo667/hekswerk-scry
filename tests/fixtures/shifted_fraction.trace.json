@@ -1,0 +1,627 @@
+{
+    "version": 1,
+    "theorem": "shifted_fraction_ne_one",
+    "steps": [
+        {
+            "start": {
+                "line": 12,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [
+                        "_uniq.568"
+                    ],
+                    "goal": "_uniq.240"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.568"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [
+                        "_uniq.489"
+                    ],
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "hypothesis": "_uniq.567",
+                    "alias_of": null
+                }
+            ],
+            "index": 0,
+            "end": {
+                "line": 12,
+                "column": 60
+            },
+            "code": "have cube_pos : (x + 7) ^ 3 > 0 := pow_pos (by linarith) 3"
+        },
+        {
+            "start": {
+                "line": 12,
+                "column": 49
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238",
+                        "_uniq.239"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.489"
+                }
+            ],
+            "parent": 0,
+            "leaves": [],
+            "kind": "linarith",
+            "introduces": [],
+            "index": 1,
+            "end": {
+                "line": 12,
+                "column": 57
+            },
+            "code": "linarith"
+        },
+        {
+            "start": {
+                "line": 13,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [
+                        "_uniq.2095"
+                    ],
+                    "goal": "_uniq.568"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.2095"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [
+                        "_uniq.2093"
+                    ],
+                    "uses": [],
+                    "hypothesis": "_uniq.2094",
+                    "alias_of": null
+                }
+            ],
+            "index": 2,
+            "end": {
+                "line": 13,
+                "column": 66
+            },
+            "code": "have cube_split : (x + 7) ^ 3 = (x + 7) * (x + 7) ^ 2 := by ring"
+        },
+        {
+            "start": {
+                "line": 13,
+                "column": 62
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.2093"
+                }
+            ],
+            "parent": 2,
+            "leaves": [],
+            "kind": "Mathlib.Tactic.RingNF.ring",
+            "introduces": [],
+            "index": 3,
+            "end": {
+                "line": 13,
+                "column": 66
+            },
+            "code": "ring"
+        },
+        {
+            "start": {
+                "line": 14,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [
+                        "_uniq.2586"
+                    ],
+                    "goal": "_uniq.2095"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.2586"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [
+                        "_uniq.2567"
+                    ],
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "hypothesis": "_uniq.2585",
+                    "alias_of": null
+                }
+            ],
+            "index": 4,
+            "end": {
+                "line": 14,
+                "column": 58
+            },
+            "code": "have sq_pos : (x + 7) ^ 2 > 0 := pow_pos (by linarith) 2"
+        },
+        {
+            "start": {
+                "line": 14,
+                "column": 47
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238",
+                        "_uniq.239"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.2567"
+                }
+            ],
+            "parent": 4,
+            "leaves": [],
+            "kind": "linarith",
+            "introduces": [],
+            "index": 5,
+            "end": {
+                "line": 14,
+                "column": 55
+            },
+            "code": "linarith"
+        },
+        {
+            "start": {
+                "line": 15,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [
+                        "_uniq.2918"
+                    ],
+                    "goal": "_uniq.2586"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.2918"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [
+                        "_uniq.2916"
+                    ],
+                    "uses": [],
+                    "hypothesis": "_uniq.2917",
+                    "alias_of": null
+                }
+            ],
+            "index": 6,
+            "end": {
+                "line": 17,
+                "column": 56
+            },
+            "code": "have shift_pos : x + 7 > 0 := by\n    rw [cube_split] at cube_pos\n    exact pos_of_mul_pos_left cube_pos (le_of_lt sq_pos)"
+        },
+        {
+            "start": {
+                "line": 16,
+                "column": 4
+            },
+            "parts": [
+                {
+                    "uses": [],
+                    "holes": [
+                        "_uniq.2941"
+                    ],
+                    "goal": "_uniq.2916"
+                }
+            ],
+            "parent": 6,
+            "leaves": [
+                "_uniq.2941"
+            ],
+            "kind": "Lean.Parser.Tactic.rwSeq",
+            "introduces": [
+                {
+                    "value_holes": [],
+                    "uses": [
+                        "_uniq.238",
+                        "_uniq.2094",
+                        "_uniq.567"
+                    ],
+                    "hypothesis": "_uniq.2934",
+                    "alias_of": null
+                },
+                {
+                    "value_holes": [],
+                    "uses": [
+                        "_uniq.2094"
+                    ],
+                    "hypothesis": "_uniq.2937",
+                    "alias_of": "_uniq.2094"
+                },
+                {
+                    "value_holes": [],
+                    "uses": [
+                        "_uniq.2585"
+                    ],
+                    "hypothesis": "_uniq.2938",
+                    "alias_of": "_uniq.2585"
+                }
+            ],
+            "index": 7,
+            "end": {
+                "line": 16,
+                "column": 31
+            },
+            "code": "rw [cube_split] at cube_pos"
+        },
+        {
+            "start": {
+                "line": 17,
+                "column": 4
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238",
+                        "_uniq.2934",
+                        "_uniq.2938"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.2941"
+                }
+            ],
+            "parent": 6,
+            "leaves": [],
+            "kind": "Lean.Parser.Tactic.exact",
+            "introduces": [],
+            "index": 8,
+            "end": {
+                "line": 17,
+                "column": 56
+            },
+            "code": "exact pos_of_mul_pos_left cube_pos (le_of_lt sq_pos)"
+        },
+        {
+            "start": {
+                "line": 18,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [
+                        "_uniq.3556"
+                    ],
+                    "goal": "_uniq.2918"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.3556"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [],
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "hypothesis": "_uniq.3555",
+                    "alias_of": null
+                }
+            ],
+            "index": 9,
+            "end": {
+                "line": 18,
+                "column": 45
+            },
+            "code": "have sq_nonneg_x : x ^ 2 \u2265 0 := sq_nonneg x"
+        },
+        {
+            "start": {
+                "line": 19,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [
+                        "_uniq.3605"
+                    ],
+                    "goal": "_uniq.3556"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.3605"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [
+                        "_uniq.3603"
+                    ],
+                    "uses": [],
+                    "hypothesis": "_uniq.3604",
+                    "alias_of": null
+                }
+            ],
+            "index": 10,
+            "end": {
+                "line": 19,
+                "column": 42
+            },
+            "code": "have lt_shift : x < x + 7 := by linarith"
+        },
+        {
+            "start": {
+                "line": 19,
+                "column": 34
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.3603"
+                }
+            ],
+            "parent": 10,
+            "leaves": [],
+            "kind": "linarith",
+            "introduces": [],
+            "index": 11,
+            "end": {
+                "line": 19,
+                "column": 42
+            },
+            "code": "linarith"
+        },
+        {
+            "start": {
+                "line": 20,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238"
+                    ],
+                    "holes": [
+                        "_uniq.4119"
+                    ],
+                    "goal": "_uniq.3605"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.4119"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [],
+                    "uses": [
+                        "_uniq.238",
+                        "_uniq.2917",
+                        "_uniq.3604"
+                    ],
+                    "hypothesis": "_uniq.4118",
+                    "alias_of": null
+                }
+            ],
+            "index": 12,
+            "end": {
+                "line": 20,
+                "column": 73
+            },
+            "code": "have below_one : x / (x + 7) < 1 := (div_lt_one shift_pos).mpr lt_shift"
+        },
+        {
+            "start": {
+                "line": 21,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.238",
+                        "_uniq.4118"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.4119"
+                }
+            ],
+            "parent": null,
+            "leaves": [],
+            "kind": "Lean.Parser.Tactic.exact",
+            "introduces": [],
+            "index": 13,
+            "end": {
+                "line": 21,
+                "column": 26
+            },
+            "code": "exact ne_of_lt below_one"
+        }
+    ],
+    "starting_facts": [
+        {
+            "type": "x \u2265 0",
+            "name": "hx",
+            "hypothesis": "_uniq.239"
+        }
+    ],
+    "root_goal": "_uniq.240",
+    "lean_version": "4.10.0-rc2",
+    "hypotheses": {
+        "_uniq.567": {
+            "type": "(x + 7) ^ 3 > 0",
+            "name": "cube_pos",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.4118": {
+            "type": "x / (x + 7) < 1",
+            "name": "below_one",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.3604": {
+            "type": "x < x + 7",
+            "name": "lt_shift",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.3555": {
+            "type": "x ^ 2 \u2265 0",
+            "name": "sq_nonneg_x",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.2938": {
+            "type": "(x + 7) ^ 2 > 0",
+            "name": "sq_pos",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.2937": {
+            "type": "(x + 7) ^ 3 = (x + 7) * (x + 7) ^ 2",
+            "name": "cube_split",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.2934": {
+            "type": "(x + 7) * (x + 7) ^ 2 > 0",
+            "name": "cube_pos",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.2917": {
+            "type": "x + 7 > 0",
+            "name": "shift_pos",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.2585": {
+            "type": "(x + 7) ^ 2 > 0",
+            "name": "sq_pos",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.239": {
+            "type": "x \u2265 0",
+            "name": "hx",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": true
+        },
+        "_uniq.238": {
+            "type": "\u211d",
+            "name": "x",
+            "is_prop": false,
+            "is_auxiliary": false,
+            "from_statement": true
+        },
+        "_uniq.2094": {
+            "type": "(x + 7) ^ 3 = (x + 7) * (x + 7) ^ 2",
+            "name": "cube_split",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        }
+    },
+    "goals": {
+        "_uniq.568": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.489": {
+            "target": "0 < x + 7"
+        },
+        "_uniq.4119": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.3605": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.3603": {
+            "target": "x < x + 7"
+        },
+        "_uniq.3556": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.2941": {
+            "target": "x + 7 > 0"
+        },
+        "_uniq.2918": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.2916": {
+            "target": "x + 7 > 0"
+        },
+        "_uniq.2586": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.2567": {
+            "target": "0 < x + 7"
+        },
+        "_uniq.240": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.2095": {
+            "target": "x / (x + 7) \u2260 1"
+        },
+        "_uniq.2093": {
+            "target": "(x + 7) ^ 3 = (x + 7) * (x + 7) ^ 2"
+        }
+    },
+    "format": "hekswerk-scry/lean-trace"
+}

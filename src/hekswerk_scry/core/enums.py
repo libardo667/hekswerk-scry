@@ -10,12 +10,13 @@ from enum import StrEnum
 class StepStatus(StrEnum):
     """How far a step has been checked, and by what.
 
-    Only a Lean check (Checkpoint 2) may ever produce LEAN_CHECKED. The built-in
+    Only the Lean check may ever produce LEAN_CHECKED or LEAN_REJECTED. The built-in
     wiring check can at most produce WIRING_CHECKED, which means "the facts feed
     into each other correctly", not "the math is right".
     """
 
     LEAN_CHECKED = "lean_checked"
+    LEAN_REJECTED = "lean_rejected"
     WIRING_CHECKED = "wiring_checked"
     WIRING_BROKEN = "wiring_broken"
     NOT_CHECKED = "not_checked"
@@ -27,6 +28,7 @@ class StepStatus(StrEnum):
 
 _STEP_STATUS_LABELS: dict[StepStatus, str] = {
     StepStatus.LEAN_CHECKED: "Lean-checked",
+    StepStatus.LEAN_REJECTED: "Lean found an error",
     StepStatus.WIRING_CHECKED: "Wiring checked (not proven)",
     StepStatus.WIRING_BROKEN: "Wiring broken",
     StepStatus.NOT_CHECKED: "Not checked",
@@ -36,11 +38,12 @@ _STEP_STATUS_LABELS: dict[StepStatus, str] = {
 class CheckKind(StrEnum):
     """Which checker produced a result.
 
-    There is deliberately only one member until the Lean runner exists, so no code
-    can label a result as coming from Lean before Lean has actually been run.
+    LEAN results are only ever created by `hekswerk_scry.lean.runner`, from an actual
+    run of the Lean program.
     """
 
     WIRING = "wiring"
+    LEAN = "lean"
 
     @property
     def label(self) -> str:
@@ -49,6 +52,7 @@ class CheckKind(StrEnum):
 
 _CHECK_KIND_LABELS: dict[CheckKind, str] = {
     CheckKind.WIRING: "Built-in wiring check (follows facts between steps; does not read the math)",
+    CheckKind.LEAN: "Lean (checks the math itself)",
 }
 
 

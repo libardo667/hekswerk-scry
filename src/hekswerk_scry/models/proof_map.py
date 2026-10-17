@@ -66,6 +66,62 @@ class StepViews:
 
 
 @dataclass(frozen=True)
+class LeanRange:
+    """Where a step's tactic sits in its Lean file.
+
+    Lines count from 1. Columns count characters (not bytes) from 0, as Lean reports them.
+    """
+
+    start_line: int
+    start_column: int
+    end_line: int
+    end_column: int
+
+    def __post_init__(self) -> None:
+        if self.start_line < 1 or (self.end_line, self.end_column) < (
+            self.start_line,
+            self.start_column,
+        ):
+            raise ValueError(f"Not a usable source range: {self.to_dict()}.")
+
+    def contains(self, line: int, column: int) -> bool:
+        return (self.start_line, self.start_column) <= (line, column) <= (
+            self.end_line,
+            self.end_column,
+        )
+
+    def encloses(self, other: "LeanRange") -> bool:
+        return self.contains(other.start_line, other.start_column) and self.contains(
+            other.end_line, other.end_column
+        )
+
+    def to_dict(self) -> dict[str, int]:
+        return {
+            "start_line": self.start_line,
+            "start_column": self.start_column,
+            "end_line": self.end_line,
+            "end_column": self.end_column,
+        }
+
+
+@dataclass(frozen=True)
+class LeanSource:
+    """Which Lean file and theorem a proof map was made from.
+
+    `file` is relative to Scry's Lean workspace. `file_sha256` is the fingerprint of the
+    file's exact contents when the map was made, so a map is never checked against a
+    different version of the file.
+    """
+
+    file: str
+    theorem: str
+    file_sha256: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"file": self.file, "theorem": self.theorem, "file_sha256": self.file_sha256}
+
+
+@dataclass(frozen=True)
 class ProofStep:
     """One step of a proof.
 
@@ -79,6 +135,7 @@ class ProofStep:
     contract: StepContract
     views: StepViews = field(default_factory=StepViews)
     depends_on: tuple[str, ...] = ()
+    lean_range: LeanRange | None = None
 
     def __post_init__(self) -> None:
         if not self.step_id or self.step_id != self.step_id.strip() or " " in self.step_id:
@@ -101,6 +158,7 @@ class ProofStep:
             **self.contract.to_dict(),
             "depends_on": list(self.depends_on),
             "views": self.views.to_dict(),
+            "lean_range": self.lean_range.to_dict() if self.lean_range else None,
         }
 
 
@@ -151,6 +209,7 @@ class ProofMap:
     steps: dict[str, ProofStep]
     archived_steps: dict[str, ProofStep] = field(default_factory=dict)
     history: tuple[SwapRecord, ...] = ()
+    lean_source: LeanSource | None = None
 
     def __post_init__(self) -> None:
         goal = normalize_fact(self.goal)
@@ -179,6 +238,7 @@ class ProofMap:
                 "goal": self.goal,
                 "goal_step_id": self.goal_step_id,
                 "steps": {sid: step.fingerprint() for sid, step in sorted(self.steps.items())},
+                "lean_source": self.lean_source.to_dict() if self.lean_source else None,
             }
         )
 

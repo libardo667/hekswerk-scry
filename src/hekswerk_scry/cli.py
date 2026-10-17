@@ -5,10 +5,19 @@
     scry scan MAP.json                           find chokepoints, knots, and unused steps
     scry what-if MAP.json --remove-step ID       see what relies on a step
     scry what-if MAP.json --drop-fact "FACT"     see what relies on a starting fact
+
+With Lean (see "Setting up Lean" in README.md):
+
+    scry lean-demo                               walk through the example, checked by Lean
+    scry fetch-alphaproof                        download DeepMind's AlphaProof proofs
+    scry lean-import FILE.lean THEOREM -o MAP.json   turn a Lean proof into a proof map
+    scry lean-check MAP.json                     ask Lean whether the theorem is proven
+    scry what-if MAP.json --remove-step ID --lean    make a step do nothing; Lean judges
 """
 
 import argparse
 import sys
+import textwrap
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -21,7 +30,12 @@ from hekswerk_scry.checker import (
 )
 from hekswerk_scry.core.enums import WhatIfKind
 from hekswerk_scry.examples import load_example
-from hekswerk_scry.files import load_proof_map
+from hekswerk_scry.files import load_proof_map, save_proof_map
+from hekswerk_scry.lean.alphaproof import AlphaProofFetchError, fetch_alphaproof
+from hekswerk_scry.lean.checks import check_map_with_lean
+from hekswerk_scry.lean.importer import LeanImportError, import_theorem
+from hekswerk_scry.lean.what_if import run_lean_what_if
+from hekswerk_scry.lean.workspace import LeanSetupError, find_workspace
 from hekswerk_scry.models import (
     ProofStep,
     SimplificationCard,
@@ -33,6 +47,7 @@ from hekswerk_scry.text_reports import (
     render_breakage,
     render_card_check,
     render_history,
+    render_lean_report,
     render_map_overview,
     render_scan,
     render_wiring_report,
@@ -50,8 +65,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "scan":
             return _scan(Path(args.map_file))
         if args.command == "what-if":
-            return _what_if(Path(args.map_file), args.remove_step, args.drop_fact)
-    except ValueError as exc:
+            return _what_if(Path(args.map_file), args.remove_step, args.drop_fact, args.lean)
+        if args.command == "lean-import":
+            return _lean_import(Path(args.lean_file), args.theorem, Path(args.out))
+        if args.command == "lean-check":
+            return _lean_check(Path(args.map_file))
+        if args.command == "fetch-alphaproof":
+            return _fetch_alphaproof()
+        if args.command == "lean-demo":
+            return run_lean_demo()
+    except (ValueError, LeanSetupError, LeanImportError, AlphaProofFetchError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     parser.print_help()
@@ -74,6 +97,17 @@ def _build_parser() -> argparse.ArgumentParser:
     change = what_if.add_mutually_exclusive_group(required=True)
     change.add_argument("--remove-step", metavar="STEP_ID", help="remove this step")
     change.add_argument("--drop-fact", metavar="FACT", help="drop this starting fact")
+    what_if.add_argument(
+        "--lean", action="store_true", help="let Lean judge the change (Lean-backed maps only)"
+    )
+    lean_import = commands.add_parser("lean-import", help="turn a Lean proof into a proof map")
+    lean_import.add_argument("lean_file", help="path to a .lean file")
+    lean_import.add_argument("theorem", help="the theorem's full name")
+    lean_import.add_argument("-o", "--out", required=True, help="where to save the proof map")
+    lean_check = commands.add_parser("lean-check", help="ask Lean whether the theorem is proven")
+    lean_check.add_argument("map_file", help="path to a Lean-backed proof map JSON file")
+    commands.add_parser("fetch-alphaproof", help="download DeepMind's AlphaProof proofs")
+    commands.add_parser("lean-demo", help="walk through the example, checked by Lean")
     return parser
 
 
@@ -89,14 +123,64 @@ def _scan(path: Path) -> int:
     return 0
 
 
-def _what_if(path: Path, remove_step: str | None, drop_fact: str | None) -> int:
+def _what_if(path: Path, remove_step: str | None, drop_fact: str | None, lean: bool) -> int:
     proof_map = load_proof_map(path)
     if remove_step is not None:
         change = WhatIfChange(WhatIfKind.REMOVE_STEP, remove_step)
     else:
         change = WhatIfChange(WhatIfKind.DROP_STARTING_FACT, drop_fact or "")
-    print(render_breakage(run_what_if(proof_map, change)))
+    if lean:
+        if proof_map.lean_source is None:
+            raise ValueError(
+                f"'{path}' was not made from a Lean file, so Lean can't judge the change. "
+                "Leave out --lean to run a wiring What-If test instead."
+            )
+        print(render_breakage(run_lean_what_if(find_workspace(), proof_map, change)))
+    else:
+        print(render_breakage(run_what_if(proof_map, change)))
     return 0
+
+
+def _lean_import(lean_file: Path, theorem: str, out: Path) -> int:
+    proof_map = import_theorem(find_workspace(), lean_file, theorem)
+    save_proof_map(proof_map, out)
+    print(f"Saved a proof map of '{theorem}' with {len(proof_map.steps)} steps to {out}.")
+    print(textwrap.fill(check_wiring(proof_map).summary, 92, initial_indent="  ",
+                        subsequent_indent="  "))
+    print()
+    print(render_scan(scan_proof_map(proof_map)))
+    return 0
+
+
+def _lean_check(path: Path) -> int:
+    proof_map = load_proof_map(path)
+    if proof_map.lean_source is None:
+        raise ValueError(
+            f"'{path}' was not made from a Lean file, so Lean can't check it. "
+            "Make a Lean-backed map with `scry lean-import`."
+        )
+    report = check_map_with_lean(find_workspace(), proof_map)
+    print(render_lean_report(proof_map, report))
+    return 0 if report.passed else 1
+
+
+def _fetch_alphaproof() -> int:
+    workspace = find_workspace()
+    files = fetch_alphaproof(workspace)
+    print("Downloaded DeepMind's AlphaProof proofs from IMO 2024 (fingerprint checked):")
+    for path, theorem in files.items():
+        print(f"  {workspace.relative(path)}  (theorem {theorem})")
+    first, theorem = next(iter(files.items()))
+    print("\nTo make a proof map of one, for example:")
+    print(f"  scry lean-import {path_hint(first)} {theorem} -o {theorem}.json")
+    return 0
+
+
+def path_hint(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path)
 
 
 def _section(title: str) -> None:
@@ -191,6 +275,32 @@ def run_demo() -> int:
         "\nEverything above is 'wiring checked (not proven)'. Next, Lean will check the\n"
         "math of each step; until then, nothing here counts as proven."
     )
+    return 0
+
+
+def run_lean_demo() -> int:
+    """Walk through the Lean version of the example: import, check, scan, What-If."""
+    workspace = find_workspace()
+    lean_file = workspace.root / "Examples" / "ShiftedFraction.lean"
+    _section("1. Turn the Lean proof into a proof map")
+    proof_map = import_theorem(workspace, lean_file, "shifted_fraction_ne_one")
+    print(render_map_overview(proof_map))
+    print(
+        "\n  Every step, and every arrow between steps, comes from Lean's own record of the\n"
+        "  finished proof: which goal each tactic worked on, and what its part relied on."
+    )
+
+    _section("2. Ask Lean whether the theorem is proven")
+    print(render_lean_report(proof_map, check_map_with_lean(workspace, proof_map)))
+
+    _section("3. Scan: where should a person look first?")
+    print(render_scan(scan_proof_map(proof_map)))
+
+    _section("4. What-If tests, judged by Lean")
+    for step_id in ("s10", "s3"):
+        change = WhatIfChange(WhatIfKind.REMOVE_STEP, step_id)
+        print(render_breakage(run_lean_what_if(workspace, proof_map, change)))
+        print()
     return 0
 
 

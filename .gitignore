@@ -8,3 +8,8 @@ dist/
 .pytest_cache/
 .venv/
 .env
+
+# Lean workspace: build output, Scry's run folder, downloaded proofs
+lean/.lake/
+lean/.scry-runs/
+lean/fetched/
