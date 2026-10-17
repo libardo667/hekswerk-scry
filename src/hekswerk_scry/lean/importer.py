@@ -27,6 +27,7 @@ from typing import Any
 
 from hekswerk_scry.checker.wiring import check_wiring
 from hekswerk_scry.lean.runner import file_sha256
+from hekswerk_scry.lean.worker import LeanWorkerError, worker_for
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.proof_map import (
     LeanRange,
@@ -92,6 +93,17 @@ def run_exporter(
             f"Scry's exporter for {workspace.toolchain} isn't built (expected "
             f"{workspace.exporter}). Run `make lean-setup`."
         )
+    worker = worker_for(workspace)
+    if worker is not None:
+        try:
+            reply = worker.ask("export", path, theorem, timeout=timeout)
+        except LeanWorkerError as exc:
+            raise LeanImportError(f"The Lean exporter failed: {exc}") from exc
+        if reply.timed_out:
+            raise LeanImportError(
+                f"The Lean exporter took longer than {timeout:.0f} seconds and was stopped."
+            )
+        return _checked_trace(reply.result)
     command = [str(workspace.lake), "env", str(workspace.exporter), str(path.resolve()), theorem]
     try:
         completed = subprocess.run(
@@ -115,6 +127,10 @@ def run_exporter(
         trace = json.loads(last_line)
     except json.JSONDecodeError as exc:
         raise LeanImportError("The Lean exporter's output was not valid JSON.") from exc
+    return _checked_trace(trace)
+
+
+def _checked_trace(trace: Any) -> dict[str, Any]:
     if not isinstance(trace, dict) or trace.get("format") != TRACE_FORMAT:
         raise LeanImportError("The Lean exporter's output is not a Scry Lean trace.")
     return trace

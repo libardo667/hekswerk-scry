@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from hekswerk_scry.core.hashing import fingerprint_data
+from hekswerk_scry.lean.worker import worker_for
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.receipts import LeanRunEvidence, Receipt
 
@@ -78,11 +79,16 @@ def check_file(
     *,
     source_text: str | None = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    fresh: bool = False,
 ) -> LeanCheck:
     """Run Lean on `path` (or on `source_text`, if given) and judge `theorem`.
 
     The file is copied into the workspace with one line added at the end that asks Lean
     which axioms the theorem relies on. Line numbers in messages match the original.
+
+    Lean runs in the kept-running process (`lean/worker.py`) unless `fresh` is set or it
+    is switched off; then a new `lean` process runs. Either way the same code judges
+    Lean's messages.
     """
     workspace.build_imports(path)
     text = source_text if source_text is not None else path.read_text(encoding="utf-8")
@@ -92,8 +98,33 @@ def check_file(
     run_file = run_dir / "Check.lean"
     run_file.write_text(f"{text.rstrip()}\n\n#print axioms {theorem}\n", encoding="utf-8")
 
-    command = [str(workspace.lake), "env", "lean", "--json", *LEAN_OPTIONS, str(run_file)]
+    worker = None if fresh else worker_for(workspace)
+    command: list[str] = [str(workspace.lake), "env", "lean", "--json", *LEAN_OPTIONS,
+                          str(run_file)]
     started = time.monotonic()
+    if worker is not None:
+        reply = worker.ask("check", run_file, theorem, timeout=timeout)
+        command = list(reply.command)
+        messages_json = (reply.result or {}).get("messages", [])
+        stdout = "\n".join([*(json.dumps(m) for m in messages_json), *reply.printed])
+        stderr, timed_out = "", reply.timed_out
+        exit_code = None if reply.timed_out else 0
+    else:
+        stdout, stderr, timed_out, exit_code = _run_fresh(workspace, command, timeout)
+    seconds = time.monotonic() - started
+    evidence = LeanRunEvidence(
+        command=tuple(command),
+        exit_code=exit_code,
+        timed_out=timed_out,
+        output_sha256=hashlib.sha256((stdout + "\0" + stderr).encode("utf-8")).hexdigest(),
+        seconds=seconds,
+    )
+    return _judged(workspace, path, theorem, digest, evidence, stdout, stderr, timeout)
+
+
+def _run_fresh(
+    workspace: LeanWorkspace, command: list[str], timeout: float
+) -> tuple[str, str, bool, int | None]:
     try:
         completed = subprocess.run(
             command,
@@ -104,21 +135,18 @@ def check_file(
             timeout=timeout,
             check=False,
         )
-        stdout, stderr, timed_out = completed.stdout, completed.stderr, False
-        exit_code: int | None = completed.returncode
+        return completed.stdout, completed.stderr, False, completed.returncode
     except subprocess.TimeoutExpired as exc:
         stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
         stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-        timed_out, exit_code = True, None
-    seconds = time.monotonic() - started
-    evidence = LeanRunEvidence(
-        command=tuple(command),
-        exit_code=exit_code,
-        timed_out=timed_out,
-        output_sha256=hashlib.sha256((stdout + "\0" + stderr).encode("utf-8")).hexdigest(),
-        seconds=seconds,
-    )
+        return stdout, stderr, True, None
 
+
+def _judged(
+    workspace: LeanWorkspace, path: Path, theorem: str, digest: str, evidence: LeanRunEvidence,
+    stdout: str, stderr: str, timeout: float,
+) -> LeanCheck:
+    timed_out, seconds = evidence.timed_out, evidence.seconds
     messages, other = parse_output(stdout)
     other += tuple(line for line in stderr.splitlines() if line.strip())
     axioms = find_axioms(messages, theorem)

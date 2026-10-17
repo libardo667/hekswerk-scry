@@ -1,4 +1,5 @@
 import Lean
+import ScryExport.Load
 
 /-!
 # What a theorem actually states (Lean v4.10.0-rc2)
@@ -240,18 +241,12 @@ def statementJson (thm : Name) (probes : Bool) : TermElabM Json := do
     ("probes", probeJson), ("probe_heartbeats", probeHeartbeats)]
 
 /-- Elaborate `path` and report what `thm` states. -/
-unsafe def run (path : System.FilePath) (thm : Name) (probes : Bool) : IO Json := do
-  initSearchPath (← findSysroot)
-  enableInitializersExecution
-  let source ← IO.FS.readFile path
-  let inputCtx := Parser.mkInputContext source path.toString
-  let (header, parserState, messages) ← Parser.parseHeader inputCtx
-  let opts := Options.empty |>.setBool `autoImplicit false |>.setBool `relaxedAutoImplicit false
-  let (env, messages) ← processHeader header opts messages inputCtx (trustLevel := 1024)
+unsafe def run (path : System.FilePath) (thm : Name) (probes : Bool)
+    (loaded : Option ScryLoad.Loaded := none) : IO Json := do
   -- The statement needs only the finished environment, not Lean's record of how each
   -- command was elaborated, so that record is switched off (it is slow to build).
-  let cmdState := { Command.mkState env messages opts with infoState := { enabled := false } }
-  let s ← IO.processCommands inputCtx parserState cmdState
+  let done ← ScryLoad.elaborate loaded path (info := false)
+  let (inputCtx, s, opts) := (done.inputCtx, done.state, ScryLoad.options)
   let env := s.commandState.env
   -- Print names as a reader of the theorem's own namespace would write them.
   let space := thm.getPrefix

@@ -353,9 +353,12 @@ def draft_lean_card(
 
 
 def check_lean_card(
-    workspace: LeanWorkspace, proof_map: ProofMap, card: LeanSimplificationCard
+    workspace: LeanWorkspace, proof_map: ProofMap, card: LeanSimplificationCard,
+    *, fresh: bool = False,
 ) -> LeanCardCheck:
-    """Check `card` against `proof_map` and its Lean file right now. Lean has the last word."""
+    """Check `card` against `proof_map` and its Lean file right now. Lean has the last word.
+
+    `fresh` runs a new Lean process instead of the kept-running one."""
     source, path = source_path(workspace, proof_map)
     text = path.read_text(encoding="utf-8")
     stale = _stale_problems(proof_map, card, source.file_sha256)
@@ -376,7 +379,7 @@ def check_lean_card(
         spliced = splice(text, region, card.replacement)
     except LeanRegionError as exc:
         return _result(card, CardStatus.REJECTED, [str(exc)], region)
-    lean = check_file(workspace, path, source.theorem, source_text=spliced.text)
+    lean = check_file(workspace, path, source.theorem, source_text=spliced.text, fresh=fresh)
     replaced = _lines_in(text, region)
     added = spliced.last_line - spliced.first_line + 1
     if lean.passed:
@@ -408,7 +411,9 @@ def apply_lean_card(
         raise ValueError(f"'{out_path}' should be a .lean file.")
     if out_path.exists():
         raise ValueError(f"'{out_path}' already exists. Scry won't overwrite it; pick a new name.")
-    check = check_lean_card(workspace, proof_map, card)
+    # The check that allows the swap always runs in a new Lean process, the cleanest
+    # possible re-check at the moment of the swap.
+    check = check_lean_card(workspace, proof_map, card, fresh=True)
     if check.status is not CardStatus.READY_TO_SWAP or check.spliced is None or not check.lean:
         raise LeanCardRejectedError(check)
     assert proof_map.lean_source is not None  # source_path checked this

@@ -12,7 +12,8 @@ class LeanRunEvidence:
     """What actually happened when Lean ran: the command, how it ended, and its output.
 
     Every Lean receipt carries one, so anyone reading a receipt can see the run it came
-    from. Only `hekswerk_scry.lean.runner` creates these, right after running Lean.
+    from. Only code that has just run Lean creates these (`lean/runner.py` for proofs,
+    `lean/statement.py` for statements), in a new process or the kept-running one.
     """
 
     command: tuple[str, ...]

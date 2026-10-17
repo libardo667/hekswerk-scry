@@ -66,6 +66,7 @@ from hekswerk_scry.lean.checks import check_map_with_lean, source_path, workspac
 from hekswerk_scry.lean.importer import LeanImportError, import_theorem
 from hekswerk_scry.lean.statement import StatementError, read_statement
 from hekswerk_scry.lean.what_if import run_lean_what_if
+from hekswerk_scry.lean.worker import LeanWorkerError
 from hekswerk_scry.lean.workspace import LeanSetupError, find_workspace, workspace_for_file
 from hekswerk_scry.models import (
     ProofMap,
@@ -127,7 +128,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _openai_challenge(args.name, not args.no_probes)
         if args.command == "audit-statement":
             return _audit_statement(args.name, Path(args.out))
-    except (ValueError, LeanSetupError, LeanImportError, AlphaProofFetchError,
+    except (ValueError, LeanSetupError, LeanImportError, LeanWorkerError, AlphaProofFetchError,
             AIProviderError, StatementError, openai_math.OpenAIMathError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2

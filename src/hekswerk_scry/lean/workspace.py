@@ -15,6 +15,7 @@ Set SCRY_LEAN_WORKSPACE to use a different folder as Scry's own project, and SCR
 to use a specific `lake` program.
 """
 
+import hashlib
 import json
 import os
 import re
@@ -110,6 +111,18 @@ class LeanWorkspace:
         modules = self.project_imports(path)
         if not modules:
             return
+        # `lake build` takes half a minute even when nothing needs building, so remember
+        # what was built and skip it while none of the project's sources have changed.
+        record = self.root / ".scry-runs" / "built-imports.json"
+        key, stamp = " ".join(sorted(modules)), self.sources_stamp()
+        try:
+            built = json.loads(record.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            built = {}
+        if not isinstance(built, dict):
+            built = {}
+        if built.get(key) == stamp:
+            return
         try:
             completed = subprocess.run(
                 [str(self.lake), "build", *modules], cwd=self.root, env=self.environment(),
@@ -122,6 +135,34 @@ class LeanWorkspace:
         if completed.returncode != 0:
             tail = (completed.stdout + completed.stderr).strip()[-1500:]
             raise LeanSetupError(f"Couldn't build the files {path.name} imports: {tail}")
+        record.parent.mkdir(parents=True, exist_ok=True)
+        record.write_text(json.dumps({**built, key: stamp}), encoding="utf-8")
+
+    def sources_stamp(self) -> str:
+        """Changes whenever any of the project's own Lean files, or its package setup, does.
+
+        Every `.lean` file outside `.lake` (packages and build output) and `.scry-runs`
+        (Scry's scratch files, which nothing imports) counts, so an edit anywhere in the
+        project means building again.
+        """
+        digest = hashlib.sha256()
+        for name in ("lakefile.lean", "lakefile.toml", "lake-manifest.json", "lean-toolchain"):
+            digest.update(f"{name}:{_stat_key(self.root / name)}\n".encode())
+        for folder, subfolders, files in os.walk(self.root):
+            subfolders[:] = sorted(s for s in subfolders if s not in {".lake", ".scry-runs"})
+            for name in sorted(files):
+                if name.endswith(".lean"):
+                    path = Path(folder) / name
+                    digest.update(f"{path.relative_to(self.root)}:{_stat_key(path)}\n".encode())
+        return digest.hexdigest()
+
+
+def _stat_key(path: Path) -> str:
+    try:
+        info = path.stat()
+    except OSError:
+        return "missing"
+    return f"{info.st_mtime_ns}:{info.st_size}"
 
 
 def find_workspace(start: Path | None = None) -> LeanWorkspace:

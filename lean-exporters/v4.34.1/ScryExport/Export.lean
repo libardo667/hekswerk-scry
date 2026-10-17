@@ -1,4 +1,5 @@
 import Lean
+import ScryExport.Load
 import Std.Data.HashMap
 
 /-!
@@ -409,16 +410,10 @@ def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected
     ("steps", toJson stepsJson)]
 
 /-- Elaborate `path` and return the trace of theorem `thm` as JSON. -/
-unsafe def exportTheorem (path : System.FilePath) (thm : Name) : IO Json := do
-  initSearchPath (← findSysroot)
-  enableInitializersExecution
-  let source ← IO.FS.readFile path
-  let inputCtx := Parser.mkInputContext source path.toString
-  let (header, parserState, messages) ← Parser.parseHeader inputCtx
-  let opts := Options.empty |>.setBool `autoImplicit false |>.setBool `relaxedAutoImplicit false
-  let (env, messages) ← processHeader header opts messages inputCtx (trustLevel := 1024)
-  let cmdState := { Command.mkState env messages opts with infoState := { enabled := true } }
-  let s ← IO.processCommands inputCtx parserState cmdState
+unsafe def exportTheorem (path : System.FilePath) (thm : Name)
+    (loaded : Option ScryLoad.Loaded := none) : IO Json := do
+  let done ← ScryLoad.elaborate loaded path (info := true)
+  let (inputCtx, source, s) := (done.inputCtx, done.source, done.state)
   let (_, collected) ← (s.commandState.infoState.trees.toList.forM
     (collect thm none none false #[])).run {}
   let some (ctx, _) := collected.top?

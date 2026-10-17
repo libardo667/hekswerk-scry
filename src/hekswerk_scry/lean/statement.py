@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from hekswerk_scry.core.hashing import fingerprint_data
+from hekswerk_scry.lean.worker import LeanWorkerError, worker_for
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.receipts import LeanRunEvidence, Receipt
 
@@ -130,35 +131,8 @@ def read_statement(
         report = report_from_json(record["report"], workspace.relative(path), evidence)
         return replace(report, reused_from=str(record["ran_at"]))
     workspace.build_imports(path)
-    mode = "--statement-probes" if probes else "--statement"
-    command = [str(workspace.lake), "env", str(workspace.exporter), mode, str(path.resolve()),
-               theorem]
-    started = time.monotonic()
-    try:
-        completed = subprocess.run(command, cwd=workspace.root, env=workspace.environment(),
-                                   capture_output=True, text=True, timeout=timeout, check=False)
-    except subprocess.TimeoutExpired as exc:
-        raise StatementError(
-            f"Lean took longer than {timeout:.0f} seconds and was stopped."
-        ) from exc
-    seconds = time.monotonic() - started
-    if completed.returncode != 0:
-        details = (completed.stderr.strip() or completed.stdout.strip())[-2000:]
-        raise StatementError(f"Lean couldn't report on '{theorem}': {details}")
-    lines = completed.stdout.strip().splitlines()
-    try:
-        data = json.loads(lines[-1]) if lines else None
-    except json.JSONDecodeError as exc:
-        raise StatementError("Lean's statement report was not valid JSON.") from exc
-    if not isinstance(data, dict) or data.get("format") != STATEMENT_FORMAT:
-        raise StatementError("Lean's output was not a statement report.")
-    evidence = LeanRunEvidence(
-        command=tuple(command), exit_code=completed.returncode, timed_out=False,
-        output_sha256=hashlib.sha256(
-            (completed.stdout + "\0" + completed.stderr).encode("utf-8")
-        ).hexdigest(),
-        seconds=seconds,
-    )
+    mode = "statement-probes" if probes else "statement"
+    data, evidence = _run_lean(workspace, mode, path, theorem, timeout)
     report = report_from_json(data, workspace.relative(path), evidence)
     stored.parent.mkdir(parents=True, exist_ok=True)
     stored.write_text(json.dumps({
@@ -166,6 +140,51 @@ def read_statement(
         "evidence": {**evidence.to_dict(), "seconds": evidence.seconds},
     }), encoding="utf-8")
     return report
+
+
+def _run_lean(
+    workspace: LeanWorkspace, mode: str, path: Path, theorem: str, timeout: float
+) -> tuple[Any, LeanRunEvidence]:
+    """Run the exporter's statement mode, in the kept-running Lean if there is one."""
+    worker = worker_for(workspace)
+    started = time.monotonic()
+    if worker is not None:
+        try:
+            reply = worker.ask(mode, path, theorem, timeout=timeout)
+        except LeanWorkerError as exc:
+            raise StatementError(f"Lean couldn't report on '{theorem}': {exc}") from exc
+        if reply.timed_out:
+            raise StatementError(f"Lean took longer than {timeout:.0f} seconds and was stopped.")
+        data: Any = reply.result
+        command, output = reply.command, reply.raw
+    else:
+        command = (str(workspace.lake), "env", str(workspace.exporter), f"--{mode}",
+                   str(path.resolve()), theorem)
+        try:
+            completed = subprocess.run(command, cwd=workspace.root, env=workspace.environment(),
+                                       capture_output=True, text=True, timeout=timeout,
+                                       check=False)
+        except subprocess.TimeoutExpired as exc:
+            raise StatementError(
+                f"Lean took longer than {timeout:.0f} seconds and was stopped."
+            ) from exc
+        if completed.returncode != 0:
+            details = (completed.stderr.strip() or completed.stdout.strip())[-2000:]
+            raise StatementError(f"Lean couldn't report on '{theorem}': {details}")
+        lines = completed.stdout.strip().splitlines()
+        try:
+            data = json.loads(lines[-1]) if lines else None
+        except json.JSONDecodeError as exc:
+            raise StatementError("Lean's statement report was not valid JSON.") from exc
+        output = completed.stdout + "\0" + completed.stderr
+    if not isinstance(data, dict) or data.get("format") != STATEMENT_FORMAT:
+        raise StatementError("Lean's output was not a statement report.")
+    evidence = LeanRunEvidence(
+        command=tuple(command), exit_code=0, timed_out=False,
+        output_sha256=hashlib.sha256(output.encode("utf-8")).hexdigest(),
+        seconds=time.monotonic() - started,
+    )
+    return data, evidence
 
 
 def stored_result_path(

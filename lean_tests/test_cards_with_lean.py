@@ -57,6 +57,11 @@ class TestCardsOnTheExample(unittest.TestCase):
         self.assertTrue(out.is_file())
         self.assertEqual(new_map.goal, self.map.goal)
         self.assertTrue(check_wiring(new_map).passed)
+        # Trying a card uses the kept-running Lean; the check that allows the swap is a new
+        # Lean process, every time.
+        self.assertIn("--serve", check.receipt.lean_run.command)
+        assert receipt.lean_run is not None
+        self.assertNotIn("--serve", receipt.lean_run.command)
         # shift_pos (have, why, linarith) + sq_nonneg_x (have, why) + lt_shift (have, why,
         # linarith) + below_one (have, why) + the final exact = 11 steps; it was 22.
         self.assertEqual(len(new_map.steps), 11)
