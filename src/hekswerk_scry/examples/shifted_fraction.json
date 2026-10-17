@@ -1,0 +1,106 @@
+{
+  "format": "hekswerk-scry/proof-map",
+  "version": 1,
+  "map_id": "shifted-fraction",
+  "title": "A fraction that never reaches 1",
+  "starting_facts": ["x >= 0"],
+  "goal": "x / (x + 7) != 1",
+  "goal_step_id": "fraction-not-one",
+  "steps": [
+    {
+      "id": "cube-positive",
+      "title": "The cube of x + 7 is positive",
+      "assumes": ["x >= 0"],
+      "proves": "(x + 7)^3 > 0",
+      "views": {
+        "plain_english": "Because x is at least 0, x + 7 is at least 7, so its cube is positive.",
+        "math": "x >= 0  =>  (x + 7)^3 > 0",
+        "code": "have cube_pos : (x + 7)^3 > 0 := pow_pos (by linarith) 3"
+      }
+    },
+    {
+      "id": "cube-split",
+      "title": "Split the cube into a product",
+      "assumes": [],
+      "proves": "(x + 7)^3 = (x + 7) * (x + 7)^2",
+      "views": {
+        "plain_english": "A cube is the number times its own square.",
+        "math": "(x + 7)^3 = (x + 7) * (x + 7)^2",
+        "code": "have cube_split : (x + 7)^3 = (x + 7) * (x + 7)^2 := by ring"
+      }
+    },
+    {
+      "id": "square-positive",
+      "title": "The square of x + 7 is positive",
+      "assumes": ["x >= 0"],
+      "proves": "(x + 7)^2 > 0",
+      "views": {
+        "plain_english": "Because x + 7 is at least 7, its square is positive.",
+        "math": "x >= 0  =>  (x + 7)^2 > 0",
+        "code": "have sq_pos : (x + 7)^2 > 0 := pow_pos (by linarith) 2"
+      }
+    },
+    {
+      "id": "shift-positive",
+      "title": "Divide the cube by the square",
+      "assumes": [
+        "(x + 7)^3 > 0",
+        "(x + 7)^3 = (x + 7) * (x + 7)^2",
+        "(x + 7)^2 > 0"
+      ],
+      "proves": "x + 7 > 0",
+      "depends_on": ["cube-positive", "cube-split", "square-positive"],
+      "views": {
+        "plain_english": "The cube is x + 7 times the square. The cube and the square are both positive, so x + 7 must be positive too.",
+        "math": "(x + 7) * (x + 7)^2 > 0 and (x + 7)^2 > 0  =>  x + 7 > 0",
+        "code": "have shift_pos : x + 7 > 0 := by\n  rw [cube_split] at cube_pos\n  exact pos_of_mul_pos_left cube_pos (le_of_lt sq_pos)"
+      }
+    },
+    {
+      "id": "less-than-shift",
+      "title": "x is less than x + 7",
+      "assumes": [],
+      "proves": "x < x + 7",
+      "views": {
+        "plain_english": "Adding 7 makes any number bigger.",
+        "math": "x < x + 7",
+        "code": "have lt_shift : x < x + 7 := by linarith"
+      }
+    },
+    {
+      "id": "fraction-below-one",
+      "title": "The fraction is below 1",
+      "assumes": ["x < x + 7", "x + 7 > 0"],
+      "proves": "x / (x + 7) < 1",
+      "depends_on": ["less-than-shift", "shift-positive"],
+      "views": {
+        "plain_english": "The bottom of the fraction is positive and bigger than the top, so the fraction is less than 1.",
+        "math": "x < x + 7 and x + 7 > 0  =>  x / (x + 7) < 1",
+        "code": "have below_one : x / (x + 7) < 1 := (div_lt_one shift_pos).mpr lt_shift"
+      }
+    },
+    {
+      "id": "fraction-not-one",
+      "title": "So the fraction is never exactly 1",
+      "assumes": ["x / (x + 7) < 1"],
+      "proves": "x / (x + 7) != 1",
+      "depends_on": ["fraction-below-one"],
+      "views": {
+        "plain_english": "Something less than 1 can't be equal to 1.",
+        "math": "x / (x + 7) < 1  =>  x / (x + 7) != 1",
+        "code": "exact ne_of_lt below_one"
+      }
+    },
+    {
+      "id": "square-nonneg",
+      "title": "x squared is never negative",
+      "assumes": [],
+      "proves": "x^2 >= 0",
+      "views": {
+        "plain_english": "Squaring a number never gives a negative result.",
+        "math": "x^2 >= 0",
+        "code": "have sq_nonneg_x : x^2 >= 0 := sq_nonneg x"
+      }
+    }
+  ]
+}
