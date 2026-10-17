@@ -84,6 +84,7 @@ def check_file(
     The file is copied into the workspace with one line added at the end that asks Lean
     which axioms the theorem relies on. Line numbers in messages match the original.
     """
+    workspace.build_imports(path)
     text = source_text if source_text is not None else path.read_text(encoding="utf-8")
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     run_dir = workspace.root / RUNS_FOLDER / digest[:16]

@@ -10,6 +10,7 @@ from hekswerk_scry.core.enums import CheckKind, StepStatus
 from hekswerk_scry.lean.cards import LeanCardCheck, LeanRegion, LeanSimplificationCard
 from hekswerk_scry.lean.checks import LeanMapReport
 from hekswerk_scry.lean.source_text import offsets
+from hekswerk_scry.lean.statement import StatementReport
 from hekswerk_scry.models.cards import SimplificationCard
 from hekswerk_scry.models.proof_map import LeanRange, ProofMap
 from hekswerk_scry.models.what_if import BreakageReport
@@ -273,5 +274,47 @@ def render_turn(turn: Turn) -> str:
     if turn.hit_round_limit:
         lines.append(_wrap("The helper hit its limit of tool calls for one turn.", "  ! "))
     lines.append(f"  (cost of this turn: ${turn.cost_usd:.4f})")
+    return "\n".join(lines)
+
+
+def render_statement(report: StatementReport) -> str:
+    """Show what a theorem states, with Lean's probes, before anyone compares it to a paper."""
+    lines = [f"What '{report.theorem}' states  ({report.kind}, in {report.file})"]
+    if report.proof_left_open:
+        lines.append(_wrap("This file states the result with its proof left as `sorry` (as a "
+                           "comparator challenge does): it is a statement to check, not a proof."))
+    lines.append("")
+    hypotheses = [b for b in report.binders if b.is_prop]
+    objects = [b for b in report.binders if not b.is_prop]
+    if objects:
+        lines.append("  For any:")
+        lines.extend(_wrap(f"{b.name} : {b.type}  ({b.binder})", "    - ") for b in objects)
+    lines.append("  Assuming:" if hypotheses else "  Assuming: nothing (no hypotheses)")
+    lines.extend(_wrap(f"{b.name} : {b.type}", "    - ") for b in hypotheses)
+    lines.append("  It concludes:")
+    lines.append(_wrap(report.conclusion, "    "))
+    lines.append("")
+    if report.definitions:
+        lines.append(_wrap(
+            f"It relies on {len(report.definitions)} definition(s) from the project itself "
+            "(not from Lean or Mathlib). These are where the formal meaning can differ from the "
+            "paper's, so each one needs reading:", "  "))
+        for d in report.definitions:
+            where = f"{d.module or 'this file'}" + (f", lines {d.start_line}-{d.end_line}"
+                                                    if d.start_line else "")
+            lines.append(_wrap(f"[{d.depth}] {d.name}  ({d.kind}; {where})", "    "))
+    else:
+        lines.append("  It relies on no project-specific definitions, only Lean and Mathlib.")
+    lines.append("")
+    if report.probes:
+        lines.append("  Lean's probes:")
+        for probe in report.probes:
+            lines.append(_wrap(f"{probe.kind}: {probe.headline}", "    - "))
+    lines.append(_wrap(f"Axioms: {', '.join(report.axioms) or '(none)'}"))
+    lines.append(_wrap(f"Receipt {report.receipt.receipt_id} ({report.receipt.checked_by.label}): "
+                       f"{report.receipt.summary}"))
+    if report.reused_from:
+        lines.append(_wrap(f"(Reused the stored result of a Lean run at {report.reused_from}, on "
+                           "exactly this file, theorem, Lean version and exporter.)"))
     return "\n".join(lines)
 

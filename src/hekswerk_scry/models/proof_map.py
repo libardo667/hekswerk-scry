@@ -108,17 +108,22 @@ class LeanRange:
 class LeanSource:
     """Which Lean file and theorem a proof map was made from.
 
-    `file` is relative to Scry's Lean workspace. `file_sha256` is the fingerprint of the
-    file's exact contents when the map was made, so a map is never checked against a
-    different version of the file.
+    `file` is relative to the Lean project it belongs to. `project` is that project's
+    folder, or None for Scry's own project (the repository's `lean/` folder).
+    `file_sha256` is the fingerprint of the file's exact contents when the map was made, so
+    a map is never checked against a different version of the file.
     """
 
     file: str
     theorem: str
     file_sha256: str
+    project: str | None = None
 
     def to_dict(self) -> dict[str, str]:
-        return {"file": self.file, "theorem": self.theorem, "file_sha256": self.file_sha256}
+        data = {"file": self.file, "theorem": self.theorem, "file_sha256": self.file_sha256}
+        if self.project is not None:
+            data["project"] = self.project
+        return data
 
 
 @dataclass(frozen=True)

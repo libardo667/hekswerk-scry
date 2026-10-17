@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from hekswerk_scry.ai.openrouter import AIProviderError, OpenRouterClient
-from hekswerk_scry.ai.tools import Evidence, Toolbox
+from hekswerk_scry.ai.tools import Evidence, Toolbox, ToolRunner
 
 MAX_TOOL_ROUNDS = 16
 # A citation is a bracket holding one or more evidence IDs: [E3] or [E4, E5].
@@ -69,15 +69,22 @@ class Turn:
 
 @dataclass
 class Session:
+    """A conversation with the model. `system_prompt` defaults to the proof helper's
+    instructions (which need a proof-map `Toolbox`); other uses pass their own."""
+
     client: OpenRouterClient
-    toolbox: Toolbox
+    toolbox: ToolRunner
+    system_prompt: str = ""
     messages: list[dict[str, Any]] = field(default_factory=list)
     total_cost_usd: float = 0.0
 
     def __post_init__(self) -> None:
+        if not self.system_prompt:
+            if not isinstance(self.toolbox, Toolbox):
+                raise TypeError("A session with a custom toolbox needs its own system prompt.")
+            self.system_prompt = SYSTEM_PROMPT.format(overview=_overview(self.toolbox))
         if not self.messages:
-            self.messages.append({"role": "system", "content": SYSTEM_PROMPT.format(
-                overview=_overview(self.toolbox))})
+            self.messages.append({"role": "system", "content": self.system_prompt})
 
     def ask(self, text: str) -> Turn:
         """Send the person's message; run the model's tool calls; return its answer."""

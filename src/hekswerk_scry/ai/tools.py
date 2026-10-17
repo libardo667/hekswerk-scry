@@ -58,6 +58,50 @@ class Outcome:
     receipt_id: str | None = None
 
 
+class ToolRunner:
+    """Shared by every toolbox: runs a tool and records its result as numbered evidence.
+
+    Subclasses provide `definitions()` (what the model is offered) and `handlers()`
+    (the code behind each tool). A tool that wasn't offered can't be run.
+    """
+
+    evidence: list[Evidence]
+
+    def definitions(self) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def handlers(self) -> dict[str, Callable[[dict[str, Any]], "Outcome"]]:
+        raise NotImplementedError
+
+    def run(self, name: str, arguments: dict[str, Any]) -> Evidence:
+        """Run one tool and record the result as evidence. Never raises for bad input."""
+        offered = {t["function"]["name"] for t in self.definitions()}
+        handler = self.handlers().get(name) if name in offered else None
+        if handler is None:
+            outcome = Outcome(f"unknown tool {name}", f"There is no tool called '{name}'.")
+        else:
+            try:
+                outcome = handler(arguments)
+            except (ValueError, KeyError, TypeError, RuntimeError) as exc:
+                outcome = Outcome(f"{name} failed", f"The tool could not run: {exc}")
+        evidence = Evidence(
+            evidence_id=f"E{len(self.evidence) + 1}", tool=name, arguments=arguments,
+            summary=outcome.summary, result=outcome.result,
+            checked_by=outcome.checked_by, receipt_id=outcome.receipt_id,
+        )
+        self.evidence.append(evidence)
+        return evidence
+
+
+def tool(name: str, description: str, properties: dict[str, Any],
+         required: list[str]) -> dict[str, Any]:
+    """A tool definition in the shape OpenRouter expects."""
+    return {"type": "function", "function": {
+        "name": name, "description": description,
+        "parameters": {"type": "object", "properties": properties,
+                       "required": required, "additionalProperties": False}}}
+
+
 @dataclass
 class DraftedCard:
     card: LeanSimplificationCard
@@ -66,7 +110,7 @@ class DraftedCard:
 
 
 @dataclass
-class Toolbox:
+class Toolbox(ToolRunner):
     proof_map: ProofMap
     workspace: LeanWorkspace | None
     evidence: list[Evidence] = field(default_factory=list)
@@ -75,13 +119,6 @@ class Toolbox:
     # --- what the model sees -------------------------------------------------------
 
     def definitions(self) -> list[dict[str, Any]]:
-        def tool(name: str, description: str, properties: dict[str, Any],
-                 required: list[str]) -> dict[str, Any]:
-            return {"type": "function", "function": {
-                "name": name, "description": description,
-                "parameters": {"type": "object", "properties": properties,
-                               "required": required, "additionalProperties": False}}}
-
         step = {"step_id": {"type": "string",
                             "description": "A step ID such as 's7' or 's7-why1'."}}
         tools = [
@@ -116,9 +153,8 @@ class Toolbox:
             ]
         return tools
 
-    def run(self, name: str, arguments: dict[str, Any]) -> Evidence:
-        """Run one tool and record the result as evidence. Never raises for bad input."""
-        handlers: dict[str, Callable[[dict[str, Any]], Outcome]] = {
+    def handlers(self) -> dict[str, Callable[[dict[str, Any]], Outcome]]:
+        return {
             "list_steps": self._list_steps,
             "read_step": self._read_step,
             "scan_map": self._scan_map,
@@ -128,22 +164,6 @@ class Toolbox:
             "show_fact_proof": self._show_fact_proof,
             "try_new_proof": self._try_new_proof,
         }
-        offered = {t["function"]["name"] for t in self.definitions()}
-        handler = handlers.get(name) if name in offered else None
-        if handler is None:
-            outcome = Outcome(f"unknown tool {name}", f"There is no tool called '{name}'.")
-        else:
-            try:
-                outcome = handler(arguments)
-            except (ValueError, KeyError, TypeError) as exc:
-                outcome = Outcome(f"{name} failed", f"The tool could not run: {exc}")
-        evidence = Evidence(
-            evidence_id=f"E{len(self.evidence) + 1}", tool=name, arguments=arguments,
-            summary=outcome.summary, result=outcome.result,
-            checked_by=outcome.checked_by, receipt_id=outcome.receipt_id,
-        )
-        self.evidence.append(evidence)
-        return evidence
 
     # --- the tools -------------------------------------------------------------------
 

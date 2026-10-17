@@ -206,11 +206,12 @@ def _lean_source(raw: object, where: str) -> LeanSource | None:
     if raw is None:
         return None
     obj = _object(raw, where)
-    _check_keys(obj, where, _LEAN_SOURCE_KEYS, frozenset())
+    _check_keys(obj, where, _LEAN_SOURCE_KEYS, frozenset({"project"}))
     return LeanSource(
         file=_text(obj["file"], f"{where}, 'file'"),
         theorem=_text(obj["theorem"], f"{where}, 'theorem'"),
         file_sha256=_text(obj["file_sha256"], f"{where}, 'file_sha256'"),
+        project=_text(obj["project"], f"{where}, 'project'") if "project" in obj else None,
     )
 
 

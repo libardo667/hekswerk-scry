@@ -13,3 +13,10 @@ dist/
 lean/.lake/
 lean/.scry-runs/
 lean/fetched/
+
+# Other Lean projects Scry works on (cloned by `scry fetch-openai-math`)
+lean-projects/
+
+# Statement audits written by `scry audit-statement` (default folder)
+audits/
+lean-exporters/*/.lake/

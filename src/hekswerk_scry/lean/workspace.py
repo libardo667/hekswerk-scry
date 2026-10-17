@@ -1,19 +1,43 @@
-"""Finding Scry's Lean workspace and the tools needed to run it.
+"""Finding the Lean project a proof lives in, and the tools needed to run Lean there.
 
-The workspace is the `lean/` folder of this repository: a Lake project pinned to the same
-Lean and Mathlib versions as the public AlphaProof release. Set SCRY_LEAN_WORKSPACE to use
-a different folder, and SCRY_LAKE to use a specific `lake` program.
+Two things are needed to work on a Lean proof:
+
+- **The project**: the Lake project the proof file belongs to. Lean runs there, so the
+  file's imports resolve. Scry's own project is the `lean/` folder of this repository
+  (pinned to the Lean and Mathlib versions of the public AlphaProof release). Any other
+  Lake project works too, such as a clone of `openai/math`'s `lean/` folder.
+- **An exporter**: Scry's Lean program that records how a proof fits together. It reads
+  Lean's internals, so it is built separately for each supported Lean version
+  (`EXPORTERS` below). It imports only Lean itself, so one build serves every project on
+  that version.
+
+Set SCRY_LEAN_WORKSPACE to use a different folder as Scry's own project, and SCRY_LAKE
+to use a specific `lake` program.
 """
 
 import json
 import os
+import re
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+REPOSITORY = Path(__file__).resolve().parents[3]
+
+# Lean version -> the folder (relative to the repository) whose Lake project builds the
+# exporter for that version.
+EXPORTERS = {
+    "leanprover/lean4:v4.10.0-rc2": "lean",
+    "leanprover/lean4:v4.34.1": "lean-exporters/v4.34.1",
+}
+
+_IMPORT = re.compile(r"^\s*(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?([\w.]+)")
+BUILD_TIMEOUT_SECONDS = 3600
+
 
 class LeanSetupError(RuntimeError):
-    """Lean, Lake, or the workspace can't be found. The message says how to fix it."""
+    """Lean, Lake, or a project can't be found or used. The message says how to fix it."""
 
 
 SETUP_HINT = (
@@ -24,10 +48,12 @@ SETUP_HINT = (
 
 @dataclass(frozen=True)
 class LeanWorkspace:
-    """A Lake project Scry can run Lean in."""
+    """A Lake project to run Lean in, and the exporter for its Lean version."""
 
     root: Path
     lake: Path
+    exporter: Path
+    is_scry_project: bool = True
 
     @property
     def toolchain(self) -> str:
@@ -35,7 +61,7 @@ class LeanWorkspace:
 
     @property
     def mathlib_revision(self) -> str | None:
-        """The exact Mathlib commit the workspace uses, from its lock file."""
+        """The exact Mathlib commit the project uses, from its lock file."""
         manifest = self.root / "lake-manifest.json"
         if not manifest.is_file():
             return None
@@ -48,13 +74,13 @@ class LeanWorkspace:
 
     def environment(self) -> dict[str, str]:
         """A small, predictable environment for running Lean (no inherited secrets)."""
-        keep = ("HOME", "ELAN_HOME", "LANG", "LC_ALL", "TMPDIR")
+        keep = ("HOME", "ELAN_HOME", "LANG", "LC_ALL", "TMPDIR", "GLIBC_TUNABLES")
         env = {key: os.environ[key] for key in keep if key in os.environ}
         env["PATH"] = os.pathsep.join([str(self.lake.parent), "/usr/local/bin", "/usr/bin", "/bin"])
         return env
 
     def relative(self, path: Path) -> str:
-        """`path` as Scry records it: relative to the workspace when it is inside it."""
+        """`path` as Scry records it: relative to the project when it is inside it."""
         resolved = path.resolve()
         try:
             return resolved.relative_to(self.root).as_posix()
@@ -66,15 +92,94 @@ class LeanWorkspace:
         path = Path(recorded)
         return path if path.is_absolute() else self.root / path
 
+    def project_imports(self, path: Path) -> list[str]:
+        """The modules `path` imports that belong to this project (not to its packages)."""
+        modules: list[str] = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            found = _IMPORT.match(line)
+            if found and (self.root / (found.group(1).replace(".", "/") + ".lean")).is_file():
+                modules.append(found.group(1))
+        return modules
+
+    def build_imports(self, path: Path, *, timeout: float = BUILD_TIMEOUT_SECONDS) -> None:
+        """Build the project's own modules that `path` imports, so Lean can load them.
+
+        Mathlib and other packages come prebuilt (`lake exe cache get`); a project's own
+        files may not be, and building them can take a while the first time.
+        """
+        modules = self.project_imports(path)
+        if not modules:
+            return
+        try:
+            completed = subprocess.run(
+                [str(self.lake), "build", *modules], cwd=self.root, env=self.environment(),
+                capture_output=True, text=True, timeout=timeout, check=False,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise LeanSetupError(
+                f"Building the files {path.name} imports took longer than {timeout:.0f} seconds."
+            ) from exc
+        if completed.returncode != 0:
+            tail = (completed.stdout + completed.stderr).strip()[-1500:]
+            raise LeanSetupError(f"Couldn't build the files {path.name} imports: {tail}")
+
 
 def find_workspace(start: Path | None = None) -> LeanWorkspace:
-    """Find the workspace and `lake`, or explain what is missing."""
-    root = _find_root(start or Path.cwd())
-    lake = _find_lake()
-    return LeanWorkspace(root=root, lake=lake)
+    """Scry's own project (the `lean/` folder of this repository)."""
+    root = _find_scry_root(start or Path.cwd())
+    return LeanWorkspace(
+        root=root, lake=_find_lake(), exporter=root / ".lake" / "build" / "bin" / "scry-export"
+    )
 
 
-def _find_root(start: Path) -> Path:
+def workspace_for_file(path: Path) -> LeanWorkspace:
+    """The Lake project `path` belongs to, with the exporter for its Lean version."""
+    resolved = path.resolve()
+    for folder in resolved.parents:
+        if (folder / "lean-toolchain").is_file() and (
+            (folder / "lakefile.lean").is_file() or (folder / "lakefile.toml").is_file()
+        ):
+            return workspace_for_project(folder)
+    raise LeanSetupError(
+        f"'{path}' is not inside a Lake project (no folder above it has a lean-toolchain "
+        "and a lakefile)."
+    )
+
+
+def workspace_for_project(root: Path) -> LeanWorkspace:
+    root = root.resolve()
+    toolchain = (root / "lean-toolchain").read_text(encoding="utf-8").strip()
+    exporter_dir = EXPORTERS.get(toolchain)
+    if exporter_dir is None:
+        raise LeanSetupError(
+            f"The project at '{root}' uses {toolchain}, which Scry doesn't support yet. "
+            f"Supported Lean versions: {', '.join(EXPORTERS)}."
+        )
+    exporter = REPOSITORY / exporter_dir / ".lake" / "build" / "bin" / "scry-export"
+    if not exporter.is_file():
+        raise LeanSetupError(
+            f"Scry's exporter for {toolchain} isn't built yet (expected {exporter}). " + SETUP_HINT
+        )
+    scry_root = REPOSITORY / "lean"
+    return LeanWorkspace(
+        root=root, lake=_find_lake(), exporter=exporter,
+        is_scry_project=root == scry_root.resolve(),
+    )
+
+
+def workspace_for_map(source_project: str | None, start: Path | None = None) -> LeanWorkspace:
+    """The project a map's Lean file belongs to (None means Scry's own project)."""
+    if source_project is None:
+        return find_workspace(start)
+    root = Path(source_project)
+    if not (root / "lean-toolchain").is_file():
+        raise LeanSetupError(
+            f"The map's Lean project '{root}' isn't there any more (no lean-toolchain found)."
+        )
+    return workspace_for_project(root)
+
+
+def _find_scry_root(start: Path) -> Path:
     configured = os.environ.get("SCRY_LEAN_WORKSPACE")
     if configured:
         root = Path(configured).resolve()
@@ -84,7 +189,7 @@ def _find_root(start: Path) -> Path:
             )
         return root
     here = start.resolve()
-    for folder in (here, *here.parents):
+    for folder in (here, *here.parents, REPOSITORY):
         candidate = folder / "lean"
         if (candidate / "lakefile.lean").is_file() and (candidate / "ScryExport").is_dir():
             return candidate

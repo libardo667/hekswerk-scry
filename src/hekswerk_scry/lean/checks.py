@@ -11,7 +11,7 @@ from pathlib import Path
 
 from hekswerk_scry.core.enums import StepStatus
 from hekswerk_scry.lean.runner import LeanCheck, LeanMessage, check_file, file_sha256
-from hekswerk_scry.lean.workspace import LeanWorkspace
+from hekswerk_scry.lean.workspace import LeanWorkspace, workspace_for_map
 from hekswerk_scry.models.proof_map import LeanSource, ProofMap
 
 
@@ -48,6 +48,12 @@ def source_path(workspace: LeanWorkspace, proof_map: ProofMap) -> tuple[LeanSour
             f"Proof map '{proof_map.map_id}' was not made from a Lean file, so Lean can't "
             "check it. Lean checks need a map made with `scry lean-import`."
         )
+    expected = Path(source.project).resolve() if source.project else None
+    if expected is not None and expected != workspace.root.resolve():
+        raise LeanSourceMismatchError(
+            f"This map belongs to the Lean project '{expected}', but Lean was asked to run in "
+            f"'{workspace.root}'."
+        )
     path = workspace.resolve(source.file)
     if not path.is_file():
         raise LeanSourceMismatchError(f"The map's Lean file '{source.file}' no longer exists.")
@@ -57,6 +63,13 @@ def source_path(workspace: LeanWorkspace, proof_map: ProofMap) -> tuple[LeanSour
             "may no longer match the file. Import the theorem again."
         )
     return source, path
+
+
+def workspace_of(proof_map: ProofMap) -> LeanWorkspace:
+    """The Lean project a Lean-backed map belongs to."""
+    if proof_map.lean_source is None:
+        raise ValueError(f"Proof map '{proof_map.map_id}' was not made from a Lean file.")
+    return workspace_for_map(proof_map.lean_source.project)
 
 
 def check_map_with_lean(workspace: LeanWorkspace, proof_map: ProofMap) -> LeanMapReport:

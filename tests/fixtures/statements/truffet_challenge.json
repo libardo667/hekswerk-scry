@@ -1,0 +1,635 @@
+{
+    "axioms": [
+        "propext",
+        "sorryAx",
+        "Classical.choice",
+        "Quot.sound"
+    ],
+    "binders": [],
+    "conclusion": "crossRowRestriction initial \u2227 ForcedSingletonStep initial middle 0 1 \u2227 ForcedSingletonStep middle finalState 1 0 \u2227 (\u00ac\u2203 j, finalState.remaining j) \u2227 stop finalState \u2227 feasible initial output \u2227 feasible initial better \u2227 output 2 = 0 \u2227 better 2 = 0 \u2227 \u2191(output 1) = eval (lowerForm initial 0 1) output \u2227 \u2191(output 0) = eval (lowerForm middle 1 0) output \u2227 eval initial.cost output = eval finalState.cost output \u2227 eval initial.cost better < eval finalState.cost output",
+    "definitions": [
+        {
+            "depth": 1,
+            "end": {
+                "column": 63,
+                "line": 112
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.crossRowRestriction",
+            "start": {
+                "column": 0,
+                "line": 110
+            },
+            "type": "State \u2192 Prop",
+            "value": "fun s => \u2200 (i r : RowIndex), i \u2260 r \u2192 \u2200 (\u03b1 : \u211d), \u2203 w, eval (s.rows i).lhs w < \u2191\u03b1 + eval (s.rows r).rhs w"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 28,
+                "line": 97
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.initial",
+            "start": {
+                "column": 0,
+                "line": 93
+            },
+            "type": "State",
+            "value": "{ rows := ![{ lhs := ![0, 0, \u22a5], rhs := ![\u22a5, \u22a5, 0] }, { lhs := ![0, \u22a5, \u22a5], rhs := ![\u22a5, 1, \u2191(-2)] }], cost := ![0, \u22a5, \u22a5], remaining := fun x => True }"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 20,
+                "line": 91
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.ForcedSingletonStep",
+            "start": {
+                "column": 0,
+                "line": 86
+            },
+            "type": "State \u2192 State \u2192 RowIndex \u2192 Var \u2192 Prop",
+            "value": "fun s s' i j => wellFormed s \u2227 wellFormed s' \u2227 bounded s \u2227 \u00acstop s \u2227 \u00acswitch s \u2227 \u00acfailure s \u2227 (\u2200 (r : RowIndex) (k : Var), eligible s r k \u2194 r = i \u2227 k = j) \u2227 (\u2203 k, substitute s.cost j (lowerForm s i j) k \u2260 \u22a5) \u2227 s' = advance s i j"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 29,
+                "line": 103
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.middle",
+            "start": {
+                "column": 0,
+                "line": 99
+            },
+            "type": "State",
+            "value": "{ rows := ![{ lhs := nullForm, rhs := nullForm }, { lhs := ![0, \u22a5, \u22a5], rhs := ![\u22a5, \u22a5, 1] }], cost := ![0, \u22a5, \u22a5], remaining := fun j => j = 0 }"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 24,
+                "line": 14
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.RowIndex",
+            "start": {
+                "column": 0,
+                "line": 14
+            },
+            "type": "Type",
+            "value": "Fin 2"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 19,
+                "line": 12
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.Var",
+            "start": {
+                "column": 0,
+                "line": 12
+            },
+            "type": "Type",
+            "value": "Fin 2"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 29,
+                "line": 108
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.finalState",
+            "start": {
+                "column": 0,
+                "line": 105
+            },
+            "type": "State",
+            "value": "{ rows := fun x => { lhs := nullForm, rhs := nullForm }, cost := ![\u22a5, \u22a5, 1], remaining := fun x => False }"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 11,
+                "line": 27
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.State.remaining",
+            "start": {
+                "column": 2,
+                "line": 27
+            },
+            "type": "State \u2192 Var \u2192 Prop",
+            "value": "fun self => self.3"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 71,
+                "line": 56
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.stop",
+            "start": {
+                "column": 0,
+                "line": 56
+            },
+            "type": "State \u2192 Prop",
+            "value": "fun s => \u2200 (i : RowIndex), (s.rows i).rhs 2 \u2264 (s.rows i).lhs 2"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 52,
+                "line": 37
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.feasible",
+            "start": {
+                "column": 0,
+                "line": 36
+            },
+            "type": "State \u2192 (Fin 3 \u2192 \u211d) \u2192 Prop",
+            "value": "fun s w => \u2200 (i : RowIndex), eval (s.rows i).rhs w \u2264 eval (s.rows i).lhs w"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 36,
+                "line": 114
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.output",
+            "start": {
+                "column": 0,
+                "line": 114
+            },
+            "type": "Fin 3 \u2192 \u211d",
+            "value": "![1, 0, 0]"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 37,
+                "line": 116
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.better",
+            "start": {
+                "column": 0,
+                "line": 116
+            },
+            "type": "Fin 3 \u2192 \u211d",
+            "value": "![0, -1, 0]"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 77,
+                "line": 34
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.eval",
+            "start": {
+                "column": 0,
+                "line": 33
+            },
+            "type": "Form \u2192 (Fin 3 \u2192 \u211d) \u2192 Coeff",
+            "value": "fun f w => max (f 0 + \u2191(w 0)) (max (f 1 + \u2191(w 1)) (f 2 + \u2191(w 2)))"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 84,
+                "line": 71
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.lowerForm",
+            "start": {
+                "column": 0,
+                "line": 69
+            },
+            "type": "State \u2192 RowIndex \u2192 Var \u2192 Form",
+            "value": "fun s i j k => if k = column j then \u22a5 else (s.rows i).rhs k + \u2191(-WithBot.unbotD 0 ((s.rows i).lhs (column j)))"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 25,
+                "line": 8
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.Coeff",
+            "start": {
+                "column": 0,
+                "line": 8
+            },
+            "type": "Type",
+            "value": "WithBot \u211d"
+        },
+        {
+            "depth": 1,
+            "end": {
+                "column": 6,
+                "line": 26
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.State.cost",
+            "start": {
+                "column": 2,
+                "line": 26
+            },
+            "type": "State \u2192 Form",
+            "value": "fun self => self.2"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 24,
+                "line": 27
+            },
+            "kind": "inductive type or structure",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.State",
+            "start": {
+                "column": 0,
+                "line": 24
+            },
+            "type": "Type",
+            "value": null
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 5,
+                "line": 21
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.Row.lhs",
+            "start": {
+                "column": 2,
+                "line": 21
+            },
+            "type": "Row \u2192 Form",
+            "value": "fun self => self.1"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 6,
+                "line": 25
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.State.rows",
+            "start": {
+                "column": 2,
+                "line": 25
+            },
+            "type": "State \u2192 RowIndex \u2192 Row",
+            "value": "fun self => self.1"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 5,
+                "line": 22
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.Row.rhs",
+            "start": {
+                "column": 2,
+                "line": 22
+            },
+            "type": "Row \u2192 Form",
+            "value": "fun self => self.2"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 15,
+                "line": 24
+            },
+            "kind": "constructor",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.State.mk",
+            "start": {
+                "column": 10,
+                "line": 24
+            },
+            "type": "(RowIndex \u2192 Row) \u2192 Form \u2192 (Var \u2192 Prop) \u2192 State",
+            "value": null
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 12,
+                "line": 22
+            },
+            "kind": "inductive type or structure",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.Row",
+            "start": {
+                "column": 0,
+                "line": 20
+            },
+            "type": "Type",
+            "value": null
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 13,
+                "line": 20
+            },
+            "kind": "constructor",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.Row.mk",
+            "start": {
+                "column": 10,
+                "line": 20
+            },
+            "type": "Form \u2192 Form \u2192 Row",
+            "value": null
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 65,
+                "line": 31
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.wellFormed",
+            "start": {
+                "column": 0,
+                "line": 29
+            },
+            "type": "State \u2192 Prop",
+            "value": "fun s => \u2200 (j : Var), \u00acs.remaining j \u2192 s.cost (column j) = \u22a5 \u2227 \u2200 (i : RowIndex), (s.rows i).lhs (column j) = \u22a5 \u2227 (s.rows i).rhs (column j) = \u22a5"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 60,
+                "line": 54
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.bounded",
+            "start": {
+                "column": 0,
+                "line": 53
+            },
+            "type": "State \u2192 Prop",
+            "value": "fun s => \u2200 (j : Var), s.remaining j \u2192 (\u2203 i, lower s i j) \u2228 \u2203 i, upper s i j"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 36,
+                "line": 62
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.switch",
+            "start": {
+                "column": 0,
+                "line": 58
+            },
+            "type": "State \u2192 Prop",
+            "value": "fun s => (\u2200 (j : Var), s.remaining j \u2192 s.cost (column j) = \u22a5) \u2227 \u00acstop s \u2227 (\u2203 j, s.remaining j) \u2227 (\u00ac\u2203 i j, s.remaining j \u2227 lower s i j) \u2227 \u2203 i j, s.remaining j \u2227 upper s i j"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 44,
+                "line": 67
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.failure",
+            "start": {
+                "column": 0,
+                "line": 64
+            },
+            "type": "State \u2192 Prop",
+            "value": "fun s => \u00acstop s \u2227 ((\u00ac\u2203 j, s.remaining j) \u2228 (\u00ac\u2203 i j, s.remaining j \u2227 lower s i j) \u2227 \u00ac\u2203 i j, s.remaining j \u2227 upper s i j)"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 72,
+                "line": 51
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.eligible",
+            "start": {
+                "column": 0,
+                "line": 50
+            },
+            "type": "State \u2192 RowIndex \u2192 Var \u2192 Prop",
+            "value": "fun s i j => s.remaining j \u2227 lower s i j \u2227 ((\u2203 k, dominating s k) \u2192 dominating s j)"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 60,
+                "line": 74
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.substitute",
+            "start": {
+                "column": 0,
+                "line": 73
+            },
+            "type": "Form \u2192 Var \u2192 Form \u2192 Form",
+            "value": "fun f j g k => if k = column j then \u22a5 else max (f k) (f (column j) + g k)"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 45,
+                "line": 84
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.advance",
+            "start": {
+                "column": 0,
+                "line": 80
+            },
+            "type": "State \u2192 RowIndex \u2192 Var \u2192 State",
+            "value": "fun s i j => { rows := fun r => cleanup { lhs := substitute (s.rows r).lhs j (lowerForm s i j), rhs := substitute (s.rows r).rhs j (lowerForm s i j) }, cost := substitute s.cost j (lowerForm s i j), remaining := fun k => s.remaining k \u2227 k \u2260 j }"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 33,
+                "line": 18
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.nullForm",
+            "start": {
+                "column": 0,
+                "line": 18
+            },
+            "type": "Form",
+            "value": "fun x => \u22a5"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 28,
+                "line": 10
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.Form",
+            "start": {
+                "column": 0,
+                "line": 10
+            },
+            "type": "Type",
+            "value": "Fin 3 \u2192 Coeff"
+        },
+        {
+            "depth": 2,
+            "end": {
+                "column": 72,
+                "line": 16
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.column",
+            "start": {
+                "column": 0,
+                "line": 16
+            },
+            "type": "Var \u2192 Fin 3",
+            "value": "fun j => \u27e8\u2191j, \u22ef\u27e9"
+        },
+        {
+            "depth": 3,
+            "end": {
+                "column": 57,
+                "line": 41
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.lower",
+            "start": {
+                "column": 0,
+                "line": 39
+            },
+            "type": "State \u2192 RowIndex \u2192 Var \u2192 Prop",
+            "value": "fun s i j => (s.rows i).lhs (column j) \u2260 \u22a5 \u2227 (s.rows i).rhs (column j) < (s.rows i).lhs (column j)"
+        },
+        {
+            "depth": 3,
+            "end": {
+                "column": 57,
+                "line": 45
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.upper",
+            "start": {
+                "column": 0,
+                "line": 43
+            },
+            "type": "State \u2192 RowIndex \u2192 Var \u2192 Prop",
+            "value": "fun s i j => (s.rows i).rhs (column j) \u2260 \u22a5 \u2227 (s.rows i).lhs (column j) < (s.rows i).rhs (column j)"
+        },
+        {
+            "depth": 3,
+            "end": {
+                "column": 55,
+                "line": 48
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.dominating",
+            "start": {
+                "column": 0,
+                "line": 47
+            },
+            "type": "State \u2192 Var \u2192 Prop",
+            "value": "fun s j => s.remaining j \u2227 (\u2203 i, lower s i j) \u2227 \u2203 i, upper s i j"
+        },
+        {
+            "depth": 3,
+            "end": {
+                "column": 66,
+                "line": 78
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "OAI.TruffetV4Counterexample.cleanup",
+            "start": {
+                "column": 0,
+                "line": 76
+            },
+            "type": "Row \u2192 Row",
+            "value": "fun r => if \u2200 (k : Fin 3), r.rhs k \u2264 r.lhs k then { lhs := nullForm, rhs := nullForm } else r"
+        }
+    ],
+    "format": "hekswerk-scry/lean-statement",
+    "kind": "theorem",
+    "lean_version": "4.34.1",
+    "module": null,
+    "probe_heartbeats": 20000,
+    "probes": {
+        "tactics": [
+            "simp_all",
+            "positivity",
+            "omega",
+            "linarith",
+            "nlinarith",
+            "norm_num at *",
+            "tauto",
+            "decide",
+            "aesop"
+        ],
+        "triviality": {
+            "found": false,
+            "not_applicable": true,
+            "note": "The statement has no hypotheses to leave out."
+        },
+        "vacuity": {
+            "found": false,
+            "not_applicable": true,
+            "note": "The statement has no hypotheses, so there is nothing to contradict."
+        }
+    },
+    "statement": "crossRowRestriction initial \u2227 ForcedSingletonStep initial middle 0 1 \u2227 ForcedSingletonStep middle finalState 1 0 \u2227 (\u00ac\u2203 j, finalState.remaining j) \u2227 stop finalState \u2227 feasible initial output \u2227 feasible initial better \u2227 output 2 = 0 \u2227 better 2 = 0 \u2227 \u2191(output 1) = eval (lowerForm initial 0 1) output \u2227 \u2191(output 0) = eval (lowerForm middle 1 0) output \u2227 eval initial.cost output = eval finalState.cost output \u2227 eval initial.cost better < eval finalState.cost output",
+    "theorem": "OAI.TruffetV4Counterexample.finite_execution_not_optimal",
+    "version": 1
+}

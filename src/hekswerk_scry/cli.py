@@ -16,6 +16,16 @@ With Lean (see "Setting up Lean" in README.md):
     scry lean-region MAP.json --fact ID          show what re-proving a fact would replace
     scry lean-card MAP.json --fact ID --tactics FILE [--apply NEW.lean --save-map NEW.json]
                                                  re-prove a fact with new tactics; Lean judges
+    scry lean-statement FILE.lean THEOREM [--no-probes]
+                                                 what a theorem states, and Lean's red-flag probes
+
+OpenAI's mathematics repository (github.com/openai/math):
+
+    scry fetch-openai-math                       clone its Lean formalizations
+    scry openai-challenges                       list its comparator challenges
+    scry openai-challenge NAME [--no-probes]     what one formal result states
+    scry audit-statement NAME [--out FOLDER]     the AI helper lines the statement up against
+                                                 its paper; saved next to OpenAI's scope note
 
 With an OpenRouter key in .env (see "The AI helper" in README.md):
 
@@ -28,6 +38,7 @@ import textwrap
 from collections.abc import Sequence
 from pathlib import Path
 
+from hekswerk_scry.ai.audit import audit_challenge, save_audit
 from hekswerk_scry.ai.openrouter import AIProviderError, OpenRouterClient
 from hekswerk_scry.ai.session import Session
 from hekswerk_scry.ai.tools import Toolbox
@@ -42,6 +53,7 @@ from hekswerk_scry.core.enums import CardStatus, WhatIfKind
 from hekswerk_scry.core.settings import load_ai_settings
 from hekswerk_scry.examples import load_example
 from hekswerk_scry.files import load_proof_map, save_proof_map
+from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.alphaproof import AlphaProofFetchError, fetch_alphaproof
 from hekswerk_scry.lean.cards import (
     LeanCardRejectedError,
@@ -50,10 +62,11 @@ from hekswerk_scry.lean.cards import (
     draft_lean_card,
     find_region,
 )
-from hekswerk_scry.lean.checks import check_map_with_lean, source_path
+from hekswerk_scry.lean.checks import check_map_with_lean, source_path, workspace_of
 from hekswerk_scry.lean.importer import LeanImportError, import_theorem
+from hekswerk_scry.lean.statement import StatementError, read_statement
 from hekswerk_scry.lean.what_if import run_lean_what_if
-from hekswerk_scry.lean.workspace import LeanSetupError, find_workspace
+from hekswerk_scry.lean.workspace import LeanSetupError, find_workspace, workspace_for_file
 from hekswerk_scry.models import (
     ProofMap,
     ProofStep,
@@ -71,6 +84,7 @@ from hekswerk_scry.text_reports import (
     render_lean_report,
     render_map_overview,
     render_scan,
+    render_statement,
     render_turn,
     render_wiring_report,
 )
@@ -102,8 +116,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _lean_card(args)
         if args.command == "chat":
             return _chat(Path(args.map_file))
+        if args.command == "lean-statement":
+            return _lean_statement(Path(args.lean_file), args.theorem, not args.no_probes)
+        if args.command == "fetch-openai-math":
+            print(f"openai/math is at {openai_math.fetch()}. Next: `make openai-setup`.")
+            return 0
+        if args.command == "openai-challenges":
+            return _openai_challenges()
+        if args.command == "openai-challenge":
+            return _openai_challenge(args.name, not args.no_probes)
+        if args.command == "audit-statement":
+            return _audit_statement(args.name, Path(args.out))
     except (ValueError, LeanSetupError, LeanImportError, AlphaProofFetchError,
-            AIProviderError) as exc:
+            AIProviderError, StatementError, openai_math.OpenAIMathError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     parser.print_help()
@@ -157,6 +182,19 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="with --apply: save the changed proof's map here")
     chat = commands.add_parser("chat", help="work on a proof with the AI helper")
     chat.add_argument("map_file", help="path to a proof map JSON file")
+    statement = commands.add_parser("lean-statement", help="what a theorem states")
+    statement.add_argument("lean_file", help="path to a .lean file")
+    statement.add_argument("theorem", help="the theorem's full name")
+    statement.add_argument("--no-probes", action="store_true", help="skip Lean's probes")
+    commands.add_parser("fetch-openai-math", help="clone openai/math's Lean formalizations")
+    commands.add_parser("openai-challenges", help="list openai/math's comparator challenges")
+    one = commands.add_parser("openai-challenge", help="what one openai/math result states")
+    one.add_argument("name", help="the challenge's name, such as TruffetCounterexample")
+    one.add_argument("--no-probes", action="store_true", help="skip Lean's probes")
+    audit = commands.add_parser("audit-statement",
+                                help="line an openai/math statement up against its paper")
+    audit.add_argument("name", help="the comparator challenge's name")
+    audit.add_argument("--out", default="audits", help="folder for the report (default: audits)")
     return parser
 
 
@@ -184,14 +222,14 @@ def _what_if(path: Path, remove_step: str | None, drop_fact: str | None, lean: b
                 f"'{path}' was not made from a Lean file, so Lean can't judge the change. "
                 "Leave out --lean to run a wiring What-If test instead."
             )
-        print(render_breakage(run_lean_what_if(find_workspace(), proof_map, change)))
+        print(render_breakage(run_lean_what_if(workspace_of(proof_map), proof_map, change)))
     else:
         print(render_breakage(run_what_if(proof_map, change)))
     return 0
 
 
 def _lean_import(lean_file: Path, theorem: str, out: Path) -> int:
-    proof_map = import_theorem(find_workspace(), lean_file, theorem)
+    proof_map = import_theorem(workspace_for_file(lean_file), lean_file, theorem)
     save_proof_map(proof_map, out)
     print(f"Saved a proof map of '{theorem}' with {len(proof_map.steps)} steps to {out}.")
     print(textwrap.fill(check_wiring(proof_map).summary, 92, initial_indent="  ",
@@ -208,7 +246,7 @@ def _lean_check(path: Path) -> int:
             f"'{path}' was not made from a Lean file, so Lean can't check it. "
             "Make a Lean-backed map with `scry lean-import`."
         )
-    report = check_map_with_lean(find_workspace(), proof_map)
+    report = check_map_with_lean(workspace_of(proof_map), proof_map)
     print(render_lean_report(proof_map, report))
     return 0 if report.passed else 1
 
@@ -224,7 +262,7 @@ def _lean_map(path: Path) -> ProofMap:
 
 def _lean_region(path: Path, fact: str) -> int:
     proof_map = _lean_map(path)
-    workspace = find_workspace()
+    workspace = workspace_of(proof_map)
     _, lean_file = source_path(workspace, proof_map)
     text = lean_file.read_text(encoding="utf-8")
     print(render_lean_region(proof_map, find_region(proof_map, text, fact), text))
@@ -238,7 +276,7 @@ def _lean_card(args: argparse.Namespace) -> int:
     tactics = sys.stdin.read() if args.tactics == "-" else Path(args.tactics).read_text(
         encoding="utf-8"
     )
-    workspace = find_workspace()
+    workspace = workspace_of(proof_map)
     card = draft_lean_card(
         workspace, proof_map, args.fact,
         card_id=f"reprove-{args.fact}", title=args.title or f"Re-prove {args.fact}",
@@ -274,7 +312,7 @@ Anything else is sent to the helper."""
 def _chat(path: Path) -> int:
     proof_map = load_proof_map(path)
     settings = load_ai_settings()
-    workspace = find_workspace() if proof_map.lean_source is not None else None
+    workspace = workspace_of(proof_map) if proof_map.lean_source is not None else None
     toolbox = Toolbox(proof_map=proof_map, workspace=workspace)
     session = Session(client=OpenRouterClient(settings), toolbox=toolbox)
     print(f"Talking about '{proof_map.title}' with {settings.model} (effort {settings.effort}).")
@@ -330,6 +368,48 @@ def _chat_command(line: str, toolbox: Toolbox, session: Session, proof_map: Proo
                 f"its map in {saved}. The original file is untouched; this conversation keeps "
                 "working on the original map.")
     return CHAT_HELP
+
+
+def _lean_statement(lean_file: Path, theorem: str, probes: bool) -> int:
+    report = read_statement(workspace_for_file(lean_file), lean_file, theorem, probes=probes)
+    print(render_statement(report))
+    return 1 if report.red_flags else 0
+
+
+def _openai_challenges() -> int:
+    items = openai_math.challenges()
+    for item in items:
+        tag = "  (supporting result)" if item.is_supporting_result else ""
+        print(f"{item.name}{tag}: {', '.join(item.theorem_names)}")
+    print(f"\n{len(items)} challenges. `scry openai-challenge NAME` shows what one states.")
+    return 0
+
+
+def _openai_challenge(name: str, probes: bool) -> int:
+    item = openai_math.challenge(name)
+    workspace = workspace_for_file(item.statement_file)
+    print(f"Comparator challenge {item.name}")
+    print(f"  Statement: {workspace.relative(item.statement_file)}")
+    print(f"  Proved in: {item.solution_module} ({workspace.relative(item.solution_file)})")
+    print(f"  Permitted axioms: {', '.join(item.permitted_axioms)}\n")
+    flagged = False
+    for theorem in item.theorem_names:
+        report = read_statement(workspace, item.statement_file, theorem, probes=probes)
+        print(render_statement(report))
+        print()
+        flagged = flagged or bool(report.red_flags)
+    return 1 if flagged else 0
+
+
+def _audit_statement(name: str, out: Path) -> int:
+    settings = load_ai_settings()
+    print(f"Auditing {name} with {settings.model} (effort {settings.effort}). Reading the "
+          "statement with Lean first; this can take several minutes.")
+    result = audit_challenge(OpenRouterClient(settings), name)
+    print(render_turn(result.turn))
+    path = save_audit(result, out)
+    print(f"\nSaved the audit next to OpenAI's scope note (which the helper did not see): {path}")
+    return 0
 
 
 def _fetch_alphaproof() -> int:

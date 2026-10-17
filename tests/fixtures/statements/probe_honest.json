@@ -1,0 +1,52 @@
+{
+    "axioms": [
+        "propext",
+        "Classical.choice",
+        "Quot.sound"
+    ],
+    "binders": [
+        {
+            "binder": "explicit",
+            "is_prop": false,
+            "name": "x",
+            "type": "\u211d"
+        },
+        {
+            "binder": "explicit",
+            "is_prop": true,
+            "name": "h",
+            "type": "1 < x"
+        }
+    ],
+    "conclusion": "0 < x - 1",
+    "definitions": [],
+    "format": "hekswerk-scry/lean-statement",
+    "kind": "theorem",
+    "lean_version": "4.34.1",
+    "module": null,
+    "probe_heartbeats": 20000,
+    "probes": {
+        "tactics": [
+            "simp_all",
+            "positivity",
+            "omega",
+            "linarith",
+            "nlinarith",
+            "norm_num at *",
+            "tauto",
+            "decide",
+            "aesop"
+        ],
+        "triviality": {
+            "found": false,
+            "note": "The tactics could not prove the conclusion without the hypotheses (or it refers to them)."
+        },
+        "vacuity": {
+            "found": false,
+            "note": "The tactics found no contradiction among the hypotheses. That does not show they are consistent."
+        }
+    },
+    "statement": "\u2200 (x : \u211d), 1 < x \u2192 0 < x - 1",
+    "theorem": "probe_honest",
+    "version": 1
+}

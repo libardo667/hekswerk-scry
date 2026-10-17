@@ -53,9 +53,11 @@ def import_theorem(
     timeout: float = EXPORT_TIMEOUT_SECONDS,
 ) -> ProofMap:
     """Run the Lean exporter on `path` and build a proof map for `theorem`."""
+    workspace.build_imports(path)
     trace = run_exporter(workspace, path, theorem, timeout=timeout)
     source = LeanSource(
-        file=workspace.relative(path), theorem=theorem, file_sha256=file_sha256(path)
+        file=workspace.relative(path), theorem=theorem, file_sha256=file_sha256(path),
+        project=None if workspace.is_scry_project else str(workspace.root),
     )
     return trace_to_checked_map(trace, source)
 
@@ -85,7 +87,12 @@ def trace_to_checked_map(trace: Mapping[str, Any], source: LeanSource) -> ProofM
 def run_exporter(
     workspace: LeanWorkspace, path: Path, theorem: str, *, timeout: float
 ) -> dict[str, Any]:
-    command = [str(workspace.lake), "exe", "scry-export", str(path.resolve()), theorem]
+    if not workspace.exporter.is_file():
+        raise LeanImportError(
+            f"Scry's exporter for {workspace.toolchain} isn't built (expected "
+            f"{workspace.exporter}). Run `make lean-setup`."
+        )
+    command = [str(workspace.lake), "env", str(workspace.exporter), str(path.resolve()), theorem]
     try:
         completed = subprocess.run(
             command,
