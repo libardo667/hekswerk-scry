@@ -16,6 +16,10 @@ With Lean (see "Setting up Lean" in README.md):
     scry lean-region MAP.json --fact ID          show what re-proving a fact would replace
     scry lean-card MAP.json --fact ID --tactics FILE [--apply NEW.lean --save-map NEW.json]
                                                  re-prove a fact with new tactics; Lean judges
+
+With an OpenRouter key in .env (see "The AI helper" in README.md):
+
+    scry chat MAP.json                           work on a proof with the AI helper
 """
 
 import argparse
@@ -24,6 +28,9 @@ import textwrap
 from collections.abc import Sequence
 from pathlib import Path
 
+from hekswerk_scry.ai.openrouter import AIProviderError, OpenRouterClient
+from hekswerk_scry.ai.session import Session
+from hekswerk_scry.ai.tools import Toolbox
 from hekswerk_scry.checker import (
     apply_card,
     check_card,
@@ -32,6 +39,7 @@ from hekswerk_scry.checker import (
     scan_proof_map,
 )
 from hekswerk_scry.core.enums import CardStatus, WhatIfKind
+from hekswerk_scry.core.settings import load_ai_settings
 from hekswerk_scry.examples import load_example
 from hekswerk_scry.files import load_proof_map, save_proof_map
 from hekswerk_scry.lean.alphaproof import AlphaProofFetchError, fetch_alphaproof
@@ -63,6 +71,7 @@ from hekswerk_scry.text_reports import (
     render_lean_report,
     render_map_overview,
     render_scan,
+    render_turn,
     render_wiring_report,
 )
 
@@ -91,7 +100,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _lean_region(Path(args.map_file), args.fact)
         if args.command == "lean-card":
             return _lean_card(args)
-    except (ValueError, LeanSetupError, LeanImportError, AlphaProofFetchError) as exc:
+        if args.command == "chat":
+            return _chat(Path(args.map_file))
+    except (ValueError, LeanSetupError, LeanImportError, AlphaProofFetchError,
+            AIProviderError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     parser.print_help()
@@ -143,6 +155,8 @@ def _build_parser() -> argparse.ArgumentParser:
                       help="if Lean accepts the card, write the changed proof to this new file")
     card.add_argument("--save-map", metavar="NEW.json",
                       help="with --apply: save the changed proof's map here")
+    chat = commands.add_parser("chat", help="work on a proof with the AI helper")
+    chat.add_argument("map_file", help="path to a proof map JSON file")
     return parser
 
 
@@ -246,6 +260,76 @@ def _lean_card(args: argparse.Namespace) -> int:
             save_proof_map(new_map, Path(args.save_map))
             print(f"Its map, with the replaced steps archived, is in {args.save_map}.")
     return 0
+
+
+CHAT_HELP = """Commands:
+  /cards               list the cards the helper has drafted, with Lean's verdict
+  /apply CARD NEW.lean apply a card the helper drafted (Lean checks it again first)
+  /evidence E3         show one piece of evidence in full
+  /cost                show what this conversation has cost so far
+  /quit                leave
+Anything else is sent to the helper."""
+
+
+def _chat(path: Path) -> int:
+    proof_map = load_proof_map(path)
+    settings = load_ai_settings()
+    workspace = find_workspace() if proof_map.lean_source is not None else None
+    toolbox = Toolbox(proof_map=proof_map, workspace=workspace)
+    session = Session(client=OpenRouterClient(settings), toolbox=toolbox)
+    print(f"Talking about '{proof_map.title}' with {settings.model} (effort {settings.effort}).")
+    print("Answers are the helper's reading; only Lean's checks count as proof.")
+    print(CHAT_HELP)
+    while True:
+        try:
+            line = input("\nyou> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return 0
+        if not line:
+            continue
+        if line in ("/quit", "/exit"):
+            return 0
+        if line.startswith("/"):
+            print(_chat_command(line, toolbox, session, proof_map))
+            continue
+        print("\n(thinking and checking...)")
+        try:
+            print(render_turn(session.ask(line)))
+        except AIProviderError as exc:
+            print(f"Error: {exc}")
+
+
+def _chat_command(line: str, toolbox: Toolbox, session: Session, proof_map: ProofMap) -> str:
+    command, *rest = line.split()
+    if command == "/cards":
+        if not toolbox.cards:
+            return "The helper hasn't drafted any cards yet."
+        return "\n".join(
+            f"{card_id}: re-proves {d.card.fact_step_id} | {d.check.status.label} | evidence "
+            f"{d.evidence_id}" for card_id, d in toolbox.cards.items()
+        )
+    if command == "/evidence" and len(rest) == 1:
+        found = next((e for e in toolbox.evidence if e.evidence_id == rest[0]), None)
+        return f"{found.label}\n{found.result}" if found else f"There is no evidence {rest[0]}."
+    if command == "/cost":
+        return f"This conversation has cost ${session.total_cost_usd:.4f} so far."
+    if command == "/apply" and len(rest) == 2:
+        drafted = toolbox.cards.get(rest[0])
+        if drafted is None:
+            return f"There is no card {rest[0]}. See /cards."
+        if toolbox.workspace is None:
+            return "Lean is not available for this map."
+        try:
+            new_map, _ = apply_lean_card(toolbox.workspace, proof_map, drafted.card, Path(rest[1]))
+        except (LeanCardRejectedError, ValueError) as exc:
+            return f"Not applied: {exc}"
+        saved = Path(rest[1]).with_suffix(".json")
+        save_proof_map(new_map, saved)
+        return (f"Applied {rest[0]}. Lean checked it again. The changed proof is in {rest[1]} and "
+                f"its map in {saved}. The original file is untouched; this conversation keeps "
+                "working on the original map.")
+    return CHAT_HELP
 
 
 def _fetch_alphaproof() -> int:

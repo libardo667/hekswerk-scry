@@ -8,9 +8,10 @@ map of steps, shows you where to look first, lets you poke at it to see what rel
 what, and lets you safely swap a tangled group of steps for a shorter route. It never
 claims more than it has actually checked.
 
-> **Status: Checkpoint 3 of 6.** Scry can turn a Lean proof into a proof map, ask Lean
+> **Status: Checkpoint 4 of 6.** Scry can turn a Lean proof into a proof map, ask Lean
 > whether the theorem is proven, run What-If tests that Lean judges, and swap any fact's
-> proof for a new one, which Lean must accept before anything changes. Maps written by
+> proof for a new one, which Lean must accept before anything changes. An AI helper works
+> through the same tools with you, toward a proof that is both correct and readable. Maps written by
 > hand (without Lean) can still only be *wiring checked*: Scry follows how the facts feed
 > into each other but does not read the math, so nothing in them counts as proven.
 
@@ -112,6 +113,27 @@ For example, DeepMind's own comment in AlphaProof's P2 says "The agent wastes th
 lines proving then discarding a lemma." Re-proving that goal (step `s7`) with just the
 direct proof that follows `exfalso` removes those 16 lines, and Lean accepts the result.
 
+## The AI helper
+
+```bash
+scry chat p2.json        # needs OPENROUTER_API_KEY in .env (git ignores .env)
+```
+
+A terminal conversation about one proof map. The helper finds things out only through
+Scry's tools: it reads steps and code, scans, runs Lean What-If tests, and drafts
+Simplification cards that Lean judges. Every tool result becomes numbered evidence
+(E1, E2, ...) labelled with its checker. Each answer is shown as **AI's reading**, together
+with the evidence it cites. Scry points out citations to evidence that doesn't exist, and
+answers that rest on no check. The helper is told to test your hunches with Lean before
+agreeing, and to write Lean a person can follow. It can draft cards but can't apply them:
+`/apply C1 New.lean` is yours to type, and Lean checks the card again when you do.
+
+Chat commands: `/cards`, `/apply CARD NEW.lean`, `/evidence E3`, `/cost`, `/quit`.
+
+Settings (in `.env` or the environment): `SCRY_MODEL` (default `anthropic/claude-opus-5.5`),
+`SCRY_EFFORT` (`low` to `max`, default `high`). The cost of each turn is shown as you go.
+The design is in [`docs/decisions/0004-the-ai-helper.md`](docs/decisions/0004-the-ai-helper.md).
+
 **Lean files are programs.** Compiling one can run code written in it. Only use Scry's
 Lean features on files you trust, or somewhere isolated.
 
@@ -164,9 +186,9 @@ different facts. Deciding when two formulas mean the same thing is Lean's job.
 |---|---|---|
 | 1 | Proof maps, wiring check, scanner, What-If tests, Simplification cards, receipts, CLI | Done |
 | 2 | Lean runner and exporter: a Lean file in, a proof map out; What-If tests re-checked by Lean | Done |
-| 3 | Simplification cards checked by Lean before any swap | Done (this checkpoint) |
-| 4 | AI helper via OpenRouter that works with you on clearer proofs, tests your hunches, and lets Lean judge | Next |
-| 5 | Three-pane browser workbench | |
+| 3 | Simplification cards checked by Lean before any swap | Done |
+| 4 | AI helper via OpenRouter that works with you on clearer proofs, tests your hunches, and lets Lean judge | Done (this checkpoint) |
+| 5 | Three-pane browser workbench | Next |
 | 6 | Importing written proofs and finding where English and code disagree | |
 
 ## For contributors and coding agents

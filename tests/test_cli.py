@@ -2,9 +2,11 @@
 
 import contextlib
 import io
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from hekswerk_scry.cli import main
 from hekswerk_scry.files import save_proof_map
@@ -51,6 +53,19 @@ class TestCommandLine(unittest.TestCase):
         code, out, _ = run("what-if", str(self.map_file), "--drop-fact", "x >= 0")
         self.assertEqual(code, 0)
         self.assertIn("breaks 5 step(s)", out)
+
+    def test_chat_commands_work_without_calling_the_model(self) -> None:
+        typed = io.StringIO("/cards\n/evidence E1\n/apply C1 New.lean\n/cost\n/quit\n")
+        env = {**os.environ, "OPENROUTER_API_KEY": "sk-or-test", "SCRY_MODEL": "test/model"}
+        with mock.patch.dict(os.environ, env), mock.patch("sys.stdin", typed):
+            code, out, _ = run("chat", str(self.map_file))
+        self.assertEqual(code, 0)
+        self.assertIn("with test/model (effort high)", out)
+        self.assertIn("only Lean's checks count as proof", out)
+        self.assertIn("The helper hasn't drafted any cards yet.", out)
+        self.assertIn("There is no evidence E1.", out)
+        self.assertIn("There is no card C1.", out)
+        self.assertIn("has cost $0.0000 so far", out)
 
     def test_errors_are_reported_plainly(self) -> None:
         code, _, err = run("check", str(Path(self.folder.name) / "missing.json"))

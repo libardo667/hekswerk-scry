@@ -1,4 +1,4 @@
-.PHONY: check test lint typecheck demo mutation-check lean-setup lean-test lean-demo
+.PHONY: check test lint typecheck demo mutation-check lean-setup lean-test lean-demo ai-test
 
 # Use the project's virtual environment when there is one (see README), else python3.
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
@@ -13,11 +13,11 @@ test:
 
 lint:
 	@$(PYTHON) -m ruff --version >/dev/null 2>&1 || { echo "ruff is not installed. $(DEV_TOOLS_HINT)"; exit 1; }
-	$(PYTHON) -m ruff check src tests lean_tests scripts
+	$(PYTHON) -m ruff check src tests lean_tests ai_tests scripts
 
 typecheck:
 	@$(PYTHON) -m mypy --version >/dev/null 2>&1 || { echo "mypy is not installed. $(DEV_TOOLS_HINT)"; exit 1; }
-	$(PYTHON) -m mypy --strict src tests lean_tests scripts
+	$(PYTHON) -m mypy --strict src tests lean_tests ai_tests scripts
 
 demo:
 	$(PYTHON) -m hekswerk_scry demo
@@ -41,3 +41,10 @@ lean-test:
 
 lean-demo:
 	$(PYTHON) -m hekswerk_scry lean-demo
+
+# --- AI helper (needs OPENROUTER_API_KEY in .env, and Lean) ----------------------------
+
+ai-test:
+	@test -x "$(LAKE)" || { echo "$(LEAN_HINT)"; exit 1; }
+	@echo "This calls the real model through OpenRouter and costs about \$$0.20."
+	$(PYTHON) -m unittest discover -s ai_tests -t . -v

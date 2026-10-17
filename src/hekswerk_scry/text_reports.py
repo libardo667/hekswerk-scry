@@ -2,6 +2,7 @@
 
 import textwrap
 
+from hekswerk_scry.ai.session import Turn
 from hekswerk_scry.checker.cards import CardCheck
 from hekswerk_scry.checker.scanner import MapScan
 from hekswerk_scry.checker.wiring import WiringReport
@@ -249,4 +250,28 @@ def render_lean_card_check(card: LeanSimplificationCard, check: LeanCardCheck) -
         lines.append(_wrap(f"Receipt {check.lean.receipt.receipt_id} "
                            f"({check.lean.receipt.checked_by.label})"))
     return "\n".join(line for line in lines if line != "")
+
+
+def render_turn(turn: Turn) -> str:
+    """Show the helper's answer as what it is: a reading, with what it rests on."""
+    lines = ["AI's reading:"]
+    lines.extend("  " + line if line else "" for line in turn.answer.splitlines())
+    lines.append("")
+    if turn.cited:
+        lines.append("  Rests on:")
+        lines.extend(_wrap(e.label, "    - ") for e in turn.cited)
+    if turn.unknown_citations:
+        lines.append(_wrap(
+            "Warning: the answer cites evidence that doesn't exist in this conversation: "
+            + ", ".join(turn.unknown_citations) + ".", "  ! "))
+    if not turn.checks_run:
+        lines.append(_wrap("No check was run this turn, so nothing above was checked.", "  ! "))
+    elif not any(e.checked_by is not None for e in turn.cited):
+        lines.append(_wrap(
+            f"Checks were run this turn ({', '.join(e.evidence_id for e in turn.checks_run)}), "
+            "but the answer cites none of them.", "  ! "))
+    if turn.hit_round_limit:
+        lines.append(_wrap("The helper hit its limit of tool calls for one turn.", "  ! "))
+    lines.append(f"  (cost of this turn: ${turn.cost_usd:.4f})")
+    return "\n".join(lines)
 

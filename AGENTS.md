@@ -42,7 +42,9 @@ Every claim Scry shows must say who made it. Step statuses use exactly these lab
 | `NOT_CHECKED` | Not checked | Anything that could not run a check |
 
 Claims made by an AI model are labelled **AI's reading** and must cite the evidence
-they rest on (Checkpoint 4).
+they rest on (see `docs/decisions/0004-the-ai-helper.md`). The AI helper acts only through
+Scry's tools, may draft cards but never apply them, and never forces a tool call. Its
+conversation history is append-only.
 
 - The built-in wiring check only follows which facts feed into which steps. It never
   reads a step's math, code, or English, and it must stay that way.
@@ -126,3 +128,7 @@ never skips silently.
 When you change anything under `src/hekswerk_scry/lean/` or `lean/`, also run
 `make lean-test` (it needs Lean; see `make lean-setup`). It runs real Lean, including on
 the three AlphaProof proofs, and takes a few minutes.
+
+When you change the AI helper's instructions or tools (`src/hekswerk_scry/ai/`), run
+`make ai-test`. It calls the real model and costs about $0.10 to $0.20 a run, so it is never
+part of `make check`. Don't run it in a loop.
