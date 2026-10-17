@@ -86,6 +86,21 @@ class TestExampleWithLean(unittest.TestCase):
             check_map_with_lean(ws, proof_map)
 
 
+class TestStatementsWithLean(unittest.TestCase):
+    def test_an_imo_statement_is_read_without_generated_helpers(self) -> None:
+        from hekswerk_scry.lean.statement import read_statement
+
+        ws = workspace()
+        p2 = next(path for path, thm in fetch_alphaproof(ws).items() if thm == "imo_2024_p2")
+        report = read_statement(ws, p2, "imo_2024_p2")
+        self.assertEqual(report.binders, ())
+        self.assertTrue(report.conclusion.endswith("= {(1, 1)}"), report.conclusion)
+        # `{(a, b) | ...}` makes Lean generate a pattern-matching helper; nobody wrote it,
+        # so it isn't listed as a definition to read.
+        self.assertEqual(report.definitions, ())
+        self.assertFalse(report.proof_left_open)
+
+
 class TestAlphaProofWithLean(unittest.TestCase):
     def test_all_three_proofs_import_line_up_and_are_lean_checked(self) -> None:
         ws = workspace()

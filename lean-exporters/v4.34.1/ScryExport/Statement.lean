@@ -30,9 +30,15 @@ def libraryRoots : List String :=
 def moduleOf? (env : Environment) (n : Name) : Option Name :=
   (env.getModuleIdxFor? n).map fun idx => env.header.moduleNames[idx.toNat]!
 
+/-- Helpers Lean generates by itself (pattern-match compilers, recursors, and the like).
+Nobody wrote them, so they don't belong on a list of definitions a person should read. -/
+def isGenerated (env : Environment) (n : Name) : Bool :=
+  n.isInternal || Meta.isMatcherCore env n || isAuxRecursor env n || isNoConfusion env n ||
+    isRecCore env n
+
 /-- A constant from the project: defined in the file itself, or in a non-library module. -/
 def isProjectConstant (env : Environment) (n : Name) : Bool :=
-  !n.isInternal && match moduleOf? env n with
+  !isGenerated env n && match moduleOf? env n with
     | none => true
     | some m => !libraryRoots.contains m.getRoot.toString
 

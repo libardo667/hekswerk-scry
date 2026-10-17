@@ -59,6 +59,15 @@ conversation history is append-only.
   against a file that has changed since; re-import instead.
 - The arrows of a Lean-backed map come from Lean's own record of the finished proof (see
   `docs/decisions/0002-proof-maps-from-lean.md`), never from reading the tactic text.
+- A Lean proof settles its *formal statement* only. Never present a Lean check as settling
+  a paper's claim; statement checking (`docs/decisions/0005-statement-checking.md`) is a
+  separate question. A statement probe counts only when the kernel accepts its proof.
+- OpenAI's scope notes are the answer key for statement audits. Never give them to the AI
+  helper, in prompts or tools.
+- There is one exporter source per supported Lean version (`lean/ScryExport`,
+  `lean-exporters/<version>/ScryExport`). Change them together; they may differ only where
+  the Lean versions' APIs differ. `make openai-test` checks that both versions make the same
+  map of the same proof.
 
 ## 3. Never swap steps without re-checking at the moment of the swap
 
@@ -128,6 +137,9 @@ never skips silently.
 When you change anything under `src/hekswerk_scry/lean/` or `lean/`, also run
 `make lean-test` (it needs Lean; see `make lean-setup`). It runs real Lean, including on
 the three AlphaProof proofs, and takes a few minutes.
+
+When you change the v4.34.1 exporter, statement checking, or `openai_math.py`, run
+`make openai-test` (needs `make openai-setup`; slow, since Lean loads Mathlib each time).
 
 When you change the AI helper's instructions or tools (`src/hekswerk_scry/ai/`), run
 `make ai-test`. It calls the real model and costs about $0.10 to $0.20 a run, so it is never

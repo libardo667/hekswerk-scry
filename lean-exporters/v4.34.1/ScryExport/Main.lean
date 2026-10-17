@@ -15,8 +15,8 @@ unsafe def main (args : List String) : IO UInt32 := do
       IO.println (← ScryStatement.run file thm.toName true).compress
     | _ =>
       IO.eprintln "Usage: scry-export [--statement | --statement-probes] FILE THEOREM"
-      return 2
-    return 0
+      return (2 : UInt32)
+    return (0 : UInt32)
   catch e =>
     IO.eprintln s!"scry-export: {e}"
-    return 1
+    return (1 : UInt32)
