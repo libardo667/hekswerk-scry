@@ -6,9 +6,11 @@ from hekswerk_scry.checker.cards import CardCheck
 from hekswerk_scry.checker.scanner import MapScan
 from hekswerk_scry.checker.wiring import WiringReport
 from hekswerk_scry.core.enums import CheckKind, StepStatus
+from hekswerk_scry.lean.cards import LeanCardCheck, LeanRegion, LeanSimplificationCard
 from hekswerk_scry.lean.checks import LeanMapReport
+from hekswerk_scry.lean.source_text import offsets
 from hekswerk_scry.models.cards import SimplificationCard
-from hekswerk_scry.models.proof_map import ProofMap
+from hekswerk_scry.models.proof_map import LeanRange, ProofMap
 from hekswerk_scry.models.what_if import BreakageReport
 
 _WIDTH = 92
@@ -183,4 +185,68 @@ def render_lean_report(proof_map: ProofMap, report: LeanMapReport) -> str:
         lines.append(_wrap(f"Outside every step: {error}", "  ! "))
     lines.append(_wrap(f"Receipt {check.receipt.receipt_id} ({check.receipt.checked_by.label})"))
     return "\n".join(lines)
+
+
+def _code(text: str, span: LeanRange, indent: str = "      | ") -> list[str]:
+    start, end = offsets(text, span)
+    return [indent + line for line in text[start:end].splitlines()]
+
+
+def _lines(span: LeanRange) -> str:
+    if span.start_line == span.end_line:
+        return f"line {span.start_line}"
+    return f"lines {span.start_line}-{span.end_line}"
+
+
+def render_lean_region(proof_map: ProofMap, region: LeanRegion, text: str) -> str:
+    """Show what re-proving one fact would replace and remove, before anything is changed."""
+    what = (
+        "the proof of this lemma (after its `:=`)"
+        if region.replaces_lemma_value
+        else "the rest of this goal's proof"
+    )
+    lines = [
+        f"Re-proving '{region.fact}' (step {region.fact_step_id})",
+        _wrap(
+            f"Its proof is made of {len(region.removed_step_ids)} step(s): "
+            + ", ".join(region.removed_step_ids)
+            + ". Nothing outside them relies on anything inside them except the fact itself."
+        ),
+        "",
+        f"  New tactics would replace {what}, {_lines(region.anchor)}:",
+        *_code(text, region.anchor),
+    ]
+    for span in region.removed_spans:
+        lines.append(
+            f"  Removed, because its lemma is used only inside this proof, {_lines(span)}:"
+        )
+        lines.extend(_code(text, span))
+    return "\n".join(lines)
+
+
+def render_lean_card_check(card: LeanSimplificationCard, check: LeanCardCheck) -> str:
+    lines = [
+        f"Simplification card '{card.card_id}': {card.title}",
+        _wrap(f"Why: {card.why}") if card.why else "",
+        f"  Re-proves: step {card.fact_step_id}"
+        + (f" ('{check.region.fact}')" if check.region else ""),
+        "  New tactics:",
+        *("      | " + line for line in card.replacement.strip("\n").splitlines()),
+        f"  Status: {check.status.label}",
+    ]
+    for problem in check.problems:
+        lines.append(_wrap(problem, "    - "))
+    if check.lean is not None:
+        lines.append(_wrap(check.lean.receipt.summary))
+        if check.status.value == "ready_to_swap":
+            lines.append(
+                _wrap(
+                    f"Size: {len(check.region.removed_step_ids) if check.region else 0} step(s) "
+                    f"over {check.lines_replaced} line(s) of code would be replaced by "
+                    f"{check.lines_added} line(s). (A count, not a judgement of readability.)"
+                )
+            )
+        lines.append(_wrap(f"Receipt {check.lean.receipt.receipt_id} "
+                           f"({check.lean.receipt.checked_by.label})"))
+    return "\n".join(line for line in lines if line != "")
 

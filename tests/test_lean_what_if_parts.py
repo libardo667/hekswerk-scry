@@ -3,17 +3,18 @@
 import unittest
 from pathlib import Path
 
-from hekswerk_scry.core.enums import CheckKind, StepStatus
+from hekswerk_scry.core.enums import StepStatus
 from hekswerk_scry.lean.checks import innermost_step_at, verdicts_from_check
 from hekswerk_scry.lean.runner import LeanCheck, find_axioms, judge, parse_output
+from hekswerk_scry.lean.source_text import offsets
 from hekswerk_scry.lean.what_if import (
     REPLACEMENT,
     distances_from,
-    offsets,
     original_position,
     steps_inside,
 )
 from hekswerk_scry.models import LeanRange, Receipt
+from hekswerk_scry.models.receipts import LeanRunEvidence
 from tests.test_lean_importer import lean_map
 
 OUTPUT = Path(__file__).parent / "fixtures" / "lean_output"
@@ -23,9 +24,10 @@ def lean_check(fixture: str) -> LeanCheck:
     messages, other = parse_output((OUTPUT / fixture).read_text(encoding="utf-8"))
     axioms = find_axioms(messages, "shifted_fraction_ne_one")
     problems = judge(messages, axioms, "shifted_fraction_ne_one")
-    receipt = Receipt.create(
-        checked_by=CheckKind.LEAN, subject="test", subject_fingerprint="x",
-        passed=not problems, summary="test",
+    # A stand-in for the evidence of a Lean run: these tests replay recorded Lean output.
+    evidence = LeanRunEvidence(("lean", "--json", "Check.lean"), 0, False, "0" * 64, 0.0)
+    receipt = Receipt.from_lean_run(
+        evidence, subject="test", subject_fingerprint="x", passed=not problems, summary="test"
     )
     return LeanCheck("f.lean", "shifted_fraction_ne_one", not problems, problems, messages,
                      axioms, other, 0.0, receipt)

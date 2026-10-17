@@ -57,3 +57,33 @@ def region_boundary(proof_map: ProofMap, step_ids: Iterable[str]) -> RegionBound
         outputs[proof_map.goal] = None
 
     return RegionBoundary(step_ids=tuple(inside), inputs=tuple(inputs), outputs=tuple(outputs))
+
+
+def proof_of(proof_map: ProofMap, step_id: str) -> tuple[str, ...]:
+    """The steps that make up the proof of what `step_id` proves.
+
+    That is `step_id` itself plus every earlier step whose results are needed only inside
+    this group. Replacing the group touches nothing else that matters: no step that leads
+    to the goal (or to `step_id`) relies on anything inside it except the final fact.
+
+    Dead ends don't count when deciding this. A step that leads neither to the goal nor to
+    `step_id` (an unused hint, say, or a rewritten copy of a hypothesis that nothing reads)
+    can't make anything else necessary. Steps are returned in proof order.
+    """
+    if step_id not in proof_map.steps:
+        raise ValueError(f"There is no step '{step_id}' in this map.")
+    order = proof_map.topological_order()
+    earlier = proof_map.ancestors_of(step_id)
+    live = earlier | {step_id}
+    if proof_map.goal_step_id in proof_map.steps:
+        live |= proof_map.ancestors_of(proof_map.goal_step_id) | {proof_map.goal_step_id}
+    children = proof_map.children()
+    group = {step_id}
+    # Working backwards, a step joins once every live step that uses it has joined.
+    for candidate in reversed(order):
+        if candidate not in earlier:
+            continue
+        users = [child for child in children[candidate] if child in live]
+        if users and all(user in group for user in users):
+            group.add(candidate)
+    return tuple(sid for sid in order if sid in group)

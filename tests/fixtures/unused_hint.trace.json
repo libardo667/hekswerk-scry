@@ -1,0 +1,178 @@
+{
+    "version": 1,
+    "theorem": "unused_hint",
+    "steps": [
+        {
+            "value_range": {
+                "start": {
+                    "line": 4,
+                    "column": 24
+                },
+                "end": {
+                    "line": 5,
+                    "column": 42
+                }
+            },
+            "start": {
+                "line": 4,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.168"
+                    ],
+                    "holes": [
+                        "_uniq.244"
+                    ],
+                    "goal": "_uniq.170"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.244"
+            ],
+            "kind": "Lean.Parser.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [
+                        "_uniq.242"
+                    ],
+                    "uses": [],
+                    "hypothesis": "_uniq.243",
+                    "alias_of": null
+                }
+            ],
+            "index": 0,
+            "end": {
+                "line": 5,
+                "column": 42
+            },
+            "code": "have h : 0 < x + 1 := by\n    linarith [(by norm_num : (0 : \u211d) < 2)]"
+        },
+        {
+            "value_range": null,
+            "start": {
+                "line": 5,
+                "column": 4
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.168",
+                        "_uniq.169"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.242"
+                }
+            ],
+            "parent": 0,
+            "leaves": [],
+            "kind": "linarith",
+            "introduces": [],
+            "index": 1,
+            "end": {
+                "line": 5,
+                "column": 42
+            },
+            "code": "linarith [(by norm_num : (0 : \u211d) < 2)]"
+        },
+        {
+            "value_range": null,
+            "start": {
+                "line": 5,
+                "column": 18
+            },
+            "parts": [
+                {
+                    "uses": [],
+                    "holes": [],
+                    "goal": "_uniq.288"
+                }
+            ],
+            "parent": 1,
+            "leaves": [],
+            "kind": "Mathlib.Tactic.normNum",
+            "introduces": [],
+            "index": 2,
+            "end": {
+                "line": 5,
+                "column": 26
+            },
+            "code": "norm_num"
+        },
+        {
+            "value_range": null,
+            "start": {
+                "line": 6,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.243"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.244"
+                }
+            ],
+            "parent": null,
+            "leaves": [],
+            "kind": "Lean.Parser.Tactic.exact",
+            "introduces": [],
+            "index": 3,
+            "end": {
+                "line": 6,
+                "column": 9
+            },
+            "code": "exact h"
+        }
+    ],
+    "starting_facts": [
+        {
+            "type": "0 < x",
+            "name": "hx",
+            "hypothesis": "_uniq.169"
+        }
+    ],
+    "root_goal": "_uniq.170",
+    "lean_version": "4.10.0-rc2",
+    "hypotheses": {
+        "_uniq.243": {
+            "type": "0 < x + 1",
+            "name": "h",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.169": {
+            "type": "0 < x",
+            "name": "hx",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": true
+        },
+        "_uniq.168": {
+            "type": "\u211d",
+            "name": "x",
+            "is_prop": false,
+            "is_auxiliary": false,
+            "from_statement": true
+        }
+    },
+    "goals": {
+        "_uniq.288": {
+            "target": "0 < 2"
+        },
+        "_uniq.244": {
+            "target": "0 < x + 1"
+        },
+        "_uniq.242": {
+            "target": "0 < x + 1"
+        },
+        "_uniq.170": {
+            "target": "0 < x + 1"
+        }
+    },
+    "format": "hekswerk-scry/lean-trace"
+}

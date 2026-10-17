@@ -1,6 +1,7 @@
-.PHONY: check test lint typecheck demo lean-setup lean-test lean-demo
+.PHONY: check test lint typecheck demo mutation-check lean-setup lean-test lean-demo
 
-PYTHON ?= python3
+# Use the project's virtual environment when there is one (see README), else python3.
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 export PYTHONPATH := src
 
 DEV_TOOLS_HINT = Install the development tools with: $(PYTHON) -m pip install -e '.[dev]'
@@ -11,15 +12,18 @@ test:
 	$(PYTHON) -m unittest discover -s tests -t .
 
 lint:
-	@command -v ruff >/dev/null 2>&1 || { echo "ruff is not installed. $(DEV_TOOLS_HINT)"; exit 1; }
-	ruff check src tests lean_tests
+	@$(PYTHON) -m ruff --version >/dev/null 2>&1 || { echo "ruff is not installed. $(DEV_TOOLS_HINT)"; exit 1; }
+	$(PYTHON) -m ruff check src tests lean_tests scripts
 
 typecheck:
-	@command -v mypy >/dev/null 2>&1 || { echo "mypy is not installed. $(DEV_TOOLS_HINT)"; exit 1; }
-	mypy --strict src tests lean_tests
+	@$(PYTHON) -m mypy --version >/dev/null 2>&1 || { echo "mypy is not installed. $(DEV_TOOLS_HINT)"; exit 1; }
+	$(PYTHON) -m mypy --strict src tests lean_tests scripts
 
 demo:
 	$(PYTHON) -m hekswerk_scry demo
+
+mutation-check:
+	$(PYTHON) scripts/mutation_check.py
 
 # --- Lean (see "Setting up Lean" in README.md) ---------------------------------------
 

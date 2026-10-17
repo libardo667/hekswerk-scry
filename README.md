@@ -8,14 +8,20 @@ map of steps, shows you where to look first, lets you poke at it to see what rel
 what, and lets you safely swap a tangled group of steps for a shorter route. It never
 claims more than it has actually checked.
 
-> **Status: Checkpoint 2 of 6.** Scry can turn a Lean proof into a proof map, ask Lean
-> whether the theorem is proven, and run What-If tests that Lean judges. Maps written by
+> **Status: Checkpoint 3 of 6.** Scry can turn a Lean proof into a proof map, ask Lean
+> whether the theorem is proven, run What-If tests that Lean judges, and swap any fact's
+> proof for a new one, which Lean must accept before anything changes. Maps written by
 > hand (without Lean) can still only be *wiring checked*: Scry follows how the facts feed
 > into each other but does not read the math, so nothing in them counts as proven.
 
 ## Try it
 
-Needs Python 3.13 and nothing else.
+Needs Python 3.13 and nothing else. With [uv](https://docs.astral.sh/uv/), for example:
+
+```bash
+uv venv --python 3.13 .venv && uv pip install --python .venv/bin/python -e '.[dev]'
+make check                     # the Makefile uses .venv automatically when it exists
+```
 
 ```bash
 make demo                      # walk through the bundled example
@@ -41,6 +47,8 @@ scry lean-import lean/fetched/alphaproof/P2.lean imo_2024_p2 -o p2.json
 scry lean-check p2.json        # is the theorem proven? (Lean decides)
 scry scan p2.json
 scry what-if p2.json --remove-step s7 --lean   # make step s7 do nothing; Lean judges
+scry lean-region p2.json --fact s7             # what re-proving step s7's fact would replace
+scry lean-card p2.json --fact s7 --tactics NEW_TACTICS.lean --apply P2_simpler.lean
 ```
 
 The bundled example is in
@@ -89,6 +97,20 @@ used shows up as an unused step. The details and known limitations are in
 - **Unused**, for a Lean map, means Lean's finished proof doesn't rely on the step's
   result. The code may still need it to compile (a hint that has to be proved even though
   the tactic it was given to didn't use it); a Lean What-If test settles that.
+
+### Simplification cards for Lean proofs
+
+`scry lean-card` re-proves **one fact** (a goal, or a `have`-style lemma) with new tactics
+you supply. Scry works out the fact's whole proof: the steps whose results are needed
+only inside it, plus the `have` lines that become dead without it. It splices the new
+tactics in, and Lean checks the whole changed file. Only if Lean accepts it does
+`--apply` write the simpler proof to a new file; the original is never touched. Run
+`scry lean-region` first to see exactly what would be replaced. The details are in
+[`docs/decisions/0003-simplification-cards-for-lean.md`](docs/decisions/0003-simplification-cards-for-lean.md).
+
+For example, DeepMind's own comment in AlphaProof's P2 says "The agent wastes the next 16
+lines proving then discarding a lemma." Re-proving that goal (step `s7`) with just the
+direct proof that follows `exfalso` removes those 16 lines, and Lean accepts the result.
 
 **Lean files are programs.** Compiling one can run code written in it. Only use Scry's
 Lean features on files you trust, or somewhere isolated.
@@ -141,9 +163,9 @@ different facts. Deciding when two formulas mean the same thing is Lean's job.
 | # | What you get | Status |
 |---|---|---|
 | 1 | Proof maps, wiring check, scanner, What-If tests, Simplification cards, receipts, CLI | Done |
-| 2 | Lean runner and exporter: a Lean file in, a proof map out; What-If tests re-checked by Lean | Done (this checkpoint) |
-| 3 | Simplification cards checked by Lean before any swap | Next |
-| 4 | AI helper via OpenRouter that tests your hunches before answering | |
+| 2 | Lean runner and exporter: a Lean file in, a proof map out; What-If tests re-checked by Lean | Done |
+| 3 | Simplification cards checked by Lean before any swap | Done (this checkpoint) |
+| 4 | AI helper via OpenRouter that works with you on clearer proofs, tests your hunches, and lets Lean judge | Next |
 | 5 | Three-pane browser workbench | |
 | 6 | Importing written proofs and finding where English and code disagree | |
 

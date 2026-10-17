@@ -217,6 +217,20 @@ where
     | .proj n i b => return .proj n i (← go b)
     | other => return other
 
+/-- The term after `:=` in a step such as `have h : T := v` or `obtain ⟨a, b⟩ := v`.
+A Simplification card that re-proves `h` replaces exactly this part of the source. -/
+partial def valueAfterAssign? (stx : Syntax) : Option Syntax :=
+  match stx with
+  | .node _ _ args => Id.run do
+    for i in [0:args.size] do
+      let a := args[i]!
+      if a.isAtom && a.getAtomVal == ":=" && i + 1 < args.size then
+        return some args[i + 1]!
+    for a in args do
+      if let some v := valueAfterAssign? a then return some v
+    return none
+  | _ => none
+
 def dedup {α : Type} [BEq α] (xs : Array α) : Array α :=
   xs.foldl (fun acc x => if acc.contains x then acc else acc.push x) #[]
 
@@ -349,6 +363,11 @@ def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected
     let stx := s.info.stx
     let start := stx.getPos?.getD 0
     let stop := stx.getTailPos?.getD start
+    let valueRange := match valueAfterAssign? stx with
+      | some v => match v.getPos? (canonicalOnly := true), v.getTailPos? (canonicalOnly := true) with
+        | some a, some b => Json.mkObj [("start", posJson fileMap a), ("end", posJson fileMap b)]
+        | _, _ => Json.null
+      | none => Json.null
     stepsJson := stepsJson.push <| Json.mkObj [
       ("index", i),
       ("parent", toJson s.parent?),
@@ -358,7 +377,8 @@ def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected
       ("end", posJson fileMap stop),
       ("parts", toJson parts),
       ("introduces", toJson introsJson),
-      ("leaves", toJson (after.map mvarKey))]
+      ("leaves", toJson (after.map mvarKey)),
+      ("value_range", valueRange)]
   setMCtx final
   let (_, s') ← (recordGoal root).run seen
   seen := s'

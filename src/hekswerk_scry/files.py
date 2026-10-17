@@ -28,13 +28,16 @@ _MAP_REQUIRED = frozenset(
 )
 _MAP_OPTIONAL = frozenset({"archived_steps", "history", "lean_source"})
 _STEP_REQUIRED = frozenset({"id", "title", "assumes", "proves"})
-_STEP_OPTIONAL = frozenset({"depends_on", "views", "lean_range"})
+_STEP_OPTIONAL = frozenset(
+    {"depends_on", "views", "lean_range", "lean_value_range", "lean_introduced_by"}
+)
 _LEAN_SOURCE_KEYS = frozenset({"file", "theorem", "file_sha256"})
 _LEAN_RANGE_KEYS = frozenset({"start_line", "start_column", "end_line", "end_column"})
 _VIEW_KEYS = frozenset({"plain_english", "math", "code"})
 _HISTORY_KEYS = frozenset(
     {"card_id", "card_title", "removed_step_ids", "added_step_ids", "receipt_id"}
 )
+_HISTORY_OPTIONAL = frozenset({"lean_before", "lean_after"})
 
 
 class MapFileError(ValueError):
@@ -76,7 +79,10 @@ def proof_map_to_dict(proof_map: ProofMap) -> dict[str, Any]:
     if proof_map.archived_steps:
         data["archived_steps"] = [_step_to_dict(s) for s in proof_map.archived_steps.values()]
     if proof_map.history:
-        data["history"] = [record.to_dict() for record in proof_map.history]
+        data["history"] = [
+            {key: value for key, value in record.to_dict().items() if value is not None}
+            for record in proof_map.history
+        ]
     if proof_map.lean_source:
         data["lean_source"] = proof_map.lean_source.to_dict()
     return data
@@ -129,6 +135,10 @@ def _step_to_dict(step: ProofStep) -> dict[str, Any]:
         data["views"] = views
     if step.lean_range:
         data["lean_range"] = step.lean_range.to_dict()
+    if step.lean_value_range:
+        data["lean_value_range"] = step.lean_value_range.to_dict()
+    if step.lean_introduced_by:
+        data["lean_introduced_by"] = step.lean_introduced_by
     return data
 
 
@@ -163,6 +173,14 @@ def _step(raw: object, where: str) -> ProofStep:
             ),
             depends_on=_text_list(obj.get("depends_on", []), f"{where}, 'depends_on'"),
             lean_range=_lean_range(obj.get("lean_range"), f"{where}, 'lean_range'"),
+            lean_value_range=_lean_range(
+                obj.get("lean_value_range"), f"{where}, 'lean_value_range'"
+            ),
+            lean_introduced_by=(
+                _text(obj["lean_introduced_by"], f"{where}, 'lean_introduced_by'")
+                if "lean_introduced_by" in obj
+                else None
+            ),
         )
     except MapFileError:
         raise
@@ -172,13 +190,15 @@ def _step(raw: object, where: str) -> ProofStep:
 
 def _history_record(raw: object, where: str) -> SwapRecord:
     obj = _object(raw, where)
-    _check_keys(obj, where, _HISTORY_KEYS, frozenset())
+    _check_keys(obj, where, _HISTORY_KEYS, _HISTORY_OPTIONAL)
     return SwapRecord(
         card_id=_text(obj["card_id"], f"{where}, 'card_id'"),
         card_title=_text(obj["card_title"], f"{where}, 'card_title'"),
         removed_step_ids=_text_list(obj["removed_step_ids"], f"{where}, 'removed_step_ids'"),
         added_step_ids=_text_list(obj["added_step_ids"], f"{where}, 'added_step_ids'"),
         receipt_id=_text(obj["receipt_id"], f"{where}, 'receipt_id'"),
+        lean_before=_lean_source(obj.get("lean_before"), f"{where}, 'lean_before'"),
+        lean_after=_lean_source(obj.get("lean_after"), f"{where}, 'lean_after'"),
     )
 
 

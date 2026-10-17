@@ -68,6 +68,9 @@ they rest on (Checkpoint 4).
   rest of the proof takes from the replaced steps.
 - Replaced steps are never deleted. They move to `ProofMap.archived_steps`, and the
   swap is recorded in `ProofMap.history`.
+- For Lean proofs, a card re-proves one fact and **Lean judges the whole changed file**
+  (see `docs/decisions/0003-simplification-cards-for-lean.md`). Applying a card writes a
+  new file; never modify the original Lean file.
 
 ## 4. Truth over flattery
 
@@ -94,6 +97,19 @@ a message that says what is wrong and how to fix it. Never guess and carry on.
 
 The project is built checkpoint by checkpoint (see `README.md`). After each checkpoint
 the work is pushed and stops for the owner's review before the next one begins.
+
+## Tests must be able to fail
+
+A test you have never seen fail is unmeasured. When you add or change a test, break the
+code it guards and watch it go red, then restore the code. Prefer invariants and whole
+generated artifacts (for example, a complete spliced file) over hand-picked fragments.
+Never assert on source text. Python's bytecode cache only notices a source change by
+its modification time (to the second) and size, so a same-length edit that is undone
+quickly can leave stale code running. Clear `__pycache__` after such edits.
+
+`make mutation-check` breaks the code in known ways and confirms the tests notice. When
+you add a test that guards a specific piece of behaviour, add a mutation for it to
+`scripts/mutation_check.py`.
 
 ## Quality gates
 

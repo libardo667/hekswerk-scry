@@ -12,7 +12,11 @@ from typing import Any
 
 from hekswerk_scry.checker import check_wiring, scan_proof_map
 from hekswerk_scry.files import proof_map_from_dict, proof_map_to_dict
-from hekswerk_scry.lean.importer import LeanImportError, trace_to_proof_map
+from hekswerk_scry.lean.importer import (
+    LeanImportError,
+    trace_to_checked_map,
+    trace_to_proof_map,
+)
 from hekswerk_scry.models import LeanSource, ProofMap
 
 FIXTURE = Path(__file__).parent / "fixtures" / "shifted_fraction.trace.json"
@@ -78,6 +82,16 @@ class TestImportedMap(unittest.TestCase):
         again = proof_map_from_dict(json.loads(json.dumps(proof_map_to_dict(proof_map))))
         self.assertEqual(again, proof_map)
         self.assertEqual(again.steps["s3"].lean_range, proof_map.steps["s3"].lean_range)
+
+    def test_a_trace_that_loses_something_lean_recorded_is_refused(self) -> None:
+        # Drop the step that proves `0 < x + 7` inside `have cube_pos`: Lean recorded it,
+        # so a map without it no longer lines up, and the import must refuse.
+        lossy = copy.deepcopy(trace())
+        lossy["steps"] = [s for s in lossy["steps"] if s["index"] != 1]
+        self.assertFalse(check_wiring(trace_to_proof_map(lossy, SOURCE)).passed)
+        with self.assertRaisesRegex(LeanImportError, "Scry bug"):
+            trace_to_checked_map(lossy, SOURCE)
+        self.assertTrue(check_wiring(trace_to_checked_map(trace(), SOURCE)).passed)
 
     def test_trace_whose_goal_nobody_works_on_is_rejected(self) -> None:
         broken = copy.deepcopy(trace())

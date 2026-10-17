@@ -20,10 +20,9 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from hekswerk_scry.core.enums import CheckKind
 from hekswerk_scry.core.hashing import fingerprint_data
 from hekswerk_scry.lean.workspace import LeanWorkspace
-from hekswerk_scry.models.receipts import Receipt
+from hekswerk_scry.models.receipts import LeanRunEvidence, Receipt
 
 STANDARD_AXIOMS = frozenset({"propext", "Classical.choice", "Quot.sound"})
 LEAN_OPTIONS = ("-DautoImplicit=false", "-DrelaxedAutoImplicit=false")
@@ -105,11 +104,19 @@ def check_file(
             check=False,
         )
         stdout, stderr, timed_out = completed.stdout, completed.stderr, False
+        exit_code: int | None = completed.returncode
     except subprocess.TimeoutExpired as exc:
         stdout = exc.stdout.decode() if isinstance(exc.stdout, bytes) else (exc.stdout or "")
         stderr = exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")
-        timed_out = True
+        timed_out, exit_code = True, None
     seconds = time.monotonic() - started
+    evidence = LeanRunEvidence(
+        command=tuple(command),
+        exit_code=exit_code,
+        timed_out=timed_out,
+        output_sha256=hashlib.sha256((stdout + "\0" + stderr).encode("utf-8")).hexdigest(),
+        seconds=seconds,
+    )
 
     messages, other = parse_output(stdout)
     other += tuple(line for line in stderr.splitlines() if line.strip())
@@ -123,8 +130,8 @@ def check_file(
         if passed
         else f"Not proven by Lean: {problems[0]}"
     )
-    receipt = Receipt.create(
-        checked_by=CheckKind.LEAN,
+    receipt = Receipt.from_lean_run(
+        evidence,
         subject=f"theorem '{theorem}' in {recorded}",
         subject_fingerprint=fingerprint_data(
             {

@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from hekswerk_scry.checker.wiring import check_wiring
 from hekswerk_scry.lean.runner import file_sha256
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.proof_map import (
@@ -56,7 +57,29 @@ def import_theorem(
     source = LeanSource(
         file=workspace.relative(path), theorem=theorem, file_sha256=file_sha256(path)
     )
-    return trace_to_proof_map(trace, source)
+    return trace_to_checked_map(trace, source)
+
+
+def trace_to_checked_map(trace: Mapping[str, Any], source: LeanSource) -> ProofMap:
+    """Build the map and insist that it lines up.
+
+    Everything in a trace comes from a proof Lean finished, so every fact a step needs
+    must be provided somewhere. If the map doesn't line up, the exporter or the importer
+    lost something Lean recorded. That is a Scry bug, and a map built from it would be
+    misleading, so the import fails instead of returning it.
+    """
+    proof_map = trace_to_proof_map(trace, source)
+    report = check_wiring(proof_map)
+    if not report.passed:
+        first = next(
+            (p.message for v in report.verdicts.values() for p in v.problems),
+            report.map_problems[0].message if report.map_problems else report.summary,
+        )
+        raise LeanImportError(
+            f"Scry bug: the map made from '{source.theorem}' doesn't line up, so part of "
+            f"what Lean recorded was lost on the way. {report.summary} First problem: {first}"
+        )
+    return proof_map
 
 
 def run_exporter(
@@ -189,6 +212,8 @@ def trace_to_proof_map(trace: Mapping[str, Any], source: LeanSource) -> ProofMap
         )
         title = _title(code)
         parts = raw["parts"]
+        value_range = _range(raw.get("value_range"))
+        introducer = (f"s{number}" if len(parts) == 1 else f"s{number}.1") if parts else None
         for k, part in enumerate(parts):
             step_id = f"s{number}" if len(parts) == 1 else f"s{number}.{k + 1}"
             facts, providers = needs(part["holes"], part["uses"])
@@ -200,6 +225,7 @@ def trace_to_proof_map(trace: Mapping[str, Any], source: LeanSource) -> ProofMap
                 views=StepViews(math=f"⊢ {goal_text}", code=code),
                 depends_on=tuple(dict.fromkeys(p for p in providers if p != step_id)),
                 lean_range=lean_range,
+                lean_value_range=value_range if k == 0 else None,
             )
         for k, intro in enumerate(raw["introduces"]):
             if intro.get("alias_of"):
@@ -216,6 +242,7 @@ def trace_to_proof_map(trace: Mapping[str, Any], source: LeanSource) -> ProofMap
                 ),
                 views=StepViews(math=str(hyp.get("type", "")), code=code),
                 depends_on=tuple(dict.fromkeys(p for p in providers if p != step_id)),
+                lean_introduced_by=introducer,
             )
 
     root = trace["root_goal"]
@@ -230,6 +257,17 @@ def trace_to_proof_map(trace: Mapping[str, Any], source: LeanSource) -> ProofMap
         goal_step_id=goal_provider[root],
         steps=steps,
         lean_source=source,
+    )
+
+
+def _range(raw: Mapping[str, Any] | None) -> LeanRange | None:
+    if not raw:
+        return None
+    return LeanRange(
+        start_line=raw["start"]["line"],
+        start_column=raw["start"]["column"],
+        end_line=raw["end"]["line"],
+        end_column=raw["end"]["column"],
     )
 
 

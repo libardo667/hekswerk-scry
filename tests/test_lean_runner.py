@@ -50,6 +50,13 @@ class TestJudging(unittest.TestCase):
         self.assertEqual(len(problems), 1)
         self.assertIn("uses `sorry`", problems[0])
 
+    def test_sorry_hidden_in_another_file_is_never_proven(self) -> None:
+        # A lemma left as `sorry` in another file: Lean warns there, not here, but the
+        # theorem's axioms still include sorryAx.
+        problems = judge((), ("propext", "sorryAx", "Quot.sound"), THEOREM)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("uses `sorry`", problems[0])
+
     def test_errors_are_reported_without_blaming_sorry(self) -> None:
         # After an error Lean patches the spot with sorry itself; the author wrote none.
         messages, _ = parse_output(read("error.jsonl"))

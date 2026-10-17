@@ -136,6 +136,10 @@ class ProofStep:
     views: StepViews = field(default_factory=StepViews)
     depends_on: tuple[str, ...] = ()
     lean_range: LeanRange | None = None
+    # Lean-backed maps only. On a step such as `have h : T := v`: where `v` sits in the file.
+    lean_value_range: LeanRange | None = None
+    # Lean-backed maps only. On a "Why h holds" step: the step that introduced `h`.
+    lean_introduced_by: str | None = None
 
     def __post_init__(self) -> None:
         if not self.step_id or self.step_id != self.step_id.strip() or " " in self.step_id:
@@ -159,6 +163,10 @@ class ProofStep:
             "depends_on": list(self.depends_on),
             "views": self.views.to_dict(),
             "lean_range": self.lean_range.to_dict() if self.lean_range else None,
+            "lean_value_range": (
+                self.lean_value_range.to_dict() if self.lean_value_range else None
+            ),
+            "lean_introduced_by": self.lean_introduced_by,
         }
 
 
@@ -171,6 +179,9 @@ class SwapRecord:
     removed_step_ids: tuple[str, ...]
     added_step_ids: tuple[str, ...]
     receipt_id: str
+    # Lean-backed swaps only: the Lean file before and after the swap.
+    lean_before: LeanSource | None = None
+    lean_after: LeanSource | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -179,6 +190,8 @@ class SwapRecord:
             "removed_step_ids": list(self.removed_step_ids),
             "added_step_ids": list(self.added_step_ids),
             "receipt_id": self.receipt_id,
+            "lean_before": self.lean_before.to_dict() if self.lean_before else None,
+            "lean_after": self.lean_after.to_dict() if self.lean_after else None,
         }
 
 

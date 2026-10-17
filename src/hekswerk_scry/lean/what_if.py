@@ -15,6 +15,7 @@ from dataclasses import replace
 from hekswerk_scry.core.enums import CheckKind, WhatIfKind
 from hekswerk_scry.lean.checks import first_line, innermost_step_at, source_path
 from hekswerk_scry.lean.runner import LeanMessage, check_file
+from hekswerk_scry.lean.source_text import offsets
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.proof_map import LeanRange, ProofMap
 from hekswerk_scry.models.what_if import BreakageReport, StepBreakage, WhatIfChange
@@ -39,7 +40,7 @@ def run_lean_what_if(
     if step is None:
         raise ValueError(f"There is no step '{change.target}' in this map.")
     if step.lean_range is None:
-        owner = change.target.split("-why")[0]
+        owner = step.lean_introduced_by or "(unknown)"
         raise ValueError(
             f"Step '{change.target}' has no code of its own: it is the justification for a "
             f"hypothesis introduced by step '{owner}'. Try that step instead."
@@ -103,17 +104,6 @@ def run_lean_what_if(
     )
 
 
-def offsets(text: str, span: LeanRange) -> tuple[int, int]:
-    """Character offsets of a range within `text` (end is exclusive)."""
-    starts = [0]
-    for line in text.splitlines(keepends=True):
-        starts.append(starts[-1] + len(line))
-    return (
-        starts[span.start_line - 1] + span.start_column,
-        starts[span.end_line - 1] + span.end_column,
-    )
-
-
 def original_position(
     original: str, edited: str, start: int, end: int, message: LeanMessage
 ) -> tuple[int, int]:
@@ -139,7 +129,9 @@ def steps_inside(proof_map: ProofMap, span: LeanRange) -> set[str]:
         for sid, step in proof_map.steps.items()
         if step.lean_range is not None and span.encloses(step.lean_range)
     }
-    return inside | {sid for sid in proof_map.steps if sid.split("-why")[0] in inside}
+    return inside | {
+        sid for sid, step in proof_map.steps.items() if step.lean_introduced_by in inside
+    }
 
 
 def distances_from(proof_map: ProofMap, step_id: str) -> dict[str, int]:

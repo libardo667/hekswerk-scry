@@ -13,6 +13,9 @@ With Lean (see "Setting up Lean" in README.md):
     scry lean-import FILE.lean THEOREM -o MAP.json   turn a Lean proof into a proof map
     scry lean-check MAP.json                     ask Lean whether the theorem is proven
     scry what-if MAP.json --remove-step ID --lean    make a step do nothing; Lean judges
+    scry lean-region MAP.json --fact ID          show what re-proving a fact would replace
+    scry lean-card MAP.json --fact ID --tactics FILE [--apply NEW.lean --save-map NEW.json]
+                                                 re-prove a fact with new tactics; Lean judges
 """
 
 import argparse
@@ -28,15 +31,23 @@ from hekswerk_scry.checker import (
     run_what_if,
     scan_proof_map,
 )
-from hekswerk_scry.core.enums import WhatIfKind
+from hekswerk_scry.core.enums import CardStatus, WhatIfKind
 from hekswerk_scry.examples import load_example
 from hekswerk_scry.files import load_proof_map, save_proof_map
 from hekswerk_scry.lean.alphaproof import AlphaProofFetchError, fetch_alphaproof
-from hekswerk_scry.lean.checks import check_map_with_lean
+from hekswerk_scry.lean.cards import (
+    LeanCardRejectedError,
+    apply_lean_card,
+    check_lean_card,
+    draft_lean_card,
+    find_region,
+)
+from hekswerk_scry.lean.checks import check_map_with_lean, source_path
 from hekswerk_scry.lean.importer import LeanImportError, import_theorem
 from hekswerk_scry.lean.what_if import run_lean_what_if
 from hekswerk_scry.lean.workspace import LeanSetupError, find_workspace
 from hekswerk_scry.models import (
+    ProofMap,
     ProofStep,
     SimplificationCard,
     StepContract,
@@ -47,6 +58,8 @@ from hekswerk_scry.text_reports import (
     render_breakage,
     render_card_check,
     render_history,
+    render_lean_card_check,
+    render_lean_region,
     render_lean_report,
     render_map_overview,
     render_scan,
@@ -74,6 +87,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _fetch_alphaproof()
         if args.command == "lean-demo":
             return run_lean_demo()
+        if args.command == "lean-region":
+            return _lean_region(Path(args.map_file), args.fact)
+        if args.command == "lean-card":
+            return _lean_card(args)
     except (ValueError, LeanSetupError, LeanImportError, AlphaProofFetchError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
@@ -108,6 +125,24 @@ def _build_parser() -> argparse.ArgumentParser:
     lean_check.add_argument("map_file", help="path to a Lean-backed proof map JSON file")
     commands.add_parser("fetch-alphaproof", help="download DeepMind's AlphaProof proofs")
     commands.add_parser("lean-demo", help="walk through the example, checked by Lean")
+    region = commands.add_parser("lean-region", help="show what re-proving a fact would replace")
+    region.add_argument("map_file", help="path to a Lean-backed proof map JSON file")
+    region.add_argument(
+        "--fact", required=True, metavar="STEP_ID", help="the step whose fact to re-prove"
+    )
+    card = commands.add_parser("lean-card", help="re-prove a fact with new tactics; Lean judges")
+    card.add_argument("map_file", help="path to a Lean-backed proof map JSON file")
+    card.add_argument(
+        "--fact", required=True, metavar="STEP_ID", help="the step whose fact to re-prove"
+    )
+    card.add_argument("--tactics", required=True, metavar="FILE",
+                      help="file with the new Lean tactics ('-' to read them from input)")
+    card.add_argument("--title", default="", help="a short name for the card")
+    card.add_argument("--why", default="", help="why the new proof is better, in plain words")
+    card.add_argument("--apply", metavar="NEW.lean",
+                      help="if Lean accepts the card, write the changed proof to this new file")
+    card.add_argument("--save-map", metavar="NEW.json",
+                      help="with --apply: save the changed proof's map here")
     return parser
 
 
@@ -162,6 +197,55 @@ def _lean_check(path: Path) -> int:
     report = check_map_with_lean(find_workspace(), proof_map)
     print(render_lean_report(proof_map, report))
     return 0 if report.passed else 1
+
+
+def _lean_map(path: Path) -> ProofMap:
+    proof_map = load_proof_map(path)
+    if proof_map.lean_source is None:
+        raise ValueError(
+            f"'{path}' was not made from a Lean file. Make one with `scry lean-import`."
+        )
+    return proof_map
+
+
+def _lean_region(path: Path, fact: str) -> int:
+    proof_map = _lean_map(path)
+    workspace = find_workspace()
+    _, lean_file = source_path(workspace, proof_map)
+    text = lean_file.read_text(encoding="utf-8")
+    print(render_lean_region(proof_map, find_region(proof_map, text, fact), text))
+    return 0
+
+
+def _lean_card(args: argparse.Namespace) -> int:
+    proof_map = _lean_map(Path(args.map_file))
+    if args.save_map and not args.apply:
+        raise ValueError("--save-map only makes sense together with --apply.")
+    tactics = sys.stdin.read() if args.tactics == "-" else Path(args.tactics).read_text(
+        encoding="utf-8"
+    )
+    workspace = find_workspace()
+    card = draft_lean_card(
+        workspace, proof_map, args.fact,
+        card_id=f"reprove-{args.fact}", title=args.title or f"Re-prove {args.fact}",
+        why=args.why, replacement=tactics,
+    )
+    check = check_lean_card(workspace, proof_map, card)
+    print(render_lean_card_check(card, check))
+    if check.status is not CardStatus.READY_TO_SWAP:
+        return 1
+    if args.apply:
+        try:
+            new_map, _receipt = apply_lean_card(workspace, proof_map, card, Path(args.apply))
+        except LeanCardRejectedError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        print(f"\nApplied. The changed proof is in {args.apply} "
+              f"({len(new_map.steps)} steps); the original file is untouched.")
+        if args.save_map:
+            save_proof_map(new_map, Path(args.save_map))
+            print(f"Its map, with the replaced steps archived, is in {args.save_map}.")
+    return 0
 
 
 def _fetch_alphaproof() -> int:
@@ -301,6 +385,22 @@ def run_lean_demo() -> int:
         change = WhatIfChange(WhatIfKind.REMOVE_STEP, step_id)
         print(render_breakage(run_lean_what_if(workspace, proof_map, change)))
         print()
+
+    _section("5. A Simplification card: prove shift_pos directly, and let Lean judge")
+    text = lean_file.read_text(encoding="utf-8")
+    print(render_lean_region(proof_map, find_region(proof_map, text, "s7-why1"), text))
+    print()
+    card = draft_lean_card(
+        workspace, proof_map, "s7-why1",
+        card_id="direct-shift", title="Show x + 7 > 0 directly",
+        why="x >= 0 gives x + 7 > 0 at once; the cubes and squares were a detour.",
+        replacement="-- x is at least 0, so x + 7 is at least 7.\nlinarith",
+    )
+    print(render_lean_card_check(card, check_lean_card(workspace, proof_map, card)))
+    print(
+        "\n  To write the simpler proof to a new file (the original is never touched):\n"
+        "    scry lean-card MAP.json --fact s7-why1 --tactics TACTICS.lean --apply NEW.lean"
+    )
     return 0
 
 

@@ -1,0 +1,100 @@
+"""Break the code on purpose and confirm the tests notice.
+
+Each mutation below is a small, plausible mistake in code that tests are meant to guard.
+The script applies one mutation at a time, runs the unit tests, and restores the file.
+A mutation that leaves the tests green is a gap in the tests. Run with `make
+mutation-check`; it exits non-zero if any mutation is missed.
+
+Add a mutation here whenever you add a test that guards a specific piece of behaviour.
+"""
+
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+# (file, original text, mutated text, what the mistake is)
+MUTATIONS = [
+    ("src/hekswerk_scry/checker/regions.py",
+     "if users and all(user in group for user in users):",
+     "if users and any(user in group for user in users):",
+     "a fact's proof takes in steps that are also used elsewhere"),
+    ("src/hekswerk_scry/checker/regions.py",
+     "users = [child for child in children[candidate] if child in live]",
+     "users = list(children[candidate])",
+     "dead ends keep their inputs out of a fact's proof"),
+    ("src/hekswerk_scry/lean/cards.py",
+     '        new = "by\\n" + "\\n".join(pad + line if line.strip() else "" for line in lines)',
+     '        new = "by\\n" + "\\n".join(line for line in lines)',
+     "new tactics are not indented inside the proof"),
+    ("src/hekswerk_scry/lean/cards.py",
+     "    return line_start, min(line_end + 1, len(text))",
+     "    return start, end",
+     "removed code leaves empty lines behind"),
+    ("src/hekswerk_scry/lean/cards.py",
+     "        removed.add(introducer)",
+     "        pass",
+     "dead `have` lines are kept"),
+    ("src/hekswerk_scry/lean/cards.py",
+     "            if inside_cut or (span is None and step.lean_introduced_by in removed):",
+     "            if span is None and step.lean_introduced_by in removed:",
+     "dead code inside the cut is kept"),
+    ("src/hekswerk_scry/lean/cards.py",
+     "            if inside_cut or (span is None and step.lean_introduced_by in removed):",
+     "            if inside_cut:",
+     "unused lemmas of removed steps are kept"),
+    ("src/hekswerk_scry/models/receipts.py",
+     "        if checked_by is CheckKind.LEAN:",
+     "        if False:",
+     "a receipt can claim to come from Lean without a Lean run"),
+    ("src/hekswerk_scry/lean/importer.py",
+     "    if not report.passed:\n        first = next(",
+     "    if False:\n        first = next(",
+     "an import that lost part of Lean's record is accepted"),
+    ("src/hekswerk_scry/lean/runner.py",
+     '        if "sorryAx" in extra and not errors and not any("sorry" in p for p in problems):',
+     '        if False:',
+     "a proof relying on sorry counts as proven"),
+]
+
+
+def clear_bytecode() -> None:
+    # Python's bytecode cache notices source changes only by modification time (to the
+    # second) and size, so a same-length mutation undone quickly would keep running.
+    for cache in (ROOT / "src").rglob("__pycache__"):
+        shutil.rmtree(cache)
+
+
+def main() -> int:
+    python = ROOT / ".venv" / "bin" / "python"
+    interpreter = str(python if python.is_file() else sys.executable)
+    missed = 0
+    for relative, original, mutated, mistake in MUTATIONS:
+        path = ROOT / relative
+        source = path.read_text(encoding="utf-8")
+        if source.count(original) != 1:
+            print(f"SETUP   {mistake}: the original text was not found exactly once in {relative}")
+            missed += 1
+            continue
+        path.write_text(source.replace(original, mutated), encoding="utf-8")
+        clear_bytecode()
+        try:
+            run = subprocess.run(
+                [interpreter, "-m", "unittest", "discover", "-s", "tests", "-t", "."],
+                cwd=ROOT, env={"PYTHONPATH": "src", "PATH": "/usr/bin:/bin"},
+                capture_output=True, text=True, check=False,
+            )
+        finally:
+            path.write_text(source, encoding="utf-8")
+            clear_bytecode()
+        caught = run.returncode != 0
+        missed += not caught
+        print(f"{'caught ' if caught else 'MISSED '} {mistake}")
+    print(f"\n{len(MUTATIONS) - missed} of {len(MUTATIONS)} mutations caught.")
+    return 1 if missed else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

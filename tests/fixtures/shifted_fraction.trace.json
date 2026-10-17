@@ -3,6 +3,16 @@
     "theorem": "shifted_fraction_ne_one",
     "steps": [
         {
+            "value_range": {
+                "start": {
+                    "line": 12,
+                    "column": 37
+                },
+                "end": {
+                    "line": 12,
+                    "column": 60
+                }
+            },
             "start": {
                 "line": 12,
                 "column": 2
@@ -43,6 +53,7 @@
             "code": "have cube_pos : (x + 7) ^ 3 > 0 := pow_pos (by linarith) 3"
         },
         {
+            "value_range": null,
             "start": {
                 "line": 12,
                 "column": 49
@@ -69,6 +80,16 @@
             "code": "linarith"
         },
         {
+            "value_range": {
+                "start": {
+                    "line": 13,
+                    "column": 59
+                },
+                "end": {
+                    "line": 13,
+                    "column": 66
+                }
+            },
             "start": {
                 "line": 13,
                 "column": 2
@@ -107,6 +128,7 @@
             "code": "have cube_split : (x + 7) ^ 3 = (x + 7) * (x + 7) ^ 2 := by ring"
         },
         {
+            "value_range": null,
             "start": {
                 "line": 13,
                 "column": 62
@@ -132,6 +154,16 @@
             "code": "ring"
         },
         {
+            "value_range": {
+                "start": {
+                    "line": 14,
+                    "column": 35
+                },
+                "end": {
+                    "line": 14,
+                    "column": 58
+                }
+            },
             "start": {
                 "line": 14,
                 "column": 2
@@ -172,6 +204,7 @@
             "code": "have sq_pos : (x + 7) ^ 2 > 0 := pow_pos (by linarith) 2"
         },
         {
+            "value_range": null,
             "start": {
                 "line": 14,
                 "column": 47
@@ -198,6 +231,16 @@
             "code": "linarith"
         },
         {
+            "value_range": {
+                "start": {
+                    "line": 15,
+                    "column": 32
+                },
+                "end": {
+                    "line": 17,
+                    "column": 56
+                }
+            },
             "start": {
                 "line": 15,
                 "column": 2
@@ -236,6 +279,7 @@
             "code": "have shift_pos : x + 7 > 0 := by\n    rw [cube_split] at cube_pos\n    exact pos_of_mul_pos_left cube_pos (le_of_lt sq_pos)"
         },
         {
+            "value_range": null,
             "start": {
                 "line": 16,
                 "column": 4
@@ -290,6 +334,7 @@
             "code": "rw [cube_split] at cube_pos"
         },
         {
+            "value_range": null,
             "start": {
                 "line": 17,
                 "column": 4
@@ -317,6 +362,16 @@
             "code": "exact pos_of_mul_pos_left cube_pos (le_of_lt sq_pos)"
         },
         {
+            "value_range": {
+                "start": {
+                    "line": 18,
+                    "column": 34
+                },
+                "end": {
+                    "line": 18,
+                    "column": 45
+                }
+            },
             "start": {
                 "line": 18,
                 "column": 2
@@ -355,6 +410,16 @@
             "code": "have sq_nonneg_x : x ^ 2 \u2265 0 := sq_nonneg x"
         },
         {
+            "value_range": {
+                "start": {
+                    "line": 19,
+                    "column": 31
+                },
+                "end": {
+                    "line": 19,
+                    "column": 42
+                }
+            },
             "start": {
                 "line": 19,
                 "column": 2
@@ -393,6 +458,7 @@
             "code": "have lt_shift : x < x + 7 := by linarith"
         },
         {
+            "value_range": null,
             "start": {
                 "line": 19,
                 "column": 34
@@ -418,6 +484,16 @@
             "code": "linarith"
         },
         {
+            "value_range": {
+                "start": {
+                    "line": 20,
+                    "column": 38
+                },
+                "end": {
+                    "line": 20,
+                    "column": 73
+                }
+            },
             "start": {
                 "line": 20,
                 "column": 2
@@ -458,6 +534,7 @@
             "code": "have below_one : x / (x + 7) < 1 := (div_lt_one shift_pos).mpr lt_shift"
         },
         {
+            "value_range": null,
             "start": {
                 "line": 21,
                 "column": 2
