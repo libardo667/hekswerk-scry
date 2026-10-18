@@ -90,3 +90,46 @@ across several papers is the next step.
 The statement reader also runs on Lean v4.10 (AlphaProof's IMO statements). Helpers Lean
 generates by itself, such as the pattern-matching function behind `{(a, b) | ...}`, are left
 off the list of definitions to read: nobody wrote them.
+
+## Measuring audits: the planted-difference benchmark
+
+An audit that has never missed a planted error hasn't been measured. `scry
+statement-benchmark` works like the mutation check: it plants known differences into copies
+of real comparator statements (`benchmarks/statement-plants.json`), audits each copy and an
+unchanged one blind, and scores them from the rows the helper records with `record_verdict`.
+Copies share a name, sit in folders with meaningless names, and get identical instructions
+and tools; a test checks the helper can't tell them apart. The helper's Lean claims are
+checked against the copy's own definitions, so a planted definition shows up in Lean too. A
+plant is *caught* when a row other than "matches" points at its lines, a *dangerous miss*
+when only a "matches" row does, and *missed* otherwise.
+
+The first run is in [`docs/examples/statement-benchmark-1.md`](../examples/statement-benchmark-1.md):
+six plants in three statements (FiniteCongruenceGraph, FourRowPermanent, PlaneColoring),
+**six caught, no dangerous misses**, nine audits for $8.77. Five of the six plants weaken a
+proven statement, so a proof of the planted version exists: Lean alone could never catch them.
+
+- The subtlest plants were pinned to their exact lines: one flipped `≤` inside a
+  definition three steps from the theorem, and `p₀ < 2` loosened to `p₀ ≤ 2`.
+- On the plant that dropped the norm's 1/4 normalization, the helper had Lean prove the
+  whole planted theorem in about twenty lines, with the total-variation and marginal
+  hypotheses unused. That is Lean-checked evidence that the statement had become trivial,
+  far stronger than a reading. Lean's own triviality probe couldn't see it, because the
+  theorem has no hypotheses of its own (they sit inside `∃ p₀, ...`).
+- The unchanged copies agreed with OpenAI's scope notes. PlaneColoring's flagged that it
+  proves only the classical upper bound of seven, not the paper's main claim (no
+  five-colouring). That is correct for this statement alone; OpenAI states the main claim
+  in a separate challenge, which the helper had no way to know about.
+
+What this does **not** show yet:
+
+- Six plants, one model, one run each. Nothing about how much results vary between runs.
+- The plants were written by the same model family that audits them, so they may be
+  exactly the errors it is good at seeing. Plants from people, or real misformalizations
+  found in the past, are the stronger test.
+- A row may cover up to 25 lines, so a broad row can catch a plant without pinning it;
+  in this run every catching row was narrow, but the rule allows less.
+
+Follow-ups: tell an audit which of the paper's other results are stated in sibling
+challenges (from the scope note's links, which are already read, never its text); a
+triviality probe that looks inside a leading `∃`; tighter row spans; plants not written by
+the auditor; repeated runs.

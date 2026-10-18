@@ -127,6 +127,8 @@ scry fetch-openai-math && make openai-setup
 scry openai-challenges                     # OpenAI's formal statements (comparator challenges)
 scry openai-challenge TruffetCounterexample
 scry audit-statement TruffetCounterexample # the AI helper lines it up against the paper
+scry statement-benchmark --prepare-only    # planted-error benchmark: check the copies
+scry statement-benchmark                   # audit them blind and score (costs money)
 ```
 
 - **Anatomy, from Lean:** the hypotheses, the conclusion, and every definition from the
@@ -139,6 +141,10 @@ scry audit-statement TruffetCounterexample # the AI helper lines it up against t
   point and can have Lean check claims of its own (a special case, an example). Its report
   is labelled as its reading except where it cites a Lean check. It never sees OpenAI's own
   scope notes; the saved audit puts the note next to the report so you can judge it.
+
+- **Audits are measured:** `scry statement-benchmark` plants known differences into copies of
+  real statements and scores blind audits of them. First run: six of six caught, no audit
+  passing a planted error as "matches" ([results](docs/examples/statement-benchmark-1.md)).
 
 Details: [`docs/decisions/0005-statement-checking.md`](docs/decisions/0005-statement-checking.md).
 
