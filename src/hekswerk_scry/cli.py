@@ -453,8 +453,9 @@ def _statement_benchmark(names: list[str], out: Path, prepare_only: bool,
         return 0
     settings = load_ai_settings()
     print(f"Auditing {count} copies of {len(names)} statements with {settings.model} (effort "
-          f"{settings.effort}). Each audit is a separate conversation; expect roughly $0.50 "
-          "each.")
+          f"{settings.effort}). Each audit is a separate conversation; so far they have cost "
+          "$0.40 to $1.50 each, more when the scope note links many papers. Audits saved "
+          f"in {out} for identical copies are reused.")
     print(f"Budget: ${budget:.2f}; the run stops before an audit that could go past it.")
     summary = run_benchmark(OpenRouterClient(settings), names, out, plants, budget)
     print(summary.read_text(encoding="utf-8"))

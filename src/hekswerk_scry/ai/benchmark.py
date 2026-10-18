@@ -34,7 +34,7 @@ from hekswerk_scry.ai.audit import (
     paper_files_for,
     run_audit,
 )
-from hekswerk_scry.ai.openrouter import OpenRouterClient
+from hekswerk_scry.ai.openrouter import AIProviderError, OpenRouterClient
 from hekswerk_scry.ai.statement_tools import (
     CHECK_THEOREM,
     MATCHES,
@@ -372,7 +372,11 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
     by_challenge: dict[str, list[VariantResult]] = {}
     spent: list[float] = []
     skipped: list[str] = []
+    stopped: str | None = None
     for variant, paper_files, papers in prepared:
+        if stopped is not None:
+            skipped.append(f"{variant.item.name} ({variant.name})")
+            continue
         sha = file_sha256(variant.statement_file)
         before = earlier.get((variant.item.name, variant.name))
         if before is not None and reusable(before, sha):
@@ -384,7 +388,13 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
         else:
             toolbox = toolbox_for(variant, paper_files)
             prompt = audit_prompt(toolbox, variant.item, papers, COPY_STATUS)
-            audit = run_audit(client, toolbox, prompt, variant.item.name, papers)
+            try:
+                audit = run_audit(client, toolbox, prompt, variant.item.name, papers)
+            except AIProviderError as exc:
+                # Keep everything finished so far, and say where and why it stopped.
+                stopped = f"{variant.item.name} ({variant.name}): {exc}"
+                skipped.append(f"{variant.item.name} ({variant.name})")
+                continue
             spent.append(audit.cost_usd)
             (out / f"{variant.item.name}--{variant.name}.md").write_text(
                 audit_text(audit), encoding="utf-8")
@@ -397,10 +407,15 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
     summary = out / "summary.md"
     text = render_summary(by_challenge)
     if skipped:
-        text += ("\n## Not run (budget of $" + f"{budget_usd:.2f} reached)\n\n"
+        why = (f"the AI provider stopped the run at {stopped}" if stopped
+               else f"budget of ${budget_usd:.2f} reached")
+        text += (f"\n## Not run ({why})\n\n"
                  + "\n".join(f"- {name}" for name in skipped) + "\n")
     summary.write_text(text, encoding="utf-8")
     save_results(out, by_challenge)
+    if stopped is not None:
+        raise BenchmarkError(f"The AI provider stopped the run at {stopped}. Everything "
+                             f"finished is saved in {out}; run again to continue.")
     return summary
 
 

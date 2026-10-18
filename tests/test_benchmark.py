@@ -250,6 +250,63 @@ class TestResuming(unittest.TestCase):
                     benchmark.earlier_results(out)
 
 
+class TestStoppedRuns(unittest.TestCase):
+    def test_a_refused_audit_keeps_what_finished_and_says_why(self) -> None:
+        from unittest import mock
+
+        from hekswerk_scry.ai.openrouter import AIProviderError
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            item = openai_math.Challenge("Thing", root / "S.lean", "M", root / "M.lean", ("t",), ())
+            variants: list[tuple[benchmark.Variant, list[Path], tuple[str, ...]]] = []
+            for name in ("a", "b", "c"):
+                path = root / f"{name}.lean"
+                path.write_text(name, encoding="utf-8")
+                plant = None if name == "a" else Plant("Thing", name, "k", "w", "x", "y")
+                variants.append(
+                    (
+                        benchmark.Variant(
+                            item,
+                            plant,
+                            path,
+                            None if plant is None else (1, 1),
+                            None if plant is None else (1, 1),
+                        ),
+                        [],
+                        ("Paper",),
+                    )
+                )
+            calls: list[str] = []
+
+            def audit(
+                client: object, toolbox: object, prompt: object, name: str, papers: object
+            ) -> object:
+                calls.append(name)
+                if len(calls) == 2:
+                    raise AIProviderError("status 402: out of credits")
+                box = mock.Mock(verdicts=[row("differs", (1, 1))])
+                return mock.Mock(cost_usd=0.5, toolbox=box, turn=mock.Mock(hit_round_limit=False))
+
+            out = root / "out"
+            with (
+                mock.patch.object(benchmark, "prepare", return_value=variants),
+                mock.patch.object(benchmark, "toolbox_for"),
+                mock.patch.object(benchmark, "audit_prompt"),
+                mock.patch.object(benchmark, "audit_text", return_value="report"),
+                mock.patch.object(benchmark, "run_audit", side_effect=audit),
+                mock.patch.object(openai_math, "scope_note", return_value=None),
+                self.assertRaisesRegex(BenchmarkError, "402: out of credits"),
+            ):
+                benchmark.run_benchmark(mock.Mock(), ["Thing"], out, plants={})
+            self.assertEqual(len(calls), 2)  # nothing more was tried after the refusal
+            summary = (out / "summary.md").read_text(encoding="utf-8")
+            self.assertIn("the AI provider stopped the run at Thing (b)", summary)
+            self.assertIn("- Thing (c)", summary)
+            saved = benchmark.earlier_results(out)
+            self.assertEqual(list(saved), [("Thing", benchmark.CONTROL)])
+
+
 class TestBlindness(unittest.TestCase):
     """Nothing the helper is given may say which copy it is auditing."""
 
