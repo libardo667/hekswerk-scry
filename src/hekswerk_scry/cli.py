@@ -458,7 +458,8 @@ def _audit_statement(name: str, out: Path) -> int:
 def _serve(port: int, runs: list[str] | None, maps: list[str] | None) -> int:
     run_folders = [Path(r) for r in runs] if runs else [
         REPOSITORY / "audits", REPOSITORY / "lean-projects" / "audits"]
-    map_folders = [Path(m) for m in maps] if maps else [Path(__file__).parent / "examples"]
+    map_folders = [Path(m) for m in maps] if maps else [
+        Path(__file__).parent / "examples", REPOSITORY / "lean-projects" / "maps"]
     for folder in [Path(f) for f in (runs or []) + (maps or [])]:
         if not folder.is_dir():
             raise ValueError(f"'{folder}' is not a folder.")

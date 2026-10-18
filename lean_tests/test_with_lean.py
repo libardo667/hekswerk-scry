@@ -85,6 +85,34 @@ class TestExampleWithLean(unittest.TestCase):
         with self.assertRaises(LeanSourceMismatchError):
             check_map_with_lean(ws, proof_map)
 
+    def test_rcases_and_obtain_keep_what_their_scrutinee_uses(self) -> None:
+        ws = workspace()
+        runs = ws.root / ".scry-runs" / "tests"
+        runs.mkdir(parents=True, exist_ok=True)
+        probe = runs / "RcasesObtain.lean"
+        probe.write_text(
+            "theorem rcases_probe (P Q R : Prop) (hp : Nat → P → P) (hpq : P → Q ∨ R)\n"
+            "    (h0 : P) (hq : Q → False) (hr : R → False) : False := by\n"
+            "  let k : Nat := 1\n"
+            "  have h1 : P := hp k h0\n"
+            "  rcases hpq (by exact h1) with h | h\n"
+            "  · exact hq h\n"
+            "  · exact hr h\n\n"
+            "theorem obtain_probe (P Q : Prop) (hpq : P ∧ Q) (h : P → Q → False) : False := by\n"
+            "  obtain ⟨hp, hq⟩ := hpq\n"
+            "  exact h hp hq\n",
+            encoding="utf-8",
+        )
+        rcases_map = import_theorem(ws, probe, "rcases_probe")
+        self.assertEqual(scan_proof_map(rcases_map).unused_steps, ())
+        self.assertIn("hpq : P → Q ∨ R", rcases_map.steps["s3"].contract.assumes)
+        self.assertIn("s4", rcases_map.steps["s3"].depends_on)
+        self.assertEqual(rcases_map.steps["s4"].depends_on, ("s2-why1",))
+
+        obtain_map = import_theorem(ws, probe, "obtain_probe")
+        self.assertEqual(scan_proof_map(obtain_map).unused_steps, ())
+        self.assertIn("hpq : P ∧ Q", obtain_map.steps["s1"].contract.assumes)
+
 
 class TestStatementsWithLean(unittest.TestCase):
     def test_an_imo_statement_is_read_without_generated_helpers(self) -> None:

@@ -123,6 +123,16 @@ structure Introduced where
   fvar : FVarId
   value? : Option Expr
 
+/-- When `?m` is an internal placeholder (not another step's goal), fill in the hypotheses
+it binds and hand the remaining arguments to the term inside it. -/
+def stepThroughPending? (boundary : MVarIdSet) (m : MVarId) (args : Array Expr) :
+    MetaM (Option Expr) := do
+  let some d ← getDelayedMVarAssignment? m | return none
+  if boundary.contains d.mvarIdPending || args.size < d.fvars.size then return none
+  let pending ← instantiateMVars (mkMVar d.mvarIdPending)
+  let filled := pending.replaceFVars d.fvars args[:d.fvars.size]
+  return some (mkAppN filled args[d.fvars.size:]).headBeta
+
 /-- Find hypotheses introduced inside `e`: each delayed-assigned hole `?d a₁ … aₙ` stands for a
 goal with new hypotheses. If the argument for a hypothesis is bound by a `have`-style binder
 (`letFun v (fun h => …)`, `let h := v; …`, or `(fun h => …) v`), then `v` justifies it.
@@ -167,14 +177,10 @@ partial def introduced (boundary : MVarIdSet) (e : Expr) (stack : List (Option E
               | .bvar k => (stack.get? k).join
               | other => some other
             out := out.push { fvar := d.fvars[i]!.fvarId!, value? }
-        -- An internal placeholder (not another step's goal) can hide more hypotheses, for
-        -- example when `rw ... at h` sets later hypotheses aside and brings them back.
-        -- Look through it: fill it in and hand it the remaining arguments.
-        if !boundary.contains d.mvarIdPending && args.size > d.fvars.size then
-          let pending ← instantiateMVars (mkMVar d.mvarIdPending)
-          let filled := pending.replaceFVars d.fvars args[:d.fvars.size]
-          let rest := mkAppN filled args[d.fvars.size:]
-          out := out ++ (← introduced boundary rest.headBeta stack)
+        -- An internal placeholder (not another step's goal) can hide more of the step, for
+        -- example when `rcases` or `rw ... at h` sets hypotheses aside and brings them back.
+        if let some rest ← stepThroughPending? boundary m args then
+          out := out ++ (← introduced boundary rest stack)
     else
       out := out ++ (← introduced boundary fn stack)
     for a in args do out := out ++ (← introduced boundary a stack)
@@ -182,18 +188,27 @@ partial def introduced (boundary : MVarIdSet) (e : Expr) (stack : List (Option E
   | _ => return #[]
 
 /-- Free hypotheses used by `e`, not counting the parts inside `skip` (justification terms,
-which are accounted for separately). Arguments handed to a hole (`?d h₁ … hₙ`) only pass the
-context along to a later goal, so they are not uses either. -/
-partial def usesOutside (skip : Array Expr) (e : Expr) : Array FVarId :=
-  if skip.any (· == e) then #[] else
-  if e.isApp && e.getAppFn.isMVar then #[] else
+which are accounted for separately). Arguments handed to a boundary hole (`?d h₁ … hₙ`) only
+pass the context along to a later goal, so they are not uses either; internal placeholders are
+stepped through so uses inside `rcases`, `obtain`, and `rw ... at` are still seen. -/
+partial def usesOutside (boundary : MVarIdSet) (skip : Array Expr) (e : Expr) :
+    MetaM (Array FVarId) := do
+  if skip.any (· == e) then return #[]
+  if e.isApp && e.getAppFn.isMVar then
+    if let .mvar m := e.getAppFn then
+      if let some rest ← stepThroughPending? boundary m e.getAppArgs then
+        return ← usesOutside boundary skip rest
+    return #[]
   match e with
-  | .fvar f => #[f]
-  | .app f a => usesOutside skip f ++ usesOutside skip a
-  | .lam _ t b _ | .forallE _ t b _ => usesOutside skip t ++ usesOutside skip b
-  | .letE _ t v b _ => usesOutside skip t ++ usesOutside skip v ++ usesOutside skip b
-  | .mdata _ b | .proj _ _ b => usesOutside skip b
-  | _ => #[]
+  | .fvar f => return #[f]
+  | .app f a => return (← usesOutside boundary skip f) ++ (← usesOutside boundary skip a)
+  | .lam _ t b _ | .forallE _ t b _ =>
+    return (← usesOutside boundary skip t) ++ (← usesOutside boundary skip b)
+  | .letE _ t v b _ =>
+    return (← usesOutside boundary skip t) ++ (← usesOutside boundary skip v) ++
+      (← usesOutside boundary skip b)
+  | .mdata _ b | .proj _ _ b => usesOutside boundary skip b
+  | _ => return #[]
 
 /-- When Lean finishes a term such as `pow_pos (by linarith) 3`, it copies the finished `by`
 block into the surrounding proof, so no hole is left behind. Put the holes back: replace each
@@ -317,39 +332,47 @@ def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected
         if owner == some i && m != g then some (m, v) else none
       let term := restoreNestedHoles others (← instantiateMVars (mkMVar g))
       let found ← introduced boundary term []
-      let values := found.filterMap (·.value?)
       let allHoles := dedup (← holesIn boundary term)
+      let mut values : Array Expr := #[]
       let mut valueHoles : Array MVarId := #[]
       for item in found do
         -- A hypothesis passed along unchanged (its "value" is itself) is not a new fact.
         if item.value? == some (.fvar item.fvar) then continue
+        -- The hypothesis lives in the context of the goal(s) that follow. Temporary
+        -- bindings that vanish before the step ends, and local value definitions (`let n : ℤ`),
+        -- belong to the step itself rather than introducing a separate fact.
+        let some owner := after.find? fun a => (final.getDecl a).lctx.contains item.fvar
+          | continue
         if let some v := item.value? then
+          let ownerDecl := final.getDecl owner
+          let some ldecl := ownerDecl.lctx.find? item.fvar | continue
+          setMCtx final
+          let isProp ← withLCtx ownerDecl.lctx ownerDecl.localInstances do
+            Meta.isProp (← instantiateMVars ldecl.type)
+          setMCtx erased
+          if !isProp then continue
+          values := values.push v
           let vh := dedup (← holesIn boundary v)
           valueHoles := valueHoles ++ vh
-          let vUses := dedup (usesOutside #[] v)
+          let vUses := dedup (← usesOutside boundary #[] v)
           setMCtx final
           let (_, s') ← (do
               for h in vh do recordGoal h
               for f in vUses do recordHyp g f (rootLocals.contains f)
-              for h in vh do recordGoal h).run seen
+              recordHyp owner item.fvar false).run seen
           seen := s'
-          -- The hypothesis lives in the context of the goal(s) that follow.
-          let owner? := after.find? fun a => (final.getDecl a).lctx.contains item.fvar
-          if let some owner := owner? then
-            let (_, s'') ← (recordHyp owner item.fvar false).run seen
-            seen := s''
-            -- A hypothesis passed along unchanged under a new identity is the same fact.
-            let aliasOf := match v with
-              | .fvar f => toJson (fvarKey f)
-              | _ => Json.null
-            introsJson := introsJson.push <| Json.mkObj [
-              ("hypothesis", fvarKey item.fvar),
-              ("alias_of", aliasOf),
-              ("value_holes", toJson (vh.map mvarKey)),
-              ("uses", toJson (vUses.map fvarKey))]
+          -- A hypothesis passed along unchanged under a new identity is the same fact.
+          let aliasOf := match v with
+            | .fvar f => toJson (fvarKey f)
+            | _ => Json.null
+          introsJson := introsJson.push <| Json.mkObj [
+            ("hypothesis", fvarKey item.fvar),
+            ("alias_of", aliasOf),
+            ("value_holes", toJson (vh.map mvarKey)),
+            ("uses", toJson (vUses.map fvarKey))]
           setMCtx erased
       let bodyHoles := allHoles.filter fun h => !valueHoles.contains h
-      let uses := dedup (usesOutside values term)
+      let uses := dedup (← usesOutside boundary values term)
       setMCtx final
       let (_, s') ← (do
           recordGoal g
