@@ -1,0 +1,27 @@
+# Copy to ~/.config/systemd/user/, fill in the Access settings, then:
+#   systemctl --user enable --now hekswerk-scry-serve
+# The workbench only reads: the project is mounted read-only for it.
+[Unit]
+Description=Scry's read-only workbench on 127.0.0.1:8765
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projects/personal-projects/hekswerk-scry
+Environment="PYTHONDONTWRITEBYTECODE=1"
+Environment="PYTHONPATH=%h/projects/personal-projects/hekswerk-scry/src"
+ExecStart=%h/projects/personal-projects/hekswerk-scry/.venv/bin/python -m hekswerk_scry serve --port 8765 --public-host scry.hekswerk.com --access-team <team> --access-audience <access-application-aud-tag>
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+
+[Install]
+WantedBy=default.target

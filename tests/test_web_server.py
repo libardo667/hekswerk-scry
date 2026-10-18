@@ -11,7 +11,10 @@ from pathlib import Path
 from typing import Any
 
 from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, RunLog
+from hekswerk_scry.web.access import TOKEN_HEADER
 from hekswerk_scry.web.server import Library, NotAllowedError, Source, serve
+from tests.test_web_access import public_access
+from tests.test_web_access import token as sign_in
 
 EXAMPLES = Path(__file__).parents[1] / "src" / "hekswerk_scry" / "examples"
 
@@ -119,9 +122,11 @@ class TestServer(WorkbenchCase):
         self.addCleanup(self.server.server_close)
         self.addCleanup(self.server.shutdown)
 
-    def get(self, path: str, host: str | None = None) -> tuple[int, dict[str, str], bytes]:
+    def get(self, path: str, host: str | None = None,
+            extra: dict[str, str] | None = None) -> tuple[int, dict[str, str], bytes]:
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
-        connection.request("GET", path, headers={"Host": host or f"127.0.0.1:{self.port}"})
+        connection.request("GET", path,
+                           headers={"Host": host or f"127.0.0.1:{self.port}", **(extra or {})})
         response = connection.getresponse()
         body = response.read()
         connection.close()
@@ -167,6 +172,56 @@ class TestServer(WorkbenchCase):
                 self.assertIn(status, (400, 404))
                 self.assertNotIn("outside every folder", json.dumps(data))
                 self.assertTrue(data["error"])
+
+
+class TestServerWithPublicName(TestServer):
+    """Everything TestServer checks still holds, and the public name needs a sign-in."""
+
+    def setUp(self) -> None:
+        WorkbenchCase.setUp(self)
+        self.access, _, _ = public_access()
+        self.server = serve(self.library, 0, self.access)
+        self.port = self.server.server_address[1]
+        thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(self.server.server_close)
+        self.addCleanup(self.server.shutdown)
+
+    def test_the_public_name_needs_a_valid_sign_in(self) -> None:
+        public = "scry.hekswerk.com"
+        status, _, body = self.get("/api/overview", host=public)
+        self.assertEqual(status, 403)
+        self.assertIn(b"Sign in through Cloudflare Access", body)
+        expired = sign_in(claims={"exp": 0})
+        status, _, body = self.get("/api/overview", host=public, extra={TOKEN_HEADER: expired})
+        self.assertEqual(status, 403)
+        self.assertNotIn(b"runs", body)
+        status, _, body = self.get("/api/overview", host=public, extra={TOKEN_HEADER: sign_in()})
+        self.assertEqual(status, 200)
+        self.assertIn(b"runs", body)
+        status, _, _ = self.get("/", host="SCRY.hekswerk.com", extra={TOKEN_HEADER: sign_in()})
+        self.assertEqual(status, 200)
+
+    def test_a_sign_in_opens_only_the_public_name(self) -> None:
+        for host in ("evil.example", "scry.hekswerk.com.evil.example", "workbench.hekswerk.com"):
+            with self.subTest(host):
+                status, _, _ = self.get("/api/overview", host=host,
+                                        extra={TOKEN_HEADER: sign_in()})
+                self.assertEqual(status, 403)
+
+
+class TestServerWithoutPublicName(WorkbenchCase):
+    def test_a_sign_in_means_nothing_when_no_public_name_is_set_up(self) -> None:
+        server = serve(self.library, 0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=10)
+        connection.request("GET", "/api/overview",
+                           headers={"Host": "scry.hekswerk.com", TOKEN_HEADER: sign_in()})
+        self.assertEqual(connection.getresponse().status, 403)
+        connection.close()
 
 
 if __name__ == "__main__":

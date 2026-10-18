@@ -1,0 +1,23 @@
+# Copy to ~/.config/systemd/user/, then: systemctl --user enable --now hekswerk-scry-cloudflared
+[Unit]
+Description=Cloudflare Tunnel for Scry's workbench (scry.hekswerk.com)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/cloudflared --no-autoupdate --config %h/.cloudflared/hekswerk-scry.yml tunnel run
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+
+[Install]
+WantedBy=default.target

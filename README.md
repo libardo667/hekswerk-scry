@@ -159,7 +159,9 @@ who produced it; the helper's rows lighting up the Lean lines they are about), r
 results, and look at proof maps drawn as steps and arrows. It starts nothing, spends nothing
 and changes nothing. Besides the bundled example, it shows the proof maps saved in
 `lean-projects/maps/` (for example `scry lean-import File.lean Name -o lean-projects/maps/name.json`);
-`--maps DIR` shows another folder instead. Details: [`docs/decisions/0007-the-workbench.md`](docs/decisions/0007-the-workbench.md).
+`--maps DIR` shows another folder instead. It can also be reached from a phone at a public
+name behind Cloudflare Access (`--public-host`, `--access-team`, `--access-audience`; set-up in
+the decision record). Details: [`docs/decisions/0007-the-workbench.md`](docs/decisions/0007-the-workbench.md).
 
 ## Lean checks that cost seconds
 

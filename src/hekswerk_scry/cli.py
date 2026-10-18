@@ -105,6 +105,7 @@ from hekswerk_scry.text_reports import (
     render_turn,
     render_wiring_report,
 )
+from hekswerk_scry.web.access import PublicAccess
 from hekswerk_scry.web.server import Library, Source, serve
 
 
@@ -144,7 +145,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "openai-challenge":
             return _openai_challenge(args.name, not args.no_probes)
         if args.command == "serve":
-            return _serve(args.port, args.runs, args.maps)
+            return _serve(args.port, args.runs, args.maps, args.public_host, args.access_team,
+                          args.access_audience)
         if args.command == "audit-statement":
             return _audit_statement(args.name, Path(args.out))
         if args.command == "statement-benchmark":
@@ -226,7 +228,16 @@ def _build_parser() -> argparse.ArgumentParser:
                        help="a folder of audit runs to show (default: audits/ and "
                        "lean-projects/audits/); repeat for more")
     serve.add_argument("--maps", action="append", default=None, metavar="DIR",
-                       help="a folder of proof maps to show (default: the bundled examples)")
+                       help="a folder of proof maps to show (default: the bundled examples "
+                       "and lean-projects/maps/)")
+    serve.add_argument("--public-host", metavar="NAME",
+                       help="also answer this public name (such as scry.hekswerk.com), carried "
+                       "here by a Cloudflare Tunnel, for people signed in through Cloudflare "
+                       "Access; needs --access-team and --access-audience")
+    serve.add_argument("--access-team", metavar="TEAM",
+                       help="the Cloudflare Access team name (TEAM.cloudflareaccess.com)")
+    serve.add_argument("--access-audience", metavar="AUD",
+                       help="the Access application's AUD tag")
     bench = commands.add_parser("statement-benchmark",
                                 help="score statement audits on copies with planted differences")
     bench.add_argument("names", nargs="*", help="challenges to use (default: every one with "
@@ -455,7 +466,15 @@ def _audit_statement(name: str, out: Path) -> int:
     return 0
 
 
-def _serve(port: int, runs: list[str] | None, maps: list[str] | None) -> int:
+def _serve(port: int, runs: list[str] | None, maps: list[str] | None,
+           public_host: str | None, access_team: str | None,
+           access_audience: str | None) -> int:
+    access_settings = (public_host, access_team, access_audience)
+    if any(access_settings) and not all(access_settings):
+        raise ValueError("To answer a public name, give all three of --public-host, "
+                         "--access-team and --access-audience.")
+    access = (PublicAccess(public_host, access_team, access_audience)
+              if public_host and access_team and access_audience else None)
     run_folders = [Path(r) for r in runs] if runs else [
         REPOSITORY / "audits", REPOSITORY / "lean-projects" / "audits"]
     map_folders = [Path(m) for m in maps] if maps else [
@@ -465,8 +484,11 @@ def _serve(port: int, runs: list[str] | None, maps: list[str] | None) -> int:
             raise ValueError(f"'{folder}' is not a folder.")
     library = Library([Source("runs", f) for f in run_folders] +
                       [Source("maps", f) for f in map_folders])
-    server = serve(library, port)
+    server = serve(library, port, access)
     print(f"Scry workbench: http://127.0.0.1:{port}/  (read-only; Ctrl-C to stop)")
+    if access is not None:
+        print(f"  also https://{access.host}/ for people signed in through Cloudflare Access "
+              f"({access.issuer})")
     for source in library.sources:
         shown = "" if source.root.is_dir() else "  (not there yet)"
         print(f"  {'audits' if source.kind == 'runs' else 'proof maps'}: {source.root}{shown}")

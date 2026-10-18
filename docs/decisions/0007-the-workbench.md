@@ -41,6 +41,27 @@ request asks for. Pages are served with a Content-Security-Policy that allows on
 workbench's own scripts and styles. Tests run a real server and check each refusal, and the
 mutation check confirms they would notice each safeguard going missing.
 
+**From a phone: one public name, behind Cloudflare Access.** The owner wanted to follow along
+away from the computer. The server still listens on 127.0.0.1 only. A Cloudflare Tunnel run
+by `cloudflared` on the same machine carries requests for `scry.hekswerk.com` to it, after
+Cloudflare Access has signed the person in with Google; one Allow policy names the owner's
+email. That is the same arrangement as the owner's grimoire workbench, with a tunnel of its
+own. Scry answers that one name only when the request carries exactly one Access token that
+it has checked itself (`web/access.py`): an RS256 signature against the team's published
+keys (fetched from Cloudflare, again when an unknown key appears, at most once a minute), this
+application's audience tag, this team as issuer, type `app`, and a current validity window
+with 30 seconds of clock skew. The tunnel is also told to require the token
+(`originRequest.access`), so a mistake in either place alone doesn't open the door. The
+signature check is held to OpenSSL: a test key and signature made by `openssl` are accepted,
+and the test signer reproduces OpenSSL's signature byte for byte. Templates for the tunnel
+and the two user services are in `ops/cloudflare/`.
+
+Setting it up: create the Access application (self-hosted, `scry.hekswerk.com`, Google,
+one Allow policy for one email); `cloudflared tunnel create hekswerk-scry`;
+`cloudflared tunnel route dns hekswerk-scry scry.hekswerk.com`; fill in the templates; then
+`systemctl --user enable --now hekswerk-scry-serve hekswerk-scry-cloudflared`. Cloudflare
+sees the traffic in transit; the workbench shows proofs, audits and reports, never keys.
+
 ## Not yet
 
 - Starting work from the browser (audits, benchmarks, Lean checks, cards).

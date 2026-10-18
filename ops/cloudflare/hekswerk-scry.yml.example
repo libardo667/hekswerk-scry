@@ -1,0 +1,18 @@
+# Cloudflare Tunnel for Scry's workbench. Copy to ~/.cloudflared/hekswerk-scry.yml and fill in
+# the tunnel ID, team name and Access AUD tag. See docs/decisions/0007-the-workbench.md.
+tunnel: <tunnel-id>
+credentials-file: /home/<you>/.cloudflared/<tunnel-id>.json
+
+ingress:
+  - hostname: scry.hekswerk.com
+    service: http://127.0.0.1:8765
+    originRequest:
+      httpHostHeader: scry.hekswerk.com
+      # cloudflared refuses requests without a valid Access token for this application.
+      # Scry checks the token again itself.
+      access:
+        required: true
+        teamName: <team>
+        audTag:
+          - <access-application-aud-tag>
+  - service: http_status:404

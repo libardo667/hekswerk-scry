@@ -6,7 +6,9 @@ calls, no file writes. Starting work from the browser can come later.
 
 Safety:
 - It listens on 127.0.0.1 only, and refuses requests whose Host header names anything but
-  this machine, so a web page elsewhere can't reach it through a DNS trick.
+  this machine, so a web page elsewhere can't reach it through a DNS trick. The one
+  exception, when it is set up, is a public name carried here by a Cloudflare Tunnel; those
+  requests are answered only with a valid Cloudflare Access sign-in (see `access.py`).
 - Every file it serves is named by a token, "<source>:<path inside it>", that must resolve
   to a file of the expected kind inside one of the folders it was given. Anything else is
   refused, with a plain message.
@@ -27,6 +29,7 @@ from urllib.parse import parse_qs, urlparse
 from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, read_events
 from hekswerk_scry.checker import check_wiring, scan_proof_map
 from hekswerk_scry.files import FORMAT_NAME, proof_map_from_dict, proof_map_to_dict
+from hekswerk_scry.web.access import TOKEN_HEADER, PublicAccess
 
 STATIC = Path(__file__).parent / "static"
 RESULTS_FILE = "results.json"
@@ -197,7 +200,8 @@ class Library:
         }
 
 
-def make_handler(library: Library) -> type[BaseHTTPRequestHandler]:
+def make_handler(library: Library, access: PublicAccess | None = None,
+                 ) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
         server_version = "ScryWorkbench"
 
@@ -205,9 +209,9 @@ def make_handler(library: Library) -> type[BaseHTTPRequestHandler]:
             pass  # quiet: the terminal is for the person
 
         def do_GET(self) -> None:
-            if not _HOST.match(self.headers.get("Host", "")):
-                self._send(HTTPStatus.FORBIDDEN, {"error": "This workbench only answers "
-                                                  "requests addressed to this machine."})
+            refusal = self._refusal()
+            if refusal is not None:
+                self._send(HTTPStatus.FORBIDDEN, {"error": refusal})
                 return
             url = urlparse(self.path)
             query = {k: v[0] for k, v in parse_qs(url.query).items()}
@@ -220,6 +224,15 @@ def make_handler(library: Library) -> type[BaseHTTPRequestHandler]:
                 self._send(HTTPStatus.NOT_FOUND, {"error": str(exc)})
             except (ValueError, OSError) as exc:
                 self._send(HTTPStatus.BAD_REQUEST, {"error": f"Couldn't read that: {exc}"})
+
+        def _refusal(self) -> str | None:
+            hosts = self.headers.get_all("Host") or []
+            host = hosts[0].strip().casefold() if len(hosts) == 1 else ""
+            if _HOST.match(host):
+                return None
+            if access is not None and host == access.host:
+                return access.refusal(self.headers.get_all(TOKEN_HEADER) or [])
+            return "This workbench only answers requests addressed to this machine."
 
         def _api(self, name: str, query: dict[str, str]) -> dict[str, Any]:
             if name == "overview":
@@ -268,5 +281,6 @@ def make_handler(library: Library) -> type[BaseHTTPRequestHandler]:
     return Handler
 
 
-def serve(library: Library, port: int) -> ThreadingHTTPServer:
-    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(library))
+def serve(library: Library, port: int, access: PublicAccess | None = None,
+          ) -> ThreadingHTTPServer:
+    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(library, access))

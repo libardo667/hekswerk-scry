@@ -79,6 +79,11 @@ conversation history is append-only.
   writes a file. It listens on 127.0.0.1 only, refuses foreign `Host` headers, and serves
   only files named by tokens inside the folders it was given. Never put text from a run
   log, paper or model reply into the page as HTML (no `innerHTML`); build DOM nodes.
+- The workbench may answer one public name (scry.hekswerk.com, through a Cloudflare
+  Tunnel), and only for requests with a Cloudflare Access token that `web/access.py` has
+  checked itself: signature against the team's published keys, audience, issuer, type and
+  validity window. Never trust the tunnel alone, never add a second public name or another
+  way in, and never bind to anything but 127.0.0.1.
 - Audits write an append-only run log (`ai/run_log.py`). Watching must never change what
   the model sees.
 
