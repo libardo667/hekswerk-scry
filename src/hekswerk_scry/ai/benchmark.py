@@ -61,6 +61,8 @@ COPY_CLAIM_NOTE = (
     "available; the theorems it states are not, since they have no proof here."
 )
 
+DEFAULT_BUDGET_USD = 6.0
+
 CAUGHT = "caught"
 DANGEROUS_MISS = "dangerous miss"
 MISSED = "missed"
@@ -290,16 +292,29 @@ def prepare(names: list[str], plants: dict[str, list[Plant]]) -> list[tuple[Vari
     return prepared
 
 
+def can_afford(spent: list[float], budget_usd: float) -> bool:
+    """Whether another audit fits: what's spent, plus the dearest audit so far, stays within
+    the budget. Before the first audit, nothing is known, so it may start."""
+    return not spent or sum(spent) + max(spent) <= budget_usd
+
+
 def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
-                  plants: dict[str, list[Plant]] | None = None) -> Path:
+                  plants: dict[str, list[Plant]] | None = None,
+                  budget_usd: float = DEFAULT_BUDGET_USD) -> Path:
     plants = plants if plants is not None else load_plants()
     prepared = prepare(names, plants)
     out.mkdir(parents=True, exist_ok=True)
     by_challenge: dict[str, list[VariantResult]] = {}
+    spent: list[float] = []
+    skipped: list[str] = []
     for variant, paper_files, papers in prepared:
+        if not can_afford(spent, budget_usd):
+            skipped.append(f"{variant.item.name} ({variant.name})")
+            continue
         toolbox = toolbox_for(variant, paper_files)
         prompt = audit_prompt(toolbox, variant.item, papers, COPY_STATUS)
         audit = run_audit(client, toolbox, prompt, variant.item.name, papers)
+        spent.append(audit.cost_usd)
         (out / f"{variant.item.name}--{variant.name}.md").write_text(
             audit_text(audit), encoding="utf-8")
         by_challenge.setdefault(variant.item.name, []).append(VariantResult(variant, audit))
@@ -307,7 +322,11 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
     for results in by_challenge.values():
         score_challenge(results)
     summary = out / "summary.md"
-    summary.write_text(render_summary(by_challenge), encoding="utf-8")
+    text = render_summary(by_challenge)
+    if skipped:
+        text += ("\n## Not run (budget of $" + f"{budget_usd:.2f} reached)\n\n"
+                 + "\n".join(f"- {name}" for name in skipped) + "\n")
+    summary.write_text(text, encoding="utf-8")
     _save_rows(out, by_challenge)
     return summary
 

@@ -189,6 +189,19 @@ class TestScoring(unittest.TestCase):
         self.assertFalse(control_flagged([row("differs", (8, 9))], (7, 7)))
 
 
+class TestBudget(unittest.TestCase):
+    def test_an_audit_starts_only_if_the_dearest_one_so_far_still_fits(self) -> None:
+        self.assertTrue(benchmark.can_afford([], 1.0))
+        self.assertTrue(benchmark.can_afford([0.5, 1.0], 3.0))
+        self.assertFalse(benchmark.can_afford([0.5, 1.0], 2.49))
+        # Invariant: whenever it says yes, the spend stays within the budget if the next
+        # audit costs no more than the dearest so far.
+        for spent in ([0.2], [0.4, 0.9, 0.3], [1.5, 1.5]):
+            for budget in (1.0, 2.0, 3.5, 5.0):
+                if benchmark.can_afford(spent, budget):
+                    self.assertLessEqual(sum(spent) + max(spent), budget)
+
+
 class TestBlindness(unittest.TestCase):
     """Nothing the helper is given may say which copy it is auditing."""
 

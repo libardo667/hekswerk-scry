@@ -42,7 +42,13 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from hekswerk_scry.ai.audit import audit_challenge, save_audit
-from hekswerk_scry.ai.benchmark import BenchmarkError, load_plants, prepare, run_benchmark
+from hekswerk_scry.ai.benchmark import (
+    DEFAULT_BUDGET_USD,
+    BenchmarkError,
+    load_plants,
+    prepare,
+    run_benchmark,
+)
 from hekswerk_scry.ai.openrouter import AIProviderError, OpenRouterClient
 from hekswerk_scry.ai.session import Session
 from hekswerk_scry.ai.tools import Toolbox
@@ -133,7 +139,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "audit-statement":
             return _audit_statement(args.name, Path(args.out))
         if args.command == "statement-benchmark":
-            return _statement_benchmark(args.names, Path(args.out), args.prepare_only)
+            return _statement_benchmark(args.names, Path(args.out), args.prepare_only,
+                                        args.budget)
     except (ValueError, LeanSetupError, LeanImportError, LeanWorkerError, BenchmarkError,
             AlphaProofFetchError,
             AIProviderError, StatementError, openai_math.OpenAIMathError) as exc:
@@ -209,6 +216,9 @@ def _build_parser() -> argparse.ArgumentParser:
                        "plants in benchmarks/statement-plants.json)")
     bench.add_argument("--prepare-only", action="store_true",
                        help="make and Lean-check the copies, without calling the model")
+    bench.add_argument("--budget", type=float, default=DEFAULT_BUDGET_USD,
+                       help="stop before an audit that could take the spend past this many "
+                       f"US dollars (default {DEFAULT_BUDGET_USD:.2f})")
     bench.add_argument("--out", default="audits/benchmark",
                        help="folder for the results (default: audits/benchmark)")
     return parser
@@ -428,7 +438,8 @@ def _audit_statement(name: str, out: Path) -> int:
     return 0
 
 
-def _statement_benchmark(names: list[str], out: Path, prepare_only: bool) -> int:
+def _statement_benchmark(names: list[str], out: Path, prepare_only: bool,
+                         budget: float) -> int:
     plants = load_plants()
     names = names or sorted(plants)
     count = sum(1 + len(plants.get(n, [])) for n in names)
@@ -444,7 +455,8 @@ def _statement_benchmark(names: list[str], out: Path, prepare_only: bool) -> int
     print(f"Auditing {count} copies of {len(names)} statements with {settings.model} (effort "
           f"{settings.effort}). Each audit is a separate conversation; expect roughly $0.50 "
           "each.")
-    summary = run_benchmark(OpenRouterClient(settings), names, out, plants)
+    print(f"Budget: ${budget:.2f}; the run stops before an audit that could go past it.")
+    summary = run_benchmark(OpenRouterClient(settings), names, out, plants, budget)
     print(summary.read_text(encoding="utf-8"))
     print(f"\nSaved in {summary.parent}.")
     return 0
