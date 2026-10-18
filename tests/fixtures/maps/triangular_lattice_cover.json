@@ -1,0 +1,1330 @@
+{
+  "format": "hekswerk-scry/proof-map",
+  "version": 1,
+  "map_id": "lean-OAI.Problem160.triangular_lattice_cover",
+  "title": "OAI.Problem160.triangular_lattice_cover (Covering.lean)",
+  "starting_facts": [],
+  "goal": "Goal 1: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+  "goal_step_id": "s1",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "let s : ℝ := Real.sqrt 3",
+      "assumes": [
+        "Goal 2: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 1: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s2"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "let s : ℝ := Real.sqrt 3"
+      },
+      "lean_range": {
+        "start_line": 51,
+        "start_column": 2,
+        "end_line": 51,
+        "end_column": 26
+      },
+      "lean_value_range": {
+        "start_line": 51,
+        "start_column": 15,
+        "end_line": 51,
+        "end_column": 26
+      }
+    },
+    {
+      "id": "s2",
+      "title": "have hs : 0 < s := Real.sqrt_pos.2 (by norm_num)",
+      "assumes": [
+        "Goal 4: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 2: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s4"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hs : 0 < s := Real.sqrt_pos.2 (by norm_num)"
+      },
+      "lean_range": {
+        "start_line": 52,
+        "start_column": 2,
+        "end_line": 52,
+        "end_column": 50
+      },
+      "lean_value_range": {
+        "start_line": 52,
+        "start_column": 21,
+        "end_line": 52,
+        "end_column": 50
+      }
+    },
+    {
+      "id": "s2-why1",
+      "title": "Why hs holds (from step s2)",
+      "assumes": [
+        "Goal 3: 0 < 3"
+      ],
+      "proves": "hs : 0 < s",
+      "depends_on": [
+        "s3"
+      ],
+      "views": {
+        "math": "0 < s",
+        "code": "have hs : 0 < s := Real.sqrt_pos.2 (by norm_num)"
+      },
+      "lean_introduced_by": "s2"
+    },
+    {
+      "id": "s3",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 3: 0 < 3",
+      "views": {
+        "math": "⊢ 0 < 3",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 52,
+        "start_column": 41,
+        "end_line": 52,
+        "end_column": 49
+      }
+    },
+    {
+      "id": "s4",
+      "title": "have hsq : s ^ 2 = 3 := Real.sq_sqrt (by norm_num)",
+      "assumes": [
+        "Goal 6: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 4: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s6"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hsq : s ^ 2 = 3 := Real.sq_sqrt (by norm_num)"
+      },
+      "lean_range": {
+        "start_line": 53,
+        "start_column": 2,
+        "end_line": 53,
+        "end_column": 52
+      },
+      "lean_value_range": {
+        "start_line": 53,
+        "start_column": 26,
+        "end_line": 53,
+        "end_column": 52
+      }
+    },
+    {
+      "id": "s4-why1",
+      "title": "Why hsq holds (from step s4)",
+      "assumes": [
+        "Goal 5: 0 ≤ 3"
+      ],
+      "proves": "hsq : s ^ 2 = 3",
+      "depends_on": [
+        "s5"
+      ],
+      "views": {
+        "math": "s ^ 2 = 3",
+        "code": "have hsq : s ^ 2 = 3 := Real.sq_sqrt (by norm_num)"
+      },
+      "lean_introduced_by": "s4"
+    },
+    {
+      "id": "s5",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 5: 0 ≤ 3",
+      "views": {
+        "math": "⊢ 0 ≤ 3",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 53,
+        "start_column": 43,
+        "end_line": 53,
+        "end_column": 51
+      }
+    },
+    {
+      "id": "s6",
+      "title": "let n : ℤ := ⌊2 * y / s⌋",
+      "assumes": [
+        "Goal 7: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 6: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s7"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "let n : ℤ := ⌊2 * y / s⌋"
+      },
+      "lean_range": {
+        "start_line": 54,
+        "start_column": 2,
+        "end_line": 54,
+        "end_column": 26
+      },
+      "lean_value_range": {
+        "start_line": 54,
+        "start_column": 15,
+        "end_line": 54,
+        "end_column": 26
+      }
+    },
+    {
+      "id": "s7",
+      "title": "let m : ℤ := ⌊x - (n : ℝ) / 2⌋",
+      "assumes": [
+        "Goal 8: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 7: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s8"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "let m : ℤ := ⌊x - (n : ℝ) / 2⌋"
+      },
+      "lean_range": {
+        "start_line": 55,
+        "start_column": 2,
+        "end_line": 55,
+        "end_column": 32
+      },
+      "lean_value_range": {
+        "start_line": 55,
+        "start_column": 15,
+        "end_line": 55,
+        "end_column": 32
+      }
+    },
+    {
+      "id": "s8",
+      "title": "let u : ℝ := x - ((m : ℝ) + (n : ℝ) / 2)",
+      "assumes": [
+        "Goal 9: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 8: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s9"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "let u : ℝ := x - ((m : ℝ) + (n : ℝ) / 2)"
+      },
+      "lean_range": {
+        "start_line": 56,
+        "start_column": 2,
+        "end_line": 56,
+        "end_column": 42
+      },
+      "lean_value_range": {
+        "start_line": 56,
+        "start_column": 15,
+        "end_line": 56,
+        "end_column": 42
+      }
+    },
+    {
+      "id": "s9",
+      "title": "let v : ℝ := y - s * (n : ℝ) / 2",
+      "assumes": [
+        "Goal 10: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 9: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s10"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "let v : ℝ := y - s * (n : ℝ) / 2"
+      },
+      "lean_range": {
+        "start_line": 57,
+        "start_column": 2,
+        "end_line": 57,
+        "end_column": 34
+      },
+      "lean_value_range": {
+        "start_line": 57,
+        "start_column": 15,
+        "end_line": 57,
+        "end_column": 34
+      }
+    },
+    {
+      "id": "s10",
+      "title": "have hn0 : (n : ℝ) ≤ 2 * y / s := Int.floor_le _",
+      "assumes": [
+        "Goal 11: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 10: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s11"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hn0 : (n : ℝ) ≤ 2 * y / s := Int.floor_le _"
+      },
+      "lean_range": {
+        "start_line": 58,
+        "start_column": 2,
+        "end_line": 58,
+        "end_column": 50
+      },
+      "lean_value_range": {
+        "start_line": 58,
+        "start_column": 36,
+        "end_line": 58,
+        "end_column": 50
+      }
+    },
+    {
+      "id": "s10-why1",
+      "title": "Why hn0 holds (from step s10)",
+      "assumes": [],
+      "proves": "hn0 : ↑n ≤ 2 * y / s",
+      "views": {
+        "math": "↑n ≤ 2 * y / s",
+        "code": "have hn0 : (n : ℝ) ≤ 2 * y / s := Int.floor_le _"
+      },
+      "lean_introduced_by": "s10"
+    },
+    {
+      "id": "s11",
+      "title": "have hn1 : 2 * y / s < (n : ℝ) + 1 := Int.lt_floor_add_one _",
+      "assumes": [
+        "Goal 12: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 11: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s12"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hn1 : 2 * y / s < (n : ℝ) + 1 := Int.lt_floor_add_one _"
+      },
+      "lean_range": {
+        "start_line": 59,
+        "start_column": 2,
+        "end_line": 59,
+        "end_column": 62
+      },
+      "lean_value_range": {
+        "start_line": 59,
+        "start_column": 40,
+        "end_line": 59,
+        "end_column": 62
+      }
+    },
+    {
+      "id": "s11-why1",
+      "title": "Why hn1 holds (from step s11)",
+      "assumes": [],
+      "proves": "hn1 : 2 * y / s < ↑n + 1",
+      "views": {
+        "math": "2 * y / s < ↑n + 1",
+        "code": "have hn1 : 2 * y / s < (n : ℝ) + 1 := Int.lt_floor_add_one _"
+      },
+      "lean_introduced_by": "s11"
+    },
+    {
+      "id": "s12",
+      "title": "have hm0 : (m : ℝ) ≤ x - (n : ℝ) / 2 := Int.floor_le _",
+      "assumes": [
+        "Goal 13: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 12: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s13"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hm0 : (m : ℝ) ≤ x - (n : ℝ) / 2 := Int.floor_le _"
+      },
+      "lean_range": {
+        "start_line": 60,
+        "start_column": 2,
+        "end_line": 60,
+        "end_column": 56
+      },
+      "lean_value_range": {
+        "start_line": 60,
+        "start_column": 42,
+        "end_line": 60,
+        "end_column": 56
+      }
+    },
+    {
+      "id": "s12-why1",
+      "title": "Why hm0 holds (from step s12)",
+      "assumes": [],
+      "proves": "hm0 : ↑m ≤ x - ↑n / 2",
+      "views": {
+        "math": "↑m ≤ x - ↑n / 2",
+        "code": "have hm0 : (m : ℝ) ≤ x - (n : ℝ) / 2 := Int.floor_le _"
+      },
+      "lean_introduced_by": "s12"
+    },
+    {
+      "id": "s13",
+      "title": "have hm1 : x - (n : ℝ) / 2 < (m : ℝ) + 1 := Int.lt_floor_add_one _",
+      "assumes": [
+        "Goal 14: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 13: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s14"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hm1 : x - (n : ℝ) / 2 < (m : ℝ) + 1 := Int.lt_floor_add_one _"
+      },
+      "lean_range": {
+        "start_line": 61,
+        "start_column": 2,
+        "end_line": 61,
+        "end_column": 68
+      },
+      "lean_value_range": {
+        "start_line": 61,
+        "start_column": 46,
+        "end_line": 61,
+        "end_column": 68
+      }
+    },
+    {
+      "id": "s13-why1",
+      "title": "Why hm1 holds (from step s13)",
+      "assumes": [],
+      "proves": "hm1 : x - ↑n / 2 < ↑m + 1",
+      "views": {
+        "math": "x - ↑n / 2 < ↑m + 1",
+        "code": "have hm1 : x - (n : ℝ) / 2 < (m : ℝ) + 1 := Int.lt_floor_add_one _"
+      },
+      "lean_introduced_by": "s13"
+    },
+    {
+      "id": "s14",
+      "title": "have hu0 : 0 ≤ u := by dsimp [u]; linarith",
+      "assumes": [
+        "Goal 17: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 14: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s17"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hu0 : 0 ≤ u := by dsimp [u]; linarith"
+      },
+      "lean_range": {
+        "start_line": 62,
+        "start_column": 2,
+        "end_line": 62,
+        "end_column": 44
+      },
+      "lean_value_range": {
+        "start_line": 62,
+        "start_column": 22,
+        "end_line": 62,
+        "end_column": 44
+      }
+    },
+    {
+      "id": "s14-why1",
+      "title": "Why hu0 holds (from step s14)",
+      "assumes": [
+        "Goal 15: 0 ≤ u"
+      ],
+      "proves": "hu0 : 0 ≤ u",
+      "depends_on": [
+        "s15"
+      ],
+      "views": {
+        "math": "0 ≤ u",
+        "code": "have hu0 : 0 ≤ u := by dsimp [u]; linarith"
+      },
+      "lean_introduced_by": "s14"
+    },
+    {
+      "id": "s15",
+      "title": "dsimp [u]",
+      "assumes": [
+        "Goal 16: 0 ≤ x - (↑m + ↑n / 2)"
+      ],
+      "proves": "Goal 15: 0 ≤ u",
+      "depends_on": [
+        "s16"
+      ],
+      "views": {
+        "math": "⊢ 0 ≤ u",
+        "code": "dsimp [u]"
+      },
+      "lean_range": {
+        "start_line": 62,
+        "start_column": 25,
+        "end_line": 62,
+        "end_column": 34
+      }
+    },
+    {
+      "id": "s16",
+      "title": "linarith",
+      "assumes": [
+        "hm0 : ↑m ≤ x - ↑n / 2"
+      ],
+      "proves": "Goal 16: 0 ≤ x - (↑m + ↑n / 2)",
+      "depends_on": [
+        "s12-why1"
+      ],
+      "views": {
+        "math": "⊢ 0 ≤ x - (↑m + ↑n / 2)",
+        "code": "linarith"
+      },
+      "lean_range": {
+        "start_line": 62,
+        "start_column": 36,
+        "end_line": 62,
+        "end_column": 44
+      }
+    },
+    {
+      "id": "s17",
+      "title": "have hu1 : u ≤ 1 := by dsimp [u]; linarith",
+      "assumes": [
+        "Goal 20: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 17: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s20"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hu1 : u ≤ 1 := by dsimp [u]; linarith"
+      },
+      "lean_range": {
+        "start_line": 63,
+        "start_column": 2,
+        "end_line": 63,
+        "end_column": 44
+      },
+      "lean_value_range": {
+        "start_line": 63,
+        "start_column": 22,
+        "end_line": 63,
+        "end_column": 44
+      }
+    },
+    {
+      "id": "s17-why1",
+      "title": "Why hu1 holds (from step s17)",
+      "assumes": [
+        "Goal 18: u ≤ 1"
+      ],
+      "proves": "hu1 : u ≤ 1",
+      "depends_on": [
+        "s18"
+      ],
+      "views": {
+        "math": "u ≤ 1",
+        "code": "have hu1 : u ≤ 1 := by dsimp [u]; linarith"
+      },
+      "lean_introduced_by": "s17"
+    },
+    {
+      "id": "s18",
+      "title": "dsimp [u]",
+      "assumes": [
+        "Goal 19: x - (↑m + ↑n / 2) ≤ 1"
+      ],
+      "proves": "Goal 18: u ≤ 1",
+      "depends_on": [
+        "s19"
+      ],
+      "views": {
+        "math": "⊢ u ≤ 1",
+        "code": "dsimp [u]"
+      },
+      "lean_range": {
+        "start_line": 63,
+        "start_column": 25,
+        "end_line": 63,
+        "end_column": 34
+      }
+    },
+    {
+      "id": "s19",
+      "title": "linarith",
+      "assumes": [
+        "hm1 : x - ↑n / 2 < ↑m + 1"
+      ],
+      "proves": "Goal 19: x - (↑m + ↑n / 2) ≤ 1",
+      "depends_on": [
+        "s13-why1"
+      ],
+      "views": {
+        "math": "⊢ x - (↑m + ↑n / 2) ≤ 1",
+        "code": "linarith"
+      },
+      "lean_range": {
+        "start_line": 63,
+        "start_column": 36,
+        "end_line": 63,
+        "end_column": 44
+      }
+    },
+    {
+      "id": "s20",
+      "title": "have hv0 : 0 ≤ v := by...",
+      "assumes": [
+        "Goal 24: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 20: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s24"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hv0 : 0 ≤ v := by\n    have h := (le_div_iff₀ hs).mp hn0\n    dsimp [v]\n    nlinarith"
+      },
+      "lean_range": {
+        "start_line": 64,
+        "start_column": 2,
+        "end_line": 67,
+        "end_column": 13
+      },
+      "lean_value_range": {
+        "start_line": 64,
+        "start_column": 22,
+        "end_line": 67,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "s20-why1",
+      "title": "Why hv0 holds (from step s20)",
+      "assumes": [
+        "Goal 21: 0 ≤ v"
+      ],
+      "proves": "hv0 : 0 ≤ v",
+      "depends_on": [
+        "s21"
+      ],
+      "views": {
+        "math": "0 ≤ v",
+        "code": "have hv0 : 0 ≤ v := by\n    have h := (le_div_iff₀ hs).mp hn0\n    dsimp [v]\n    nlinarith"
+      },
+      "lean_introduced_by": "s20"
+    },
+    {
+      "id": "s21",
+      "title": "have h := (le_div_iff₀ hs).mp hn0",
+      "assumes": [
+        "Goal 22: 0 ≤ v"
+      ],
+      "proves": "Goal 21: 0 ≤ v",
+      "depends_on": [
+        "s22"
+      ],
+      "views": {
+        "math": "⊢ 0 ≤ v",
+        "code": "have h := (le_div_iff₀ hs).mp hn0"
+      },
+      "lean_range": {
+        "start_line": 65,
+        "start_column": 4,
+        "end_line": 65,
+        "end_column": 37
+      },
+      "lean_value_range": {
+        "start_line": 65,
+        "start_column": 14,
+        "end_line": 65,
+        "end_column": 37
+      }
+    },
+    {
+      "id": "s21-why1",
+      "title": "Why h holds (from step s21)",
+      "assumes": [
+        "hs : 0 < s",
+        "hn0 : ↑n ≤ 2 * y / s"
+      ],
+      "proves": "h : ↑n * s ≤ 2 * y",
+      "depends_on": [
+        "s2-why1",
+        "s10-why1"
+      ],
+      "views": {
+        "math": "↑n * s ≤ 2 * y",
+        "code": "have h := (le_div_iff₀ hs).mp hn0"
+      },
+      "lean_introduced_by": "s21"
+    },
+    {
+      "id": "s22",
+      "title": "dsimp [v]",
+      "assumes": [
+        "Goal 23: 0 ≤ y - s * ↑n / 2"
+      ],
+      "proves": "Goal 22: 0 ≤ v",
+      "depends_on": [
+        "s23"
+      ],
+      "views": {
+        "math": "⊢ 0 ≤ v",
+        "code": "dsimp [v]"
+      },
+      "lean_range": {
+        "start_line": 66,
+        "start_column": 4,
+        "end_line": 66,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "s23",
+      "title": "nlinarith",
+      "assumes": [
+        "h : ↑n * s ≤ 2 * y"
+      ],
+      "proves": "Goal 23: 0 ≤ y - s * ↑n / 2",
+      "depends_on": [
+        "s21-why1"
+      ],
+      "views": {
+        "math": "⊢ 0 ≤ y - s * ↑n / 2",
+        "code": "nlinarith"
+      },
+      "lean_range": {
+        "start_line": 67,
+        "start_column": 4,
+        "end_line": 67,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "s24",
+      "title": "have hv1 : v ≤ s / 2 := by...",
+      "assumes": [
+        "Goal 28: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 24: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s28"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hv1 : v ≤ s / 2 := by\n    have h := (div_lt_iff₀ hs).mp hn1\n    dsimp [v]\n    nlinarith"
+      },
+      "lean_range": {
+        "start_line": 68,
+        "start_column": 2,
+        "end_line": 71,
+        "end_column": 13
+      },
+      "lean_value_range": {
+        "start_line": 68,
+        "start_column": 26,
+        "end_line": 71,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "s24-why1",
+      "title": "Why hv1 holds (from step s24)",
+      "assumes": [
+        "Goal 25: v ≤ s / 2"
+      ],
+      "proves": "hv1 : v ≤ s / 2",
+      "depends_on": [
+        "s25"
+      ],
+      "views": {
+        "math": "v ≤ s / 2",
+        "code": "have hv1 : v ≤ s / 2 := by\n    have h := (div_lt_iff₀ hs).mp hn1\n    dsimp [v]\n    nlinarith"
+      },
+      "lean_introduced_by": "s24"
+    },
+    {
+      "id": "s25",
+      "title": "have h := (div_lt_iff₀ hs).mp hn1",
+      "assumes": [
+        "Goal 26: v ≤ s / 2"
+      ],
+      "proves": "Goal 25: v ≤ s / 2",
+      "depends_on": [
+        "s26"
+      ],
+      "views": {
+        "math": "⊢ v ≤ s / 2",
+        "code": "have h := (div_lt_iff₀ hs).mp hn1"
+      },
+      "lean_range": {
+        "start_line": 69,
+        "start_column": 4,
+        "end_line": 69,
+        "end_column": 37
+      },
+      "lean_value_range": {
+        "start_line": 69,
+        "start_column": 14,
+        "end_line": 69,
+        "end_column": 37
+      }
+    },
+    {
+      "id": "s25-why1",
+      "title": "Why h holds (from step s25)",
+      "assumes": [
+        "hs : 0 < s",
+        "hn1 : 2 * y / s < ↑n + 1"
+      ],
+      "proves": "h : 2 * y < (↑n + 1) * s",
+      "depends_on": [
+        "s2-why1",
+        "s11-why1"
+      ],
+      "views": {
+        "math": "2 * y < (↑n + 1) * s",
+        "code": "have h := (div_lt_iff₀ hs).mp hn1"
+      },
+      "lean_introduced_by": "s25"
+    },
+    {
+      "id": "s26",
+      "title": "dsimp [v]",
+      "assumes": [
+        "Goal 27: y - s * ↑n / 2 ≤ s / 2"
+      ],
+      "proves": "Goal 26: v ≤ s / 2",
+      "depends_on": [
+        "s27"
+      ],
+      "views": {
+        "math": "⊢ v ≤ s / 2",
+        "code": "dsimp [v]"
+      },
+      "lean_range": {
+        "start_line": 70,
+        "start_column": 4,
+        "end_line": 70,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "s27",
+      "title": "nlinarith",
+      "assumes": [
+        "h : 2 * y < (↑n + 1) * s"
+      ],
+      "proves": "Goal 27: y - s * ↑n / 2 ≤ s / 2",
+      "depends_on": [
+        "s25-why1"
+      ],
+      "views": {
+        "math": "⊢ y - s * ↑n / 2 ≤ s / 2",
+        "code": "nlinarith"
+      },
+      "lean_range": {
+        "start_line": 71,
+        "start_column": 4,
+        "end_line": 71,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "s28",
+      "title": "rcases triangular_rectangle_cover s u v hs hsq hu0 hu1 hv0 hv1 with h | ...",
+      "assumes": [
+        "Goal 29: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "Goal 30: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "Goal 37: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "hs : 0 < s",
+        "hsq : s ^ 2 = 3",
+        "hu0 : 0 ≤ u",
+        "hu1 : u ≤ 1",
+        "hv0 : 0 ≤ v",
+        "hv1 : v ≤ s / 2"
+      ],
+      "proves": "Goal 28: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s29",
+        "s30",
+        "s37",
+        "s2-why1",
+        "s4-why1",
+        "s14-why1",
+        "s17-why1",
+        "s20-why1",
+        "s24-why1"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "rcases triangular_rectangle_cover s u v hs hsq hu0 hu1 hv0 hv1 with h | h | h"
+      },
+      "lean_range": {
+        "start_line": 72,
+        "start_column": 2,
+        "end_line": 72,
+        "end_column": 79
+      }
+    },
+    {
+      "id": "s29",
+      "title": "exact ⟨m, n, h⟩",
+      "assumes": [],
+      "proves": "Goal 29: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "exact ⟨m, n, h⟩"
+      },
+      "lean_range": {
+        "start_line": 73,
+        "start_column": 4,
+        "end_line": 73,
+        "end_column": 19
+      }
+    },
+    {
+      "id": "s30",
+      "title": "refine ⟨m + 1, n, ?_⟩",
+      "assumes": [
+        "Goal 31: (x - (↑(m + 1) + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 30: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s31"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "refine ⟨m + 1, n, ?_⟩"
+      },
+      "lean_range": {
+        "start_line": 74,
+        "start_column": 4,
+        "end_line": 74,
+        "end_column": 25
+      }
+    },
+    {
+      "id": "s31",
+      "title": "have hu : x - (((m + 1 : ℤ) : ℝ) + (n : ℝ) / 2) = u - 1 := by...",
+      "assumes": [
+        "Goal 35: (x - (↑(m + 1) + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 31: (x - (↑(m + 1) + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s35"
+      ],
+      "views": {
+        "math": "⊢ (x - (↑(m + 1) + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hu : x - (((m + 1 : ℤ) : ℝ) + (n : ℝ) / 2) = u - 1 := by\n      dsimp [u]\n      push_cast\n      ring"
+      },
+      "lean_range": {
+        "start_line": 75,
+        "start_column": 4,
+        "end_line": 78,
+        "end_column": 10
+      },
+      "lean_value_range": {
+        "start_line": 75,
+        "start_column": 63,
+        "end_line": 78,
+        "end_column": 10
+      }
+    },
+    {
+      "id": "s31-why1",
+      "title": "Why hu holds (from step s31)",
+      "assumes": [
+        "Goal 32: x - (↑(m + 1) + ↑n / 2) = u - 1"
+      ],
+      "proves": "hu : x - (↑(m + 1) + ↑n / 2) = u - 1",
+      "depends_on": [
+        "s32"
+      ],
+      "views": {
+        "math": "x - (↑(m + 1) + ↑n / 2) = u - 1",
+        "code": "have hu : x - (((m + 1 : ℤ) : ℝ) + (n : ℝ) / 2) = u - 1 := by\n      dsimp [u]\n      push_cast\n      ring"
+      },
+      "lean_introduced_by": "s31"
+    },
+    {
+      "id": "s32",
+      "title": "dsimp [u]",
+      "assumes": [
+        "Goal 33: x - (↑(m + 1) + ↑n / 2) = x - (↑m + ↑n / 2) - 1"
+      ],
+      "proves": "Goal 32: x - (↑(m + 1) + ↑n / 2) = u - 1",
+      "depends_on": [
+        "s33"
+      ],
+      "views": {
+        "math": "⊢ x - (↑(m + 1) + ↑n / 2) = u - 1",
+        "code": "dsimp [u]"
+      },
+      "lean_range": {
+        "start_line": 76,
+        "start_column": 6,
+        "end_line": 76,
+        "end_column": 15
+      }
+    },
+    {
+      "id": "s33",
+      "title": "push_cast",
+      "assumes": [
+        "Goal 34: x - (↑m + 1 + ↑n / 2) = x - (↑m + ↑n / 2) - 1"
+      ],
+      "proves": "Goal 33: x - (↑(m + 1) + ↑n / 2) = x - (↑m + ↑n / 2) - 1",
+      "depends_on": [
+        "s34"
+      ],
+      "views": {
+        "math": "⊢ x - (↑(m + 1) + ↑n / 2) = x - (↑m + ↑n / 2) - 1",
+        "code": "push_cast"
+      },
+      "lean_range": {
+        "start_line": 77,
+        "start_column": 6,
+        "end_line": 77,
+        "end_column": 15
+      }
+    },
+    {
+      "id": "s34",
+      "title": "ring",
+      "assumes": [],
+      "proves": "Goal 34: x - (↑m + 1 + ↑n / 2) = x - (↑m + ↑n / 2) - 1",
+      "views": {
+        "math": "⊢ x - (↑m + 1 + ↑n / 2) = x - (↑m + ↑n / 2) - 1",
+        "code": "ring"
+      },
+      "lean_range": {
+        "start_line": 78,
+        "start_column": 6,
+        "end_line": 78,
+        "end_column": 10
+      }
+    },
+    {
+      "id": "s35",
+      "title": "rw [hu]",
+      "assumes": [
+        "Goal 36: (u - 1) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "hu : x - (↑(m + 1) + ↑n / 2) = u - 1"
+      ],
+      "proves": "Goal 35: (x - (↑(m + 1) + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s36",
+        "s31-why1"
+      ],
+      "views": {
+        "math": "⊢ (x - (↑(m + 1) + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "rw [hu]"
+      },
+      "lean_range": {
+        "start_line": 79,
+        "start_column": 4,
+        "end_line": 79,
+        "end_column": 11
+      }
+    },
+    {
+      "id": "s36",
+      "title": "exact h",
+      "assumes": [],
+      "proves": "Goal 36: (u - 1) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "views": {
+        "math": "⊢ (u - 1) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "exact h"
+      },
+      "lean_range": {
+        "start_line": 80,
+        "start_column": 4,
+        "end_line": 80,
+        "end_column": 11
+      }
+    },
+    {
+      "id": "s37",
+      "title": "refine ⟨m, n + 1, ?_⟩",
+      "assumes": [
+        "Goal 38: (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 37: ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s38"
+      ],
+      "views": {
+        "math": "⊢ ∃ m n, (x - (↑m + ↑n / 2)) ^ 2 + (y - √3 * ↑n / 2) ^ 2 ≤ 1 / 3",
+        "code": "refine ⟨m, n + 1, ?_⟩"
+      },
+      "lean_range": {
+        "start_line": 81,
+        "start_column": 4,
+        "end_line": 81,
+        "end_column": 25
+      }
+    },
+    {
+      "id": "s38",
+      "title": "have hu : x - ((m : ℝ) + ((n + 1 : ℤ) : ℝ) / 2) = u - 1 / 2 := by...",
+      "assumes": [
+        "Goal 42: (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 38: (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s42"
+      ],
+      "views": {
+        "math": "⊢ (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hu : x - ((m : ℝ) + ((n + 1 : ℤ) : ℝ) / 2) = u - 1 / 2 := by\n      dsimp [u]\n      push_cast\n      ring"
+      },
+      "lean_range": {
+        "start_line": 82,
+        "start_column": 4,
+        "end_line": 85,
+        "end_column": 10
+      },
+      "lean_value_range": {
+        "start_line": 82,
+        "start_column": 67,
+        "end_line": 85,
+        "end_column": 10
+      }
+    },
+    {
+      "id": "s38-why1",
+      "title": "Why hu holds (from step s38)",
+      "assumes": [
+        "Goal 39: x - (↑m + ↑(n + 1) / 2) = u - 1 / 2"
+      ],
+      "proves": "hu : x - (↑m + ↑(n + 1) / 2) = u - 1 / 2",
+      "depends_on": [
+        "s39"
+      ],
+      "views": {
+        "math": "x - (↑m + ↑(n + 1) / 2) = u - 1 / 2",
+        "code": "have hu : x - ((m : ℝ) + ((n + 1 : ℤ) : ℝ) / 2) = u - 1 / 2 := by\n      dsimp [u]\n      push_cast\n      ring"
+      },
+      "lean_introduced_by": "s38"
+    },
+    {
+      "id": "s39",
+      "title": "dsimp [u]",
+      "assumes": [
+        "Goal 40: x - (↑m + ↑(n + 1) / 2) = x - (↑m + ↑n / 2) - 1 / 2"
+      ],
+      "proves": "Goal 39: x - (↑m + ↑(n + 1) / 2) = u - 1 / 2",
+      "depends_on": [
+        "s40"
+      ],
+      "views": {
+        "math": "⊢ x - (↑m + ↑(n + 1) / 2) = u - 1 / 2",
+        "code": "dsimp [u]"
+      },
+      "lean_range": {
+        "start_line": 83,
+        "start_column": 6,
+        "end_line": 83,
+        "end_column": 15
+      }
+    },
+    {
+      "id": "s40",
+      "title": "push_cast",
+      "assumes": [
+        "Goal 41: x - (↑m + (↑n + 1) / 2) = x - (↑m + ↑n / 2) - 1 / 2"
+      ],
+      "proves": "Goal 40: x - (↑m + ↑(n + 1) / 2) = x - (↑m + ↑n / 2) - 1 / 2",
+      "depends_on": [
+        "s41"
+      ],
+      "views": {
+        "math": "⊢ x - (↑m + ↑(n + 1) / 2) = x - (↑m + ↑n / 2) - 1 / 2",
+        "code": "push_cast"
+      },
+      "lean_range": {
+        "start_line": 84,
+        "start_column": 6,
+        "end_line": 84,
+        "end_column": 15
+      }
+    },
+    {
+      "id": "s41",
+      "title": "ring",
+      "assumes": [],
+      "proves": "Goal 41: x - (↑m + (↑n + 1) / 2) = x - (↑m + ↑n / 2) - 1 / 2",
+      "views": {
+        "math": "⊢ x - (↑m + (↑n + 1) / 2) = x - (↑m + ↑n / 2) - 1 / 2",
+        "code": "ring"
+      },
+      "lean_range": {
+        "start_line": 85,
+        "start_column": 6,
+        "end_line": 85,
+        "end_column": 10
+      }
+    },
+    {
+      "id": "s42",
+      "title": "have hv : y - Real.sqrt 3 * ((n + 1 : ℤ) : ℝ) / 2 = v - s / 2 := by...",
+      "assumes": [
+        "Goal 46: (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3"
+      ],
+      "proves": "Goal 42: (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s46"
+      ],
+      "views": {
+        "math": "⊢ (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3",
+        "code": "have hv : y - Real.sqrt 3 * ((n + 1 : ℤ) : ℝ) / 2 = v - s / 2 := by\n      dsimp [v, s]\n      push_cast\n      ring"
+      },
+      "lean_range": {
+        "start_line": 86,
+        "start_column": 4,
+        "end_line": 89,
+        "end_column": 10
+      },
+      "lean_value_range": {
+        "start_line": 86,
+        "start_column": 69,
+        "end_line": 89,
+        "end_column": 10
+      }
+    },
+    {
+      "id": "s42-why1",
+      "title": "Why hv holds (from step s42)",
+      "assumes": [
+        "Goal 43: y - √3 * ↑(n + 1) / 2 = v - s / 2"
+      ],
+      "proves": "hv : y - √3 * ↑(n + 1) / 2 = v - s / 2",
+      "depends_on": [
+        "s43"
+      ],
+      "views": {
+        "math": "y - √3 * ↑(n + 1) / 2 = v - s / 2",
+        "code": "have hv : y - Real.sqrt 3 * ((n + 1 : ℤ) : ℝ) / 2 = v - s / 2 := by\n      dsimp [v, s]\n      push_cast\n      ring"
+      },
+      "lean_introduced_by": "s42"
+    },
+    {
+      "id": "s43",
+      "title": "dsimp [v, s]",
+      "assumes": [
+        "Goal 44: y - √3 * ↑(n + 1) / 2 = y - √3 * ↑n / 2 - √3 / 2"
+      ],
+      "proves": "Goal 43: y - √3 * ↑(n + 1) / 2 = v - s / 2",
+      "depends_on": [
+        "s44"
+      ],
+      "views": {
+        "math": "⊢ y - √3 * ↑(n + 1) / 2 = v - s / 2",
+        "code": "dsimp [v, s]"
+      },
+      "lean_range": {
+        "start_line": 87,
+        "start_column": 6,
+        "end_line": 87,
+        "end_column": 18
+      }
+    },
+    {
+      "id": "s44",
+      "title": "push_cast",
+      "assumes": [
+        "Goal 45: y - √3 * (↑n + 1) / 2 = y - √3 * ↑n / 2 - √3 / 2"
+      ],
+      "proves": "Goal 44: y - √3 * ↑(n + 1) / 2 = y - √3 * ↑n / 2 - √3 / 2",
+      "depends_on": [
+        "s45"
+      ],
+      "views": {
+        "math": "⊢ y - √3 * ↑(n + 1) / 2 = y - √3 * ↑n / 2 - √3 / 2",
+        "code": "push_cast"
+      },
+      "lean_range": {
+        "start_line": 88,
+        "start_column": 6,
+        "end_line": 88,
+        "end_column": 15
+      }
+    },
+    {
+      "id": "s45",
+      "title": "ring",
+      "assumes": [],
+      "proves": "Goal 45: y - √3 * (↑n + 1) / 2 = y - √3 * ↑n / 2 - √3 / 2",
+      "views": {
+        "math": "⊢ y - √3 * (↑n + 1) / 2 = y - √3 * ↑n / 2 - √3 / 2",
+        "code": "ring"
+      },
+      "lean_range": {
+        "start_line": 89,
+        "start_column": 6,
+        "end_line": 89,
+        "end_column": 10
+      }
+    },
+    {
+      "id": "s46",
+      "title": "rw [hu, hv]",
+      "assumes": [
+        "Goal 47: (u - 1 / 2) ^ 2 + (v - s / 2) ^ 2 ≤ 1 / 3",
+        "hu : x - (↑m + ↑(n + 1) / 2) = u - 1 / 2",
+        "hv : y - √3 * ↑(n + 1) / 2 = v - s / 2"
+      ],
+      "proves": "Goal 46: (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3",
+      "depends_on": [
+        "s47",
+        "s38-why1",
+        "s42-why1"
+      ],
+      "views": {
+        "math": "⊢ (x - (↑m + ↑(n + 1) / 2)) ^ 2 + (y - √3 * ↑(n + 1) / 2) ^ 2 ≤ 1 / 3",
+        "code": "rw [hu, hv]"
+      },
+      "lean_range": {
+        "start_line": 90,
+        "start_column": 4,
+        "end_line": 90,
+        "end_column": 15
+      }
+    },
+    {
+      "id": "s47",
+      "title": "exact h",
+      "assumes": [],
+      "proves": "Goal 47: (u - 1 / 2) ^ 2 + (v - s / 2) ^ 2 ≤ 1 / 3",
+      "views": {
+        "math": "⊢ (u - 1 / 2) ^ 2 + (v - s / 2) ^ 2 ≤ 1 / 3",
+        "code": "exact h"
+      },
+      "lean_range": {
+        "start_line": 91,
+        "start_column": 4,
+        "end_line": 91,
+        "end_column": 11
+      }
+    }
+  ],
+  "lean_source": {
+    "file": "OAI/Geometry/PlaneColoring/Covering.lean",
+    "theorem": "OAI.Problem160.triangular_lattice_cover",
+    "file_sha256": "513a8ef4ebc13d27935444ffb8b5992df7172ce105f3a1fb6861c66f270246be",
+    "project": "/home/levib/projects/personal-projects/hekswerk-scry/lean-projects/openai-math/lean"
+  }
+}

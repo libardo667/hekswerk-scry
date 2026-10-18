@@ -179,10 +179,41 @@ blockquote { margin: 0.5em 0; padding: 0.1em 0.9em; border-left: 3px solid var(-
 .legend-choke::before { border: 3px solid var(--ai); }
 .legend-unused::before { background: var(--lookup-bg); opacity: 0.6; }
 .legend-goal::before { border: 3px solid var(--lean); }
+.legend-block::before { background: var(--ai-bg); border: 1px solid var(--ai); }
+.map-svg .block rect { fill: var(--ai-bg); stroke: var(--ai); stroke-width: 1.5; }
+.map-svg .block.chokepoint rect { stroke-width: 3; }
+.map-svg .in-block rect { stroke-dasharray: 5 3; }
+.map-controls { margin: 0.2em 0 0.6em; font-size: 0.88rem; }
+button {
+  font: inherit; font-size: 0.88rem; padding: 0.25em 0.7em; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+}
+button:hover { border-color: var(--accent); }
+button.cite { border: none; padding: 0 0.2em; background: none; }
+.menu-toggle { display: none; margin-left: auto; }
+.map-title { overflow-wrap: anywhere; }
 
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); }
-  .audit-columns, .map-columns { grid-template-columns: 1fr; }
+  .audit-columns, .map-columns { grid-template-columns: minmax(0, 1fr); }
   .audit-side, .map-detail { position: static; max-height: none; }
+  .map-scroll { max-height: 60vh; }
+}
+
+/* A phone: the sidebar becomes a menu behind a button. */
+@media (max-width: 700px) {
+  body { font-size: 16px; }
+  .topbar { padding: 0.5rem 1rem; align-items: center; }
+  .tagline { display: none; }
+  .menu-toggle { display: inline-block; }
+  .sidebar { display: none; }
+  body.menu-open .sidebar { display: block; }
+  body.menu-open .main { display: none; }
+  .main { padding: 0.8rem 1rem 3rem; }
+  h1 { font-size: 1.25rem; overflow-wrap: anywhere; }
+  .legend { gap: 0.4em 1em; }
+  .row-card dl { grid-template-columns: 1fr; }
+  .code-lines { max-height: 40vh; }
+  pre, code, .hint, .meta, p { overflow-wrap: anywhere; }
 }

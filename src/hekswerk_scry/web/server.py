@@ -30,6 +30,7 @@ from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, read_events
 from hekswerk_scry.checker import check_wiring, scan_proof_map
 from hekswerk_scry.files import FORMAT_NAME, proof_map_from_dict, proof_map_to_dict
 from hekswerk_scry.web.access import TOKEN_HEADER, PublicAccess
+from hekswerk_scry.web.blocks import foldable_blocks
 
 STATIC = Path(__file__).parent / "static"
 RESULTS_FILE = "results.json"
@@ -191,6 +192,7 @@ class Library:
                           for sid, v in wiring.verdicts.items()},
                 "problems": [p.message for p in wiring.map_problems],
             },
+            "blocks": [vars(b) for b in foldable_blocks(proof_map)],
             "scan": {
                 "overview": scan.overview,
                 "chokepoints": [vars(c) for c in scan.chokepoints],

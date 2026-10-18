@@ -10,6 +10,7 @@ import { ago, api, badge, dollars, fill, h, message } from './dom.js'
 const sidebar = document.getElementById('sidebar')
 const main = document.getElementById('main')
 const REFRESH_MS = 5000
+const menuToggle = document.getElementById('menu-toggle')
 let overview = { runs: [], maps: [] }
 let stopView = null
 
@@ -87,5 +88,14 @@ async function route() {
   drawSidebar()
 }
 
-window.addEventListener('hashchange', route)
+// On a phone the sidebar is a menu: the button shows it in place of the page, and choosing
+// anything in it (or going back) shows the page again.
+function showMenu(shown) {
+  document.body.classList.toggle('menu-open', shown)
+  menuToggle.setAttribute('aria-expanded', String(shown))
+  menuToggle.textContent = shown ? 'Close' : 'Menu'
+}
+menuToggle.addEventListener('click', () => showMenu(!document.body.classList.contains('menu-open')))
+
+window.addEventListener('hashchange', () => { showMenu(false); route() })
 refresh().then(route)

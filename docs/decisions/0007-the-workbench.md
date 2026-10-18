@@ -34,6 +34,23 @@ log, paper or model reply is ever treated as HTML: text goes in through `textCon
 small Markdown renderer builds DOM nodes. Parallax's 3D map doesn't carry over; a proof map is
 drawn flat, each step below the steps it takes facts from.
 
+**Big Lean maps fold their `have` blocks.** Drawn in rows, a 79-step Navier–Stokes proof put
+about thirty leaf steps in its top row and was unreadable. Machine-written Lean proofs are
+mostly chains of `have`s, so a *block* is what one `have` writes inside itself (the tactics of
+its `by` block, nested `by` blocks in its term) together with its "Why h holds" step
+(`web/blocks.py`). Blocks start folded, each drawn as one box that takes facts in from outside
+and gives `h` to the steps that use it; that proof becomes 31 boxes that read like its outline
+(`hd`, then `hediv` and `hePDE`, then `he`, `hvel`, ...). Opening a block shows its steps with
+the blocks inside it still folded. The `have` line itself is never folded: the main line of
+the proof runs from each tactic to the next, so folding it in would draw arrows in a circle.
+Folding any set of blocks can't draw a circle either (a block takes in only facts from before
+it in the source and gives out only its own); tests fold 300 random sets of blocks in two real
+maps and check, and a block that a route could leave and re-enter is not offered.
+
+**On a phone** the sidebar becomes a Menu button, the views stack in one column, and choosing a
+step scrolls to its details. Wide drawings and tables scroll inside their own box; the page
+itself stays the width of the screen.
+
 **Safety.** The server listens on 127.0.0.1 only and refuses requests whose `Host` header
 names any other site (so a web page elsewhere can't reach it through DNS rebinding). Files
 are named by tokens that must resolve, inside a folder it was given, to a file of the kind the

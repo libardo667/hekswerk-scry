@@ -110,6 +110,7 @@ class TestLibrary(WorkbenchCase):
         self.assertTrue(data["wiring"]["passed"])
         self.assertEqual(set(data["order"]), {s["id"] for s in data["map"]["steps"]})
         self.assertEqual(len(data["scan"]["chokepoints"]), 1)
+        self.assertEqual(data["blocks"], [])  # the bundled example has no Lean positions
 
 
 class TestServer(WorkbenchCase):

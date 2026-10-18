@@ -1,0 +1,1689 @@
+{
+  "format": "hekswerk-scry/proof-map",
+  "version": 1,
+  "map_id": "lean-OAI.VelocityDetection.Cylinder.unique_velocity_and_pressure",
+  "title": "OAI.VelocityDetection.Cylinder.unique_velocity_and_pressure (CylinderEnergy.lean)",
+  "starting_facts": [
+    "hT : 0 < T",
+    "hν : 0 ≤ ν",
+    "hu : EnergyRegularOn u du p T",
+    "hv : EnergyRegularOn v dv q T",
+    "hupde : solvesOn ν f u du p T",
+    "hvpde : solvesOn ν f v dv q T",
+    "h0 : ∀ (x : Space), v 0 x = u 0 x"
+  ],
+  "goal": "Goal 1: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+  "goal_step_id": "s1",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "rcases hu.strong_time with ⟨U, dU, hUc, hUr, hdUr, hUd⟩",
+      "assumes": [
+        "Goal 2: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "hu : EnergyRegularOn u du p T"
+      ],
+      "proves": "Goal 1: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s2"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "rcases hu.strong_time with ⟨U, dU, hUc, hUr, hdUr, hUd⟩"
+      },
+      "lean_range": {
+        "start_line": 228,
+        "start_column": 2,
+        "end_line": 228,
+        "end_column": 57
+      }
+    },
+    {
+      "id": "s2",
+      "title": "rcases hv.strong_time with ⟨V, dV, hVc, hVr, hdVr, hVd⟩",
+      "assumes": [
+        "Goal 3: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "hv : EnergyRegularOn v dv q T"
+      ],
+      "proves": "Goal 2: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s3"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "rcases hv.strong_time with ⟨V, dV, hVc, hVr, hdVr, hVd⟩"
+      },
+      "lean_range": {
+        "start_line": 229,
+        "start_column": 2,
+        "end_line": 229,
+        "end_column": 57
+      }
+    },
+    {
+      "id": "s3",
+      "title": "rcases hu.bounded with ⟨BU, hBU, hUb, hDUb⟩",
+      "assumes": [
+        "Goal 4: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "hu : EnergyRegularOn u du p T"
+      ],
+      "proves": "Goal 3: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s4"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "rcases hu.bounded with ⟨BU, hBU, hUb, hDUb⟩"
+      },
+      "lean_range": {
+        "start_line": 230,
+        "start_column": 2,
+        "end_line": 230,
+        "end_column": 45
+      }
+    },
+    {
+      "id": "s4",
+      "title": "rcases hv.bounded with ⟨BV, hBV, hVb, hDVb⟩",
+      "assumes": [
+        "Goal 5: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "hv : EnergyRegularOn v dv q T"
+      ],
+      "proves": "Goal 4: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s5"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "rcases hv.bounded with ⟨BV, hBV, hVb, hDVb⟩"
+      },
+      "lean_range": {
+        "start_line": 231,
+        "start_column": 2,
+        "end_line": 231,
+        "end_column": 45
+      }
+    },
+    {
+      "id": "s5",
+      "title": "let e : ℝ → Space → Vect := fun t x i => v t x i - u t x i",
+      "assumes": [
+        "Goal 6: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 5: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s6"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "let e : ℝ → Space → Vect := fun t x i => v t x i - u t x i"
+      },
+      "lean_range": {
+        "start_line": 232,
+        "start_column": 2,
+        "end_line": 232,
+        "end_column": 60
+      },
+      "lean_value_range": {
+        "start_line": 232,
+        "start_column": 30,
+        "end_line": 232,
+        "end_column": 60
+      }
+    },
+    {
+      "id": "s6",
+      "title": "let de : ℝ → Space → Vect := fun t x i => dv t x i - du t x i",
+      "assumes": [
+        "Goal 7: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 6: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s7"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "let de : ℝ → Space → Vect := fun t x i => dv t x i - du t x i"
+      },
+      "lean_range": {
+        "start_line": 233,
+        "start_column": 2,
+        "end_line": 233,
+        "end_column": 63
+      },
+      "lean_value_range": {
+        "start_line": 233,
+        "start_column": 31,
+        "end_line": 233,
+        "end_column": 63
+      }
+    },
+    {
+      "id": "s7",
+      "title": "let r : ℝ → Space → ℝ := fun t x => q t x - p t x",
+      "assumes": [
+        "Goal 8: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 7: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s8"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "let r : ℝ → Space → ℝ := fun t x => q t x - p t x"
+      },
+      "lean_range": {
+        "start_line": 234,
+        "start_column": 2,
+        "end_line": 234,
+        "end_column": 51
+      },
+      "lean_value_range": {
+        "start_line": 234,
+        "start_column": 27,
+        "end_line": 234,
+        "end_column": 51
+      }
+    },
+    {
+      "id": "s8",
+      "title": "have hd (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) (i k : Fin 3) :...",
+      "assumes": [
+        "Goal 11: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 8: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s11"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "have hd (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) (i k : Fin 3) :\n      D k (fun y => e t y i) x =\n        D k (fun y => v t y i) x - D k (fun y => u t y i) x :=\n    D_sub ((hv.space t ht).smooth i |>.differentiable (by norm_num))\n      ((hu.space t ht).smooth i |>.differentiable (by norm_num)) k x"
+      },
+      "lean_range": {
+        "start_line": 235,
+        "start_column": 2,
+        "end_line": 239,
+        "end_column": 68
+      },
+      "lean_value_range": {
+        "start_line": 238,
+        "start_column": 4,
+        "end_line": 239,
+        "end_column": 68
+      }
+    },
+    {
+      "id": "s8-why1",
+      "title": "Why hd holds (from step s8)",
+      "assumes": [
+        "Goal 9: 2 ≠ 0",
+        "Goal 10: 2 ≠ 0",
+        "hv : EnergyRegularOn v dv q T",
+        "hu : EnergyRegularOn u du p T"
+      ],
+      "proves": "hd : ∀ t ∈ Icc 0 T, ∀ (x : Space) (i k : Fin 3), D k (fun y => e t y i) x = D k (fun y => v t y i) x - D k (fun y => u t y i) x",
+      "depends_on": [
+        "s9",
+        "s10"
+      ],
+      "views": {
+        "math": "∀ t ∈ Icc 0 T, ∀ (x : Space) (i k : Fin 3), D k (fun y => e t y i) x = D k (fun y => v t y i) x - D k (fun y => u t y i) x",
+        "code": "have hd (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) (i k : Fin 3) :\n      D k (fun y => e t y i) x =\n        D k (fun y => v t y i) x - D k (fun y => u t y i) x :=\n    D_sub ((hv.space t ht).smooth i |>.differentiable (by norm_num))\n      ((hu.space t ht).smooth i |>.differentiable (by norm_num)) k x"
+      },
+      "lean_introduced_by": "s8"
+    },
+    {
+      "id": "s9",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 9: 2 ≠ 0",
+      "views": {
+        "math": "⊢ 2 ≠ 0",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 238,
+        "start_column": 58,
+        "end_line": 238,
+        "end_column": 66
+      }
+    },
+    {
+      "id": "s10",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 10: 2 ≠ 0",
+      "views": {
+        "math": "⊢ 2 ≠ 0",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 239,
+        "start_column": 54,
+        "end_line": 239,
+        "end_column": 62
+      }
+    },
+    {
+      "id": "s11",
+      "title": "have hediv (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) : div (e t) x = 0 := b...",
+      "assumes": [
+        "Goal 15: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 11: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s15"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "have hediv (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) : div (e t) x = 0 := by\n    simp only [div, hd t ht, Finset.sum_sub_distrib]\n    change div (v t) x - div (u t) x = 0\n    rw [hvpde.1 t ht, hupde.1 t ht, sub_self]"
+      },
+      "lean_range": {
+        "start_line": 240,
+        "start_column": 2,
+        "end_line": 243,
+        "end_column": 45
+      },
+      "lean_value_range": {
+        "start_line": 240,
+        "start_column": 73,
+        "end_line": 243,
+        "end_column": 45
+      }
+    },
+    {
+      "id": "s11-why1",
+      "title": "Why hediv holds (from step s11)",
+      "assumes": [
+        "Goal 12: div (e t) x = 0"
+      ],
+      "proves": "hediv : ∀ t ∈ Icc 0 T, ∀ (x : Space), div (e t) x = 0",
+      "depends_on": [
+        "s12"
+      ],
+      "views": {
+        "math": "∀ t ∈ Icc 0 T, ∀ (x : Space), div (e t) x = 0",
+        "code": "have hediv (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) : div (e t) x = 0 := by\n    simp only [div, hd t ht, Finset.sum_sub_distrib]\n    change div (v t) x - div (u t) x = 0\n    rw [hvpde.1 t ht, hupde.1 t ht, sub_self]"
+      },
+      "lean_introduced_by": "s11"
+    },
+    {
+      "id": "s12",
+      "title": "simp only [div, hd t ht, Finset.sum_sub_distrib]",
+      "assumes": [
+        "Goal 13: ∑ x_1, D x_1 (fun y => v t y x_1) x - ∑ x_1, D x_1 (fun y => u t y x_1) x = 0",
+        "hd : ∀ t ∈ Icc 0 T, ∀ (x : Space) (i k : Fin 3), D k (fun y => e t y i) x = D k (fun y => v t y i) x - D k (fun y => u t y i) x"
+      ],
+      "proves": "Goal 12: div (e t) x = 0",
+      "depends_on": [
+        "s13",
+        "s8-why1"
+      ],
+      "views": {
+        "math": "⊢ div (e t) x = 0",
+        "code": "simp only [div, hd t ht, Finset.sum_sub_distrib]"
+      },
+      "lean_range": {
+        "start_line": 241,
+        "start_column": 4,
+        "end_line": 241,
+        "end_column": 52
+      }
+    },
+    {
+      "id": "s13",
+      "title": "change div (v t) x - div (u t) x = 0",
+      "assumes": [
+        "Goal 14: div (v t) x - div (u t) x = 0"
+      ],
+      "proves": "Goal 13: ∑ x_1, D x_1 (fun y => v t y x_1) x - ∑ x_1, D x_1 (fun y => u t y x_1) x = 0",
+      "depends_on": [
+        "s14"
+      ],
+      "views": {
+        "math": "⊢ ∑ x_1, D x_1 (fun y => v t y x_1) x - ∑ x_1, D x_1 (fun y => u t y x_1) x = 0",
+        "code": "change div (v t) x - div (u t) x = 0"
+      },
+      "lean_range": {
+        "start_line": 242,
+        "start_column": 4,
+        "end_line": 242,
+        "end_column": 40
+      }
+    },
+    {
+      "id": "s14",
+      "title": "rw [hvpde.1 t ht, hupde.1 t ht, sub_self]",
+      "assumes": [
+        "hvpde : solvesOn ν f v dv q T",
+        "hupde : solvesOn ν f u du p T"
+      ],
+      "proves": "Goal 14: div (v t) x - div (u t) x = 0",
+      "views": {
+        "math": "⊢ div (v t) x - div (u t) x = 0",
+        "code": "rw [hvpde.1 t ht, hupde.1 t ht, sub_self]"
+      },
+      "lean_range": {
+        "start_line": 243,
+        "start_column": 4,
+        "end_line": 243,
+        "end_column": 45
+      }
+    },
+    {
+      "id": "s15",
+      "title": "have hePDE (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) (i : Fin 3) :...",
+      "assumes": [
+        "Goal 25: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 15: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s25"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "have hePDE (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) (i : Fin 3) :\n      de t x i + (∑ k, v t x k * D k (fun y => e t y i) x) +\n        (∑ k, e t x k * D k (fun y => u t y i) x) =\n        -D i (r t) x + ν * lap (fun y => e t y i) x := by\n    have huv := hupde.2 t ht x i\n    have hvv := hvpde.2 t ht x i\n    simp only [hd t ht]\n    change dv t x i - du t x i +\n      (∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x)) +\n      (∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x) =\n      -D i (fun y => q t y - p t y) x + ν * lap (fun y => v t y i - u t y i) x\n    rw [lap_sub ((hv.space t ht).smooth i) ((hu.space t ht).smooth i),\n      D_sub ((hv.pressure t ht).smooth.differentiable (by norm_num))\n        ((hu.pressure t ht).smooth.differentiable (by norm_num))]\n    simp only [Fin.sum_univ_three] at huv hvv ⊢\n    linear_combination hvv - huv"
+      },
+      "lean_range": {
+        "start_line": 244,
+        "start_column": 2,
+        "end_line": 259,
+        "end_column": 32
+      },
+      "lean_value_range": {
+        "start_line": 247,
+        "start_column": 55,
+        "end_line": 259,
+        "end_column": 32
+      }
+    },
+    {
+      "id": "s15-why1",
+      "title": "Why hePDE holds (from step s15)",
+      "assumes": [
+        "Goal 16: de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x"
+      ],
+      "proves": "hePDE : ∀ t ∈ Icc 0 T, ∀ (x : Space) (i : Fin 3), de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+      "depends_on": [
+        "s16"
+      ],
+      "views": {
+        "math": "∀ t ∈ Icc 0 T, ∀ (x : Space) (i : Fin 3), de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+        "code": "have hePDE (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) (i : Fin 3) :\n      de t x i + (∑ k, v t x k * D k (fun y => e t y i) x) +\n        (∑ k, e t x k * D k (fun y => u t y i) x) =\n        -D i (r t) x + ν * lap (fun y => e t y i) x := by\n    have huv := hupde.2 t ht x i\n    have hvv := hvpde.2 t ht x i\n    simp only [hd t ht]\n    change dv t x i - du t x i +\n      (∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x)) +\n      (∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x) =\n      -D i (fun y => q t y - p t y) x + ν * lap (fun y => v t y i - u t y i) x\n    rw [lap_sub ((hv.space t ht).smooth i) ((hu.space t ht).smooth i),\n      D_sub ((hv.pressure t ht).smooth.differentiable (by norm_num))\n        ((hu.pressure t ht).smooth.differentiable (by norm_num))]\n    simp only [Fin.sum_univ_three] at huv hvv ⊢\n    linear_combination hvv - huv"
+      },
+      "lean_introduced_by": "s15"
+    },
+    {
+      "id": "s16",
+      "title": "have huv := hupde.2 t ht x i",
+      "assumes": [
+        "Goal 17: de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x"
+      ],
+      "proves": "Goal 16: de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+      "depends_on": [
+        "s17"
+      ],
+      "views": {
+        "math": "⊢ de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+        "code": "have huv := hupde.2 t ht x i"
+      },
+      "lean_range": {
+        "start_line": 248,
+        "start_column": 4,
+        "end_line": 248,
+        "end_column": 32
+      },
+      "lean_value_range": {
+        "start_line": 248,
+        "start_column": 16,
+        "end_line": 248,
+        "end_column": 32
+      }
+    },
+    {
+      "id": "s16-why1",
+      "title": "Why huv holds (from step s16)",
+      "assumes": [
+        "hupde : solvesOn ν f u du p T"
+      ],
+      "proves": "huv : du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (p t) x + ν * lap (fun y => u t y i) x + f t x i",
+      "views": {
+        "math": "du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (p t) x + ν * lap (fun y => u t y i) x + f t x i",
+        "code": "have huv := hupde.2 t ht x i"
+      },
+      "lean_introduced_by": "s16"
+    },
+    {
+      "id": "s17",
+      "title": "have hvv := hvpde.2 t ht x i",
+      "assumes": [
+        "Goal 18: de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x"
+      ],
+      "proves": "Goal 17: de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+      "depends_on": [
+        "s18"
+      ],
+      "views": {
+        "math": "⊢ de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+        "code": "have hvv := hvpde.2 t ht x i"
+      },
+      "lean_range": {
+        "start_line": 249,
+        "start_column": 4,
+        "end_line": 249,
+        "end_column": 32
+      },
+      "lean_value_range": {
+        "start_line": 249,
+        "start_column": 16,
+        "end_line": 249,
+        "end_column": 32
+      }
+    },
+    {
+      "id": "s17-why1",
+      "title": "Why hvv holds (from step s17)",
+      "assumes": [
+        "hvpde : solvesOn ν f v dv q T"
+      ],
+      "proves": "hvv : dv t x i + ∑ k, v t x k * D k (fun y => v t y i) x = -D i (q t) x + ν * lap (fun y => v t y i) x + f t x i",
+      "views": {
+        "math": "dv t x i + ∑ k, v t x k * D k (fun y => v t y i) x = -D i (q t) x + ν * lap (fun y => v t y i) x + f t x i",
+        "code": "have hvv := hvpde.2 t ht x i"
+      },
+      "lean_introduced_by": "s17"
+    },
+    {
+      "id": "s18",
+      "title": "simp only [hd t ht]",
+      "assumes": [
+        "Goal 19: de t x i + ∑ x_1, v t x x_1 * (D x_1 (fun y => v t y i) x - D x_1 (fun y => u t y i) x) + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+        "hd : ∀ t ∈ Icc 0 T, ∀ (x : Space) (i k : Fin 3), D k (fun y => e t y i) x = D k (fun y => v t y i) x - D k (fun y => u t y i) x"
+      ],
+      "proves": "Goal 18: de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+      "depends_on": [
+        "s19",
+        "s8-why1"
+      ],
+      "views": {
+        "math": "⊢ de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+        "code": "simp only [hd t ht]"
+      },
+      "lean_range": {
+        "start_line": 250,
+        "start_column": 4,
+        "end_line": 250,
+        "end_column": 23
+      }
+    },
+    {
+      "id": "s19",
+      "title": "change dv t x i - du t x i +...",
+      "assumes": [
+        "Goal 20: dv t x i - du t x i + ∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x) + ∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x = -D i (fun y => q t y - p t y) x + ν * lap (fun y => v t y i - u t y i) x"
+      ],
+      "proves": "Goal 19: de t x i + ∑ x_1, v t x x_1 * (D x_1 (fun y => v t y i) x - D x_1 (fun y => u t y i) x) + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+      "depends_on": [
+        "s20"
+      ],
+      "views": {
+        "math": "⊢ de t x i + ∑ x_1, v t x x_1 * (D x_1 (fun y => v t y i) x - D x_1 (fun y => u t y i) x) + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x",
+        "code": "change dv t x i - du t x i +\n      (∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x)) +\n      (∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x) =\n      -D i (fun y => q t y - p t y) x + ν * lap (fun y => v t y i - u t y i) x"
+      },
+      "lean_range": {
+        "start_line": 251,
+        "start_column": 4,
+        "end_line": 254,
+        "end_column": 78
+      }
+    },
+    {
+      "id": "s20",
+      "title": "rw [lap_sub ((hv.space t ht).smooth i) ((hu.space t ht).smooth i),...",
+      "assumes": [
+        "Goal 21: 1 ≠ 0",
+        "Goal 22: 1 ≠ 0",
+        "Goal 23: dv t x i - du t x i + ∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x) + ∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x = -(D i (q t) x - D i (p t) x) + ν * (lap (fun x => v t x i) x - lap (fun x => u t x i) x)",
+        "hv : EnergyRegularOn v dv q T",
+        "hu : EnergyRegularOn u du p T"
+      ],
+      "proves": "Goal 20: dv t x i - du t x i + ∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x) + ∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x = -D i (fun y => q t y - p t y) x + ν * lap (fun y => v t y i - u t y i) x",
+      "depends_on": [
+        "s21",
+        "s22",
+        "s23"
+      ],
+      "views": {
+        "math": "⊢ dv t x i - du t x i + ∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x) + ∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x = -D i (fun y => q t y - p t y) x + ν * lap (fun y => v t y i - u t y i) x",
+        "code": "rw [lap_sub ((hv.space t ht).smooth i) ((hu.space t ht).smooth i),\n      D_sub ((hv.pressure t ht).smooth.differentiable (by norm_num))\n        ((hu.pressure t ht).smooth.differentiable (by norm_num))]"
+      },
+      "lean_range": {
+        "start_line": 255,
+        "start_column": 4,
+        "end_line": 257,
+        "end_column": 65
+      }
+    },
+    {
+      "id": "s21",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 21: 1 ≠ 0",
+      "views": {
+        "math": "⊢ 1 ≠ 0",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 256,
+        "start_column": 58,
+        "end_line": 256,
+        "end_column": 66
+      }
+    },
+    {
+      "id": "s22",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 22: 1 ≠ 0",
+      "views": {
+        "math": "⊢ 1 ≠ 0",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 257,
+        "start_column": 54,
+        "end_line": 257,
+        "end_column": 62
+      }
+    },
+    {
+      "id": "s23",
+      "title": "simp only [Fin.sum_univ_three] at huv hvv ⊢",
+      "assumes": [
+        "Goal 24: dv t x i - du t x i + (v t x 0 * (D 0 (fun y => v t y i) x - D 0 (fun y => u t y i) x) + v t x 1 * (D 1 (fun y => v t y i) x - D 1 (fun y => u t y i) x) + v t x 2 * (D 2 (fun y => v t y i) x - D 2 (fun y => u t y i) x)) + ((v t x 0 - u t x 0) * D 0 (fun y => u t y i) x + (v t x 1 - u t x 1) * D 1 (fun y => u t y i) x + (v t x 2 - u t x 2) * D 2 (fun y => u t y i) x) = -(D i (q t) x - D i (p t) x) + ν * (D 0 (D 0 fun y => v t y i) x + D 1 (D 1 fun y => v t y i) x + D 2 (D 2 fun y => v t y i) x - (D 0 (D 0 fun y => u t y i) x + D 1 (D 1 fun y => u t y i) x + D 2 (D 2 fun y => u t y i) x))"
+      ],
+      "proves": "Goal 23: dv t x i - du t x i + ∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x) + ∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x = -(D i (q t) x - D i (p t) x) + ν * (lap (fun x => v t x i) x - lap (fun x => u t x i) x)",
+      "depends_on": [
+        "s24"
+      ],
+      "views": {
+        "math": "⊢ dv t x i - du t x i + ∑ k, v t x k * (D k (fun y => v t y i) x - D k (fun y => u t y i) x) + ∑ k, (v t x k - u t x k) * D k (fun y => u t y i) x = -(D i (q t) x - D i (p t) x) + ν * (lap (fun x => v t x i) x - lap (fun x => u t x i) x)",
+        "code": "simp only [Fin.sum_univ_three] at huv hvv ⊢"
+      },
+      "lean_range": {
+        "start_line": 258,
+        "start_column": 4,
+        "end_line": 258,
+        "end_column": 47
+      }
+    },
+    {
+      "id": "s23-why1",
+      "title": "Why huv holds (from step s23)",
+      "assumes": [
+        "huv : du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (p t) x + ν * lap (fun y => u t y i) x + f t x i"
+      ],
+      "proves": "huv : du t x i + (u t x 0 * D 0 (fun y => u t y i) x + u t x 1 * D 1 (fun y => u t y i) x + u t x 2 * D 2 (fun y => u t y i) x) = -D i (p t) x + ν * (D 0 (D 0 fun y => u t y i) x + D 1 (D 1 fun y => u t y i) x + D 2 (D 2 fun y => u t y i) x) + f t x i",
+      "depends_on": [
+        "s16-why1"
+      ],
+      "views": {
+        "math": "du t x i + (u t x 0 * D 0 (fun y => u t y i) x + u t x 1 * D 1 (fun y => u t y i) x + u t x 2 * D 2 (fun y => u t y i) x) = -D i (p t) x + ν * (D 0 (D 0 fun y => u t y i) x + D 1 (D 1 fun y => u t y i) x + D 2 (D 2 fun y => u t y i) x) + f t x i",
+        "code": "simp only [Fin.sum_univ_three] at huv hvv ⊢"
+      },
+      "lean_introduced_by": "s23"
+    },
+    {
+      "id": "s23-why2",
+      "title": "Why hvv holds (from step s23)",
+      "assumes": [
+        "hvv : dv t x i + ∑ k, v t x k * D k (fun y => v t y i) x = -D i (q t) x + ν * lap (fun y => v t y i) x + f t x i"
+      ],
+      "proves": "hvv : dv t x i + (v t x 0 * D 0 (fun y => v t y i) x + v t x 1 * D 1 (fun y => v t y i) x + v t x 2 * D 2 (fun y => v t y i) x) = -D i (q t) x + ν * (D 0 (D 0 fun y => v t y i) x + D 1 (D 1 fun y => v t y i) x + D 2 (D 2 fun y => v t y i) x) + f t x i",
+      "depends_on": [
+        "s17-why1"
+      ],
+      "views": {
+        "math": "dv t x i + (v t x 0 * D 0 (fun y => v t y i) x + v t x 1 * D 1 (fun y => v t y i) x + v t x 2 * D 2 (fun y => v t y i) x) = -D i (q t) x + ν * (D 0 (D 0 fun y => v t y i) x + D 1 (D 1 fun y => v t y i) x + D 2 (D 2 fun y => v t y i) x) + f t x i",
+        "code": "simp only [Fin.sum_univ_three] at huv hvv ⊢"
+      },
+      "lean_introduced_by": "s23"
+    },
+    {
+      "id": "s24",
+      "title": "linear_combination hvv - huv",
+      "assumes": [
+        "hvv : dv t x i + (v t x 0 * D 0 (fun y => v t y i) x + v t x 1 * D 1 (fun y => v t y i) x + v t x 2 * D 2 (fun y => v t y i) x) = -D i (q t) x + ν * (D 0 (D 0 fun y => v t y i) x + D 1 (D 1 fun y => v t y i) x + D 2 (D 2 fun y => v t y i) x) + f t x i",
+        "huv : du t x i + (u t x 0 * D 0 (fun y => u t y i) x + u t x 1 * D 1 (fun y => u t y i) x + u t x 2 * D 2 (fun y => u t y i) x) = -D i (p t) x + ν * (D 0 (D 0 fun y => u t y i) x + D 1 (D 1 fun y => u t y i) x + D 2 (D 2 fun y => u t y i) x) + f t x i"
+      ],
+      "proves": "Goal 24: dv t x i - du t x i + (v t x 0 * (D 0 (fun y => v t y i) x - D 0 (fun y => u t y i) x) + v t x 1 * (D 1 (fun y => v t y i) x - D 1 (fun y => u t y i) x) + v t x 2 * (D 2 (fun y => v t y i) x - D 2 (fun y => u t y i) x)) + ((v t x 0 - u t x 0) * D 0 (fun y => u t y i) x + (v t x 1 - u t x 1) * D 1 (fun y => u t y i) x + (v t x 2 - u t x 2) * D 2 (fun y => u t y i) x) = -(D i (q t) x - D i (p t) x) + ν * (D 0 (D 0 fun y => v t y i) x + D 1 (D 1 fun y => v t y i) x + D 2 (D 2 fun y => v t y i) x - (D 0 (D 0 fun y => u t y i) x + D 1 (D 1 fun y => u t y i) x + D 2 (D 2 fun y => u t y i) x))",
+      "depends_on": [
+        "s23-why2",
+        "s23-why1"
+      ],
+      "views": {
+        "math": "⊢ dv t x i - du t x i + (v t x 0 * (D 0 (fun y => v t y i) x - D 0 (fun y => u t y i) x) + v t x 1 * (D 1 (fun y => v t y i) x - D 1 (fun y => u t y i) x) + v t x 2 * (D 2 (fun y => v t y i) x - D 2 (fun y => u t y i) x)) + ((v t x 0 - u t x 0) * D 0 (fun y => u t y i) x + (v t x 1 - u t x 1) * D 1 (fun y => u t y i) x + (v t x 2 - u t x 2) * D 2 (fun y => u t y i) x) = -(D i (q t) x - D i (p t) x) + ν * (D 0 (D 0 fun y => v t y i) x + D 1 (D 1 fun y => v t y i) x + D 2 (D 2 fun y => v t y i) x - (D 0 (D 0 fun y => u t y i) x + D 1 (D 1 fun y => u t y i) x + D 2 (D 2 fun y => u t y i) x))",
+        "code": "linear_combination hvv - huv"
+      },
+      "lean_range": {
+        "start_line": 259,
+        "start_column": 4,
+        "end_line": 259,
+        "end_column": 32
+      }
+    },
+    {
+      "id": "s25",
+      "title": "have he : ∀ t ∈ Icc 0 T, ∀ x, e t x = 0 := by...",
+      "assumes": [
+        "Goal 40: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 25: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s40"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "have he : ∀ t ∈ Icc 0 T, ∀ x, e t x = 0 := by\n    apply difference_zero (E := fun t i => V t i - U t i)\n      (dE := fun t i => dV t i - dU t i) (B := BV + BU) hT.le hν (add_nonneg hBV hBU)\n      (fun t ht => (hv.space t ht).sub (hu.space t ht))\n      (fun t ht i => ((hv.space t ht).smooth i).of_le (by norm_num))\n      (fun t ht => (hv.space t ht).per)\n      (fun t ht i => ((hu.space t ht).smooth i).of_le (by norm_num))\n      (fun t ht => (hv.pressure t ht).sub (hu.pressure t ht))\n      (fun t ht x i => (hVb t ht x i).trans (le_add_of_nonneg_right hBU))\n      (fun t ht x i => (hDVb t ht x i i).trans (le_add_of_nonneg_right hBU))\n      (fun t ht x i k => (hDUb t ht x i k).trans (le_add_of_nonneg_left hBV))\n      hvpde.1 hediv hePDE (fun i => (hVc i).sub (hUc i))\n    · intro t ht i\n      filter_upwards [Lp.coeFn_sub (V t i) (U t i), hVr t ht i, hUr t ht i] with x hx hvx hux\n      simpa only [Pi.sub_apply, e, hvx, hux] using hx\n    · intro t ht i\n      filter_upwards [Lp.coeFn_sub (dV t i) (dU t i), hdVr t ht i, hdUr t ht i] with x hx hvx hux\n      simpa only [Pi.sub_apply, de, hvx, hux] using hx\n    · intro t ht i\n      exact (hVd t ht i).sub (hUd t ht i)\n    · intro x\n      ext i\n      simp [h0 x]"
+      },
+      "lean_range": {
+        "start_line": 260,
+        "start_column": 2,
+        "end_line": 282,
+        "end_column": 17
+      },
+      "lean_value_range": {
+        "start_line": 260,
+        "start_column": 45,
+        "end_line": 282,
+        "end_column": 17
+      }
+    },
+    {
+      "id": "s25-why1",
+      "title": "Why he holds (from step s25)",
+      "assumes": [
+        "Goal 26: ∀ t ∈ Icc 0 T, ∀ (x : Space), e t x = 0"
+      ],
+      "proves": "he : ∀ t ∈ Icc 0 T, ∀ (x : Space), e t x = 0",
+      "depends_on": [
+        "s26"
+      ],
+      "views": {
+        "math": "∀ t ∈ Icc 0 T, ∀ (x : Space), e t x = 0",
+        "code": "have he : ∀ t ∈ Icc 0 T, ∀ x, e t x = 0 := by\n    apply difference_zero (E := fun t i => V t i - U t i)\n      (dE := fun t i => dV t i - dU t i) (B := BV + BU) hT.le hν (add_nonneg hBV hBU)\n      (fun t ht => (hv.space t ht).sub (hu.space t ht))\n      (fun t ht i => ((hv.space t ht).smooth i).of_le (by norm_num))\n      (fun t ht => (hv.space t ht).per)\n      (fun t ht i => ((hu.space t ht).smooth i).of_le (by norm_num))\n      (fun t ht => (hv.pressure t ht).sub (hu.pressure t ht))\n      (fun t ht x i => (hVb t ht x i).trans (le_add_of_nonneg_right hBU))\n      (fun t ht x i => (hDVb t ht x i i).trans (le_add_of_nonneg_right hBU))\n      (fun t ht x i k => (hDUb t ht x i k).trans (le_add_of_nonneg_left hBV))\n      hvpde.1 hediv hePDE (fun i => (hVc i).sub (hUc i))\n    · intro t ht i\n      filter_upwards [Lp.coeFn_sub (V t i) (U t i), hVr t ht i, hUr t ht i] with x hx hvx hux\n      simpa only [Pi.sub_apply, e, hvx, hux] using hx\n    · intro t ht i\n      filter_upwards [Lp.coeFn_sub (dV t i) (dU t i), hdVr t ht i, hdUr t ht i] with x hx hvx hux\n      simpa only [Pi.sub_apply, de, hvx, hux] using hx\n    · intro t ht i\n      exact (hVd t ht i).sub (hUd t ht i)\n    · intro x\n      ext i\n      simp [h0 x]"
+      },
+      "lean_introduced_by": "s25"
+    },
+    {
+      "id": "s26",
+      "title": "apply difference_zero (E := fun t i => V t i - U t i)...",
+      "assumes": [
+        "Goal 27: 1 ≤ 2",
+        "Goal 28: 1 ≤ 2",
+        "Goal 29: ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), (fun x => ↑↑(V t i - U t i) x) =ᵐ[measure] fun x => v t x i - u t x i",
+        "Goal 32: ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), (fun x => ↑↑(dV t i - dU t i) x) =ᵐ[measure] fun x => de t x i",
+        "Goal 35: ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), HasDerivWithinAt (fun t => V t i - U t i) (dV t i - dU t i) (Icc 0 T) t",
+        "Goal 37: ∀ (x : Space), (fun i => v 0 x i - u 0 x i) = 0",
+        "hT : 0 < T",
+        "hν : 0 ≤ ν",
+        "hv : EnergyRegularOn v dv q T",
+        "hu : EnergyRegularOn u du p T",
+        "hvpde : solvesOn ν f v dv q T",
+        "hediv : ∀ t ∈ Icc 0 T, ∀ (x : Space), div (e t) x = 0",
+        "hePDE : ∀ t ∈ Icc 0 T, ∀ (x : Space) (i : Fin 3), de t x i + ∑ k, v t x k * D k (fun y => e t y i) x + ∑ k, e t x k * D k (fun y => u t y i) x = -D i (r t) x + ν * lap (fun y => e t y i) x"
+      ],
+      "proves": "Goal 26: ∀ t ∈ Icc 0 T, ∀ (x : Space), e t x = 0",
+      "depends_on": [
+        "s27",
+        "s28",
+        "s29",
+        "s32",
+        "s35",
+        "s37",
+        "s11-why1",
+        "s15-why1"
+      ],
+      "views": {
+        "math": "⊢ ∀ t ∈ Icc 0 T, ∀ (x : Space), e t x = 0",
+        "code": "apply difference_zero (E := fun t i => V t i - U t i)\n      (dE := fun t i => dV t i - dU t i) (B := BV + BU) hT.le hν (add_nonneg hBV hBU)\n      (fun t ht => (hv.space t ht).sub (hu.space t ht))\n      (fun t ht i => ((hv.space t ht).smooth i).of_le (by norm_num))\n      (fun t ht => (hv.space t ht).per)\n      (fun t ht i => ((hu.space t ht).smooth i).of_le (by norm_num))\n      (fun t ht => (hv.pressure t ht).sub (hu.pressure t ht))\n      (fun t ht x i => (hVb t ht x i).trans (le_add_of_nonneg_right hBU))\n      (fun t ht x i => (hDVb t ht x i i).trans (le_add_of_nonneg_right hBU))\n      (fun t ht x i k => (hDUb t ht x i k).trans (le_add_of_nonneg_left hBV))\n      hvpde.1 hediv hePDE (fun i => (hVc i).sub (hUc i))"
+      },
+      "lean_range": {
+        "start_line": 261,
+        "start_column": 4,
+        "end_line": 271,
+        "end_column": 56
+      },
+      "lean_value_range": {
+        "start_line": 261,
+        "start_column": 32,
+        "end_line": 261,
+        "end_column": 56
+      }
+    },
+    {
+      "id": "s27",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 27: 1 ≤ 2",
+      "views": {
+        "math": "⊢ 1 ≤ 2",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 264,
+        "start_column": 58,
+        "end_line": 264,
+        "end_column": 66
+      }
+    },
+    {
+      "id": "s28",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 28: 1 ≤ 2",
+      "views": {
+        "math": "⊢ 1 ≤ 2",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 266,
+        "start_column": 58,
+        "end_line": 266,
+        "end_column": 66
+      }
+    },
+    {
+      "id": "s29",
+      "title": "intro t ht i",
+      "assumes": [
+        "Goal 30: (fun x => ↑↑(V t i - U t i) x) =ᵐ[measure] fun x => v t x i - u t x i"
+      ],
+      "proves": "Goal 29: ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), (fun x => ↑↑(V t i - U t i) x) =ᵐ[measure] fun x => v t x i - u t x i",
+      "depends_on": [
+        "s30"
+      ],
+      "views": {
+        "math": "⊢ ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), (fun x => ↑↑(V t i - U t i) x) =ᵐ[measure] fun x => v t x i - u t x i",
+        "code": "intro t ht i"
+      },
+      "lean_range": {
+        "start_line": 272,
+        "start_column": 6,
+        "end_line": 272,
+        "end_column": 18
+      }
+    },
+    {
+      "id": "s30",
+      "title": "filter_upwards [Lp.coeFn_sub (V t i) (U t i), hVr t ht i, hUr t ht i] wi...",
+      "assumes": [
+        "Goal 31: ↑↑(V t i - U t i) x = v t x i - u t x i"
+      ],
+      "proves": "Goal 30: (fun x => ↑↑(V t i - U t i) x) =ᵐ[measure] fun x => v t x i - u t x i",
+      "depends_on": [
+        "s31"
+      ],
+      "views": {
+        "math": "⊢ (fun x => ↑↑(V t i - U t i) x) =ᵐ[measure] fun x => v t x i - u t x i",
+        "code": "filter_upwards [Lp.coeFn_sub (V t i) (U t i), hVr t ht i, hUr t ht i] with x hx hvx hux"
+      },
+      "lean_range": {
+        "start_line": 273,
+        "start_column": 6,
+        "end_line": 273,
+        "end_column": 93
+      }
+    },
+    {
+      "id": "s31",
+      "title": "simpa only [Pi.sub_apply, e, hvx, hux] using hx",
+      "assumes": [],
+      "proves": "Goal 31: ↑↑(V t i - U t i) x = v t x i - u t x i",
+      "views": {
+        "math": "⊢ ↑↑(V t i - U t i) x = v t x i - u t x i",
+        "code": "simpa only [Pi.sub_apply, e, hvx, hux] using hx"
+      },
+      "lean_range": {
+        "start_line": 274,
+        "start_column": 6,
+        "end_line": 274,
+        "end_column": 53
+      }
+    },
+    {
+      "id": "s32",
+      "title": "intro t ht i",
+      "assumes": [
+        "Goal 33: (fun x => ↑↑(dV t i - dU t i) x) =ᵐ[measure] fun x => de t x i"
+      ],
+      "proves": "Goal 32: ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), (fun x => ↑↑(dV t i - dU t i) x) =ᵐ[measure] fun x => de t x i",
+      "depends_on": [
+        "s33"
+      ],
+      "views": {
+        "math": "⊢ ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), (fun x => ↑↑(dV t i - dU t i) x) =ᵐ[measure] fun x => de t x i",
+        "code": "intro t ht i"
+      },
+      "lean_range": {
+        "start_line": 275,
+        "start_column": 6,
+        "end_line": 275,
+        "end_column": 18
+      }
+    },
+    {
+      "id": "s33",
+      "title": "filter_upwards [Lp.coeFn_sub (dV t i) (dU t i), hdVr t ht i, hdUr t ht i...",
+      "assumes": [
+        "Goal 34: ↑↑(dV t i - dU t i) x = de t x i"
+      ],
+      "proves": "Goal 33: (fun x => ↑↑(dV t i - dU t i) x) =ᵐ[measure] fun x => de t x i",
+      "depends_on": [
+        "s34"
+      ],
+      "views": {
+        "math": "⊢ (fun x => ↑↑(dV t i - dU t i) x) =ᵐ[measure] fun x => de t x i",
+        "code": "filter_upwards [Lp.coeFn_sub (dV t i) (dU t i), hdVr t ht i, hdUr t ht i] with x hx hvx hux"
+      },
+      "lean_range": {
+        "start_line": 276,
+        "start_column": 6,
+        "end_line": 276,
+        "end_column": 97
+      }
+    },
+    {
+      "id": "s34",
+      "title": "simpa only [Pi.sub_apply, de, hvx, hux] using hx",
+      "assumes": [],
+      "proves": "Goal 34: ↑↑(dV t i - dU t i) x = de t x i",
+      "views": {
+        "math": "⊢ ↑↑(dV t i - dU t i) x = de t x i",
+        "code": "simpa only [Pi.sub_apply, de, hvx, hux] using hx"
+      },
+      "lean_range": {
+        "start_line": 277,
+        "start_column": 6,
+        "end_line": 277,
+        "end_column": 54
+      }
+    },
+    {
+      "id": "s35",
+      "title": "intro t ht i",
+      "assumes": [
+        "Goal 36: HasDerivWithinAt (fun t => V t i - U t i) (dV t i - dU t i) (Icc 0 T) t"
+      ],
+      "proves": "Goal 35: ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), HasDerivWithinAt (fun t => V t i - U t i) (dV t i - dU t i) (Icc 0 T) t",
+      "depends_on": [
+        "s36"
+      ],
+      "views": {
+        "math": "⊢ ∀ t ∈ Icc 0 T, ∀ (i : Fin 3), HasDerivWithinAt (fun t => V t i - U t i) (dV t i - dU t i) (Icc 0 T) t",
+        "code": "intro t ht i"
+      },
+      "lean_range": {
+        "start_line": 278,
+        "start_column": 6,
+        "end_line": 278,
+        "end_column": 18
+      }
+    },
+    {
+      "id": "s36",
+      "title": "exact (hVd t ht i).sub (hUd t ht i)",
+      "assumes": [],
+      "proves": "Goal 36: HasDerivWithinAt (fun t => V t i - U t i) (dV t i - dU t i) (Icc 0 T) t",
+      "views": {
+        "math": "⊢ HasDerivWithinAt (fun t => V t i - U t i) (dV t i - dU t i) (Icc 0 T) t",
+        "code": "exact (hVd t ht i).sub (hUd t ht i)"
+      },
+      "lean_range": {
+        "start_line": 279,
+        "start_column": 6,
+        "end_line": 279,
+        "end_column": 41
+      }
+    },
+    {
+      "id": "s37",
+      "title": "intro x",
+      "assumes": [
+        "Goal 38: (fun i => v 0 x i - u 0 x i) = 0"
+      ],
+      "proves": "Goal 37: ∀ (x : Space), (fun i => v 0 x i - u 0 x i) = 0",
+      "depends_on": [
+        "s38"
+      ],
+      "views": {
+        "math": "⊢ ∀ (x : Space), (fun i => v 0 x i - u 0 x i) = 0",
+        "code": "intro x"
+      },
+      "lean_range": {
+        "start_line": 280,
+        "start_column": 6,
+        "end_line": 280,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "s38",
+      "title": "ext i",
+      "assumes": [
+        "Goal 39: v 0 x i - u 0 x i = 0 i"
+      ],
+      "proves": "Goal 38: (fun i => v 0 x i - u 0 x i) = 0",
+      "depends_on": [
+        "s39"
+      ],
+      "views": {
+        "math": "⊢ (fun i => v 0 x i - u 0 x i) = 0",
+        "code": "ext i"
+      },
+      "lean_range": {
+        "start_line": 281,
+        "start_column": 6,
+        "end_line": 281,
+        "end_column": 11
+      }
+    },
+    {
+      "id": "s39",
+      "title": "simp [h0 x]",
+      "assumes": [
+        "h0 : ∀ (x : Space), v 0 x = u 0 x"
+      ],
+      "proves": "Goal 39: v 0 x i - u 0 x i = 0 i",
+      "views": {
+        "math": "⊢ v 0 x i - u 0 x i = 0 i",
+        "code": "simp [h0 x]"
+      },
+      "lean_range": {
+        "start_line": 282,
+        "start_column": 6,
+        "end_line": 282,
+        "end_column": 17
+      }
+    },
+    {
+      "id": "s40",
+      "title": "have hvel (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) : v t x = u t x := by...",
+      "assumes": [
+        "Goal 43: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 40: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s43"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "have hvel (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) : v t x = u t x := by\n    ext i\n    exact sub_eq_zero.mp (congrFun (he t ht x) i)"
+      },
+      "lean_range": {
+        "start_line": 283,
+        "start_column": 2,
+        "end_line": 285,
+        "end_column": 49
+      },
+      "lean_value_range": {
+        "start_line": 283,
+        "start_column": 70,
+        "end_line": 285,
+        "end_column": 49
+      }
+    },
+    {
+      "id": "s40-why1",
+      "title": "Why hvel holds (from step s40)",
+      "assumes": [
+        "Goal 41: v t x = u t x"
+      ],
+      "proves": "hvel : ∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x",
+      "depends_on": [
+        "s41"
+      ],
+      "views": {
+        "math": "∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x",
+        "code": "have hvel (t : ℝ) (ht : t ∈ Icc 0 T) (x : Space) : v t x = u t x := by\n    ext i\n    exact sub_eq_zero.mp (congrFun (he t ht x) i)"
+      },
+      "lean_introduced_by": "s40"
+    },
+    {
+      "id": "s41",
+      "title": "ext i",
+      "assumes": [
+        "Goal 42: v t x i = u t x i"
+      ],
+      "proves": "Goal 41: v t x = u t x",
+      "depends_on": [
+        "s42"
+      ],
+      "views": {
+        "math": "⊢ v t x = u t x",
+        "code": "ext i"
+      },
+      "lean_range": {
+        "start_line": 284,
+        "start_column": 4,
+        "end_line": 284,
+        "end_column": 9
+      }
+    },
+    {
+      "id": "s42",
+      "title": "exact sub_eq_zero.mp (congrFun (he t ht x) i)",
+      "assumes": [
+        "he : ∀ t ∈ Icc 0 T, ∀ (x : Space), e t x = 0"
+      ],
+      "proves": "Goal 42: v t x i = u t x i",
+      "depends_on": [
+        "s25-why1"
+      ],
+      "views": {
+        "math": "⊢ v t x i = u t x i",
+        "code": "exact sub_eq_zero.mp (congrFun (he t ht x) i)"
+      },
+      "lean_range": {
+        "start_line": 285,
+        "start_column": 4,
+        "end_line": 285,
+        "end_column": 49
+      }
+    },
+    {
+      "id": "s43",
+      "title": "refine ⟨hvel, ?_⟩",
+      "assumes": [
+        "Goal 44: ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "hvel : ∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x"
+      ],
+      "proves": "Goal 43: (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s44",
+        "s40-why1"
+      ],
+      "views": {
+        "math": "⊢ (∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x) ∧ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "refine ⟨hvel, ?_⟩"
+      },
+      "lean_range": {
+        "start_line": 286,
+        "start_column": 2,
+        "end_line": 286,
+        "end_column": 19
+      }
+    },
+    {
+      "id": "s44",
+      "title": "intro t ht",
+      "assumes": [
+        "Goal 45: ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 44: ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s45"
+      ],
+      "views": {
+        "math": "⊢ ∀ t ∈ Icc 0 T, ∀ (x : Space), q t x = p t x",
+        "code": "intro t ht"
+      },
+      "lean_range": {
+        "start_line": 287,
+        "start_column": 2,
+        "end_line": 287,
+        "end_column": 12
+      }
+    },
+    {
+      "id": "s45",
+      "title": "have hslice : v t = u t := funext (hvel t ht)",
+      "assumes": [
+        "Goal 46: ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 45: ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s46"
+      ],
+      "views": {
+        "math": "⊢ ∀ (x : Space), q t x = p t x",
+        "code": "have hslice : v t = u t := funext (hvel t ht)"
+      },
+      "lean_range": {
+        "start_line": 288,
+        "start_column": 2,
+        "end_line": 288,
+        "end_column": 47
+      },
+      "lean_value_range": {
+        "start_line": 288,
+        "start_column": 29,
+        "end_line": 288,
+        "end_column": 47
+      }
+    },
+    {
+      "id": "s45-why1",
+      "title": "Why hslice holds (from step s45)",
+      "assumes": [
+        "hvel : ∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x"
+      ],
+      "proves": "hslice : v t = u t",
+      "depends_on": [
+        "s40-why1"
+      ],
+      "views": {
+        "math": "v t = u t",
+        "code": "have hslice : v t = u t := funext (hvel t ht)"
+      },
+      "lean_introduced_by": "s45"
+    },
+    {
+      "id": "s46",
+      "title": "have htime (x : Space) (i : Fin 3) : dv t x i = du t x i := by...",
+      "assumes": [
+        "Goal 49: ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 46: ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s49"
+      ],
+      "views": {
+        "math": "⊢ ∀ (x : Space), q t x = p t x",
+        "code": "have htime (x : Space) (i : Fin 3) : dv t x i = du t x i := by\n    have hh := (hu.pointwise_time t ht x i).congr\n      (fun s hs => congrFun (hvel s hs x) i) (congrFun (hvel t ht x) i)\n    exact ((hv.pointwise_time t ht x i).derivWithin (uniqueDiffOn_Icc hT t ht)).symm.trans\n      (hh.derivWithin (uniqueDiffOn_Icc hT t ht))"
+      },
+      "lean_range": {
+        "start_line": 289,
+        "start_column": 2,
+        "end_line": 293,
+        "end_column": 49
+      },
+      "lean_value_range": {
+        "start_line": 289,
+        "start_column": 62,
+        "end_line": 293,
+        "end_column": 49
+      }
+    },
+    {
+      "id": "s46-why1",
+      "title": "Why htime holds (from step s46)",
+      "assumes": [
+        "Goal 47: dv t x i = du t x i"
+      ],
+      "proves": "htime : ∀ (x : Space) (i : Fin 3), dv t x i = du t x i",
+      "depends_on": [
+        "s47"
+      ],
+      "views": {
+        "math": "∀ (x : Space) (i : Fin 3), dv t x i = du t x i",
+        "code": "have htime (x : Space) (i : Fin 3) : dv t x i = du t x i := by\n    have hh := (hu.pointwise_time t ht x i).congr\n      (fun s hs => congrFun (hvel s hs x) i) (congrFun (hvel t ht x) i)\n    exact ((hv.pointwise_time t ht x i).derivWithin (uniqueDiffOn_Icc hT t ht)).symm.trans\n      (hh.derivWithin (uniqueDiffOn_Icc hT t ht))"
+      },
+      "lean_introduced_by": "s46"
+    },
+    {
+      "id": "s47",
+      "title": "have hh := (hu.pointwise_time t ht x i).congr...",
+      "assumes": [
+        "Goal 48: dv t x i = du t x i"
+      ],
+      "proves": "Goal 47: dv t x i = du t x i",
+      "depends_on": [
+        "s48"
+      ],
+      "views": {
+        "math": "⊢ dv t x i = du t x i",
+        "code": "have hh := (hu.pointwise_time t ht x i).congr\n      (fun s hs => congrFun (hvel s hs x) i) (congrFun (hvel t ht x) i)"
+      },
+      "lean_range": {
+        "start_line": 290,
+        "start_column": 4,
+        "end_line": 291,
+        "end_column": 71
+      },
+      "lean_value_range": {
+        "start_line": 290,
+        "start_column": 15,
+        "end_line": 291,
+        "end_column": 71
+      }
+    },
+    {
+      "id": "s47-why1",
+      "title": "Why hh holds (from step s47)",
+      "assumes": [
+        "hu : EnergyRegularOn u du p T",
+        "hvel : ∀ t ∈ Icc 0 T, ∀ (x : Space), v t x = u t x"
+      ],
+      "proves": "hh : HasDerivWithinAt (fun s => v s x i) (du t x i) (Icc 0 T) t",
+      "depends_on": [
+        "s40-why1"
+      ],
+      "views": {
+        "math": "HasDerivWithinAt (fun s => v s x i) (du t x i) (Icc 0 T) t",
+        "code": "have hh := (hu.pointwise_time t ht x i).congr\n      (fun s hs => congrFun (hvel s hs x) i) (congrFun (hvel t ht x) i)"
+      },
+      "lean_introduced_by": "s47"
+    },
+    {
+      "id": "s48",
+      "title": "exact ((hv.pointwise_time t ht x i).derivWithin (uniqueDiffOn_Icc hT t h...",
+      "assumes": [
+        "hv : EnergyRegularOn v dv q T",
+        "hT : 0 < T",
+        "hh : HasDerivWithinAt (fun s => v s x i) (du t x i) (Icc 0 T) t"
+      ],
+      "proves": "Goal 48: dv t x i = du t x i",
+      "depends_on": [
+        "s47-why1"
+      ],
+      "views": {
+        "math": "⊢ dv t x i = du t x i",
+        "code": "exact ((hv.pointwise_time t ht x i).derivWithin (uniqueDiffOn_Icc hT t ht)).symm.trans\n      (hh.derivWithin (uniqueDiffOn_Icc hT t ht))"
+      },
+      "lean_range": {
+        "start_line": 292,
+        "start_column": 4,
+        "end_line": 293,
+        "end_column": 49
+      }
+    },
+    {
+      "id": "s49",
+      "title": "have hgrad (x : Space) (i : Fin 3) : D i (fun y => q t y - p t y) x = 0 ...",
+      "assumes": [
+        "Goal 57: ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 49: ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s57"
+      ],
+      "views": {
+        "math": "⊢ ∀ (x : Space), q t x = p t x",
+        "code": "have hgrad (x : Space) (i : Fin 3) : D i (fun y => q t y - p t y) x = 0 := by\n    have h1 := hupde.2 t ht x i\n    have h2 := hvpde.2 t ht x i\n    rw [htime, hslice] at h2\n    rw [D_sub ((hv.pressure t ht).smooth.differentiable (by norm_num))\n      ((hu.pressure t ht).smooth.differentiable (by norm_num))]\n    linarith only [h1, h2]"
+      },
+      "lean_range": {
+        "start_line": 294,
+        "start_column": 2,
+        "end_line": 300,
+        "end_column": 26
+      },
+      "lean_value_range": {
+        "start_line": 294,
+        "start_column": 77,
+        "end_line": 300,
+        "end_column": 26
+      }
+    },
+    {
+      "id": "s49-why1",
+      "title": "Why hgrad holds (from step s49)",
+      "assumes": [
+        "Goal 50: D i (fun y => q t y - p t y) x = 0"
+      ],
+      "proves": "hgrad : ∀ (x : Space) (i : Fin 3), D i (fun y => q t y - p t y) x = 0",
+      "depends_on": [
+        "s50"
+      ],
+      "views": {
+        "math": "∀ (x : Space) (i : Fin 3), D i (fun y => q t y - p t y) x = 0",
+        "code": "have hgrad (x : Space) (i : Fin 3) : D i (fun y => q t y - p t y) x = 0 := by\n    have h1 := hupde.2 t ht x i\n    have h2 := hvpde.2 t ht x i\n    rw [htime, hslice] at h2\n    rw [D_sub ((hv.pressure t ht).smooth.differentiable (by norm_num))\n      ((hu.pressure t ht).smooth.differentiable (by norm_num))]\n    linarith only [h1, h2]"
+      },
+      "lean_introduced_by": "s49"
+    },
+    {
+      "id": "s50",
+      "title": "have h1 := hupde.2 t ht x i",
+      "assumes": [
+        "Goal 51: D i (fun y => q t y - p t y) x = 0"
+      ],
+      "proves": "Goal 50: D i (fun y => q t y - p t y) x = 0",
+      "depends_on": [
+        "s51"
+      ],
+      "views": {
+        "math": "⊢ D i (fun y => q t y - p t y) x = 0",
+        "code": "have h1 := hupde.2 t ht x i"
+      },
+      "lean_range": {
+        "start_line": 295,
+        "start_column": 4,
+        "end_line": 295,
+        "end_column": 31
+      },
+      "lean_value_range": {
+        "start_line": 295,
+        "start_column": 15,
+        "end_line": 295,
+        "end_column": 31
+      }
+    },
+    {
+      "id": "s50-why1",
+      "title": "Why h1 holds (from step s50)",
+      "assumes": [
+        "hupde : solvesOn ν f u du p T"
+      ],
+      "proves": "h1 : du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (p t) x + ν * lap (fun y => u t y i) x + f t x i",
+      "views": {
+        "math": "du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (p t) x + ν * lap (fun y => u t y i) x + f t x i",
+        "code": "have h1 := hupde.2 t ht x i"
+      },
+      "lean_introduced_by": "s50"
+    },
+    {
+      "id": "s51",
+      "title": "have h2 := hvpde.2 t ht x i",
+      "assumes": [
+        "Goal 52: D i (fun y => q t y - p t y) x = 0"
+      ],
+      "proves": "Goal 51: D i (fun y => q t y - p t y) x = 0",
+      "depends_on": [
+        "s52"
+      ],
+      "views": {
+        "math": "⊢ D i (fun y => q t y - p t y) x = 0",
+        "code": "have h2 := hvpde.2 t ht x i"
+      },
+      "lean_range": {
+        "start_line": 296,
+        "start_column": 4,
+        "end_line": 296,
+        "end_column": 31
+      },
+      "lean_value_range": {
+        "start_line": 296,
+        "start_column": 15,
+        "end_line": 296,
+        "end_column": 31
+      }
+    },
+    {
+      "id": "s51-why1",
+      "title": "Why h2 holds (from step s51)",
+      "assumes": [
+        "hvpde : solvesOn ν f v dv q T"
+      ],
+      "proves": "h2 : dv t x i + ∑ k, v t x k * D k (fun y => v t y i) x = -D i (q t) x + ν * lap (fun y => v t y i) x + f t x i",
+      "views": {
+        "math": "dv t x i + ∑ k, v t x k * D k (fun y => v t y i) x = -D i (q t) x + ν * lap (fun y => v t y i) x + f t x i",
+        "code": "have h2 := hvpde.2 t ht x i"
+      },
+      "lean_introduced_by": "s51"
+    },
+    {
+      "id": "s52",
+      "title": "rw [htime, hslice] at h2",
+      "assumes": [
+        "Goal 53: D i (fun y => q t y - p t y) x = 0"
+      ],
+      "proves": "Goal 52: D i (fun y => q t y - p t y) x = 0",
+      "depends_on": [
+        "s53"
+      ],
+      "views": {
+        "math": "⊢ D i (fun y => q t y - p t y) x = 0",
+        "code": "rw [htime, hslice] at h2"
+      },
+      "lean_range": {
+        "start_line": 297,
+        "start_column": 4,
+        "end_line": 297,
+        "end_column": 28
+      }
+    },
+    {
+      "id": "s52-why1",
+      "title": "Why h2 holds (from step s52)",
+      "assumes": [
+        "hslice : v t = u t",
+        "htime : ∀ (x : Space) (i : Fin 3), dv t x i = du t x i",
+        "h2 : dv t x i + ∑ k, v t x k * D k (fun y => v t y i) x = -D i (q t) x + ν * lap (fun y => v t y i) x + f t x i"
+      ],
+      "proves": "h2 : du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (q t) x + ν * lap (fun y => u t y i) x + f t x i",
+      "depends_on": [
+        "s45-why1",
+        "s46-why1",
+        "s51-why1"
+      ],
+      "views": {
+        "math": "du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (q t) x + ν * lap (fun y => u t y i) x + f t x i",
+        "code": "rw [htime, hslice] at h2"
+      },
+      "lean_introduced_by": "s52"
+    },
+    {
+      "id": "s53",
+      "title": "rw [D_sub ((hv.pressure t ht).smooth.differentiable (by norm_num))...",
+      "assumes": [
+        "Goal 54: 1 ≠ 0",
+        "Goal 55: 1 ≠ 0",
+        "Goal 56: D i (q t) x - D i (p t) x = 0",
+        "hv : EnergyRegularOn v dv q T",
+        "hu : EnergyRegularOn u du p T"
+      ],
+      "proves": "Goal 53: D i (fun y => q t y - p t y) x = 0",
+      "depends_on": [
+        "s54",
+        "s55",
+        "s56"
+      ],
+      "views": {
+        "math": "⊢ D i (fun y => q t y - p t y) x = 0",
+        "code": "rw [D_sub ((hv.pressure t ht).smooth.differentiable (by norm_num))\n      ((hu.pressure t ht).smooth.differentiable (by norm_num))]"
+      },
+      "lean_range": {
+        "start_line": 298,
+        "start_column": 4,
+        "end_line": 299,
+        "end_column": 63
+      }
+    },
+    {
+      "id": "s54",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 54: 1 ≠ 0",
+      "views": {
+        "math": "⊢ 1 ≠ 0",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 298,
+        "start_column": 60,
+        "end_line": 298,
+        "end_column": 68
+      }
+    },
+    {
+      "id": "s55",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 55: 1 ≠ 0",
+      "views": {
+        "math": "⊢ 1 ≠ 0",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 299,
+        "start_column": 52,
+        "end_line": 299,
+        "end_column": 60
+      }
+    },
+    {
+      "id": "s56",
+      "title": "linarith only [h1, h2]",
+      "assumes": [
+        "h1 : du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (p t) x + ν * lap (fun y => u t y i) x + f t x i",
+        "h2 : du t x i + ∑ k, u t x k * D k (fun y => u t y i) x = -D i (q t) x + ν * lap (fun y => u t y i) x + f t x i"
+      ],
+      "proves": "Goal 56: D i (q t) x - D i (p t) x = 0",
+      "depends_on": [
+        "s50-why1",
+        "s52-why1"
+      ],
+      "views": {
+        "math": "⊢ D i (q t) x - D i (p t) x = 0",
+        "code": "linarith only [h1, h2]"
+      },
+      "lean_range": {
+        "start_line": 300,
+        "start_column": 4,
+        "end_line": 300,
+        "end_column": 26
+      }
+    },
+    {
+      "id": "s57",
+      "title": "have hpq := (hv.pressure t ht).sub (hu.pressure t ht)",
+      "assumes": [
+        "Goal 58: ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 57: ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s58"
+      ],
+      "views": {
+        "math": "⊢ ∀ (x : Space), q t x = p t x",
+        "code": "have hpq := (hv.pressure t ht).sub (hu.pressure t ht)"
+      },
+      "lean_range": {
+        "start_line": 301,
+        "start_column": 2,
+        "end_line": 301,
+        "end_column": 55
+      },
+      "lean_value_range": {
+        "start_line": 301,
+        "start_column": 14,
+        "end_line": 301,
+        "end_column": 55
+      }
+    },
+    {
+      "id": "s57-why1",
+      "title": "Why hpq holds (from step s57)",
+      "assumes": [
+        "hv : EnergyRegularOn v dv q T",
+        "hu : EnergyRegularOn u du p T"
+      ],
+      "proves": "hpq : PressureH1 fun x => q t x - p t x",
+      "views": {
+        "math": "PressureH1 fun x => q t x - p t x",
+        "code": "have hpq := (hv.pressure t ht).sub (hu.pressure t ht)"
+      },
+      "lean_introduced_by": "s57"
+    },
+    {
+      "id": "s58",
+      "title": "have hh := pressure_zero_of_gradient_zero (hpq.smooth.differentiable (by...",
+      "assumes": [
+        "Goal 60: ∀ (x : Space), q t x = p t x"
+      ],
+      "proves": "Goal 58: ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s60"
+      ],
+      "views": {
+        "math": "⊢ ∀ (x : Space), q t x = p t x",
+        "code": "have hh := pressure_zero_of_gradient_zero (hpq.smooth.differentiable (by norm_num))\n    hpq.square_integrable hgrad"
+      },
+      "lean_range": {
+        "start_line": 302,
+        "start_column": 2,
+        "end_line": 303,
+        "end_column": 31
+      },
+      "lean_value_range": {
+        "start_line": 302,
+        "start_column": 13,
+        "end_line": 303,
+        "end_column": 31
+      }
+    },
+    {
+      "id": "s58-why1",
+      "title": "Why hh holds (from step s58)",
+      "assumes": [
+        "Goal 59: 1 ≠ 0",
+        "hpq : PressureH1 fun x => q t x - p t x",
+        "hgrad : ∀ (x : Space) (i : Fin 3), D i (fun y => q t y - p t y) x = 0"
+      ],
+      "proves": "hh : ∀ (x : Space), q t x - p t x = 0",
+      "depends_on": [
+        "s59",
+        "s57-why1",
+        "s49-why1"
+      ],
+      "views": {
+        "math": "∀ (x : Space), q t x - p t x = 0",
+        "code": "have hh := pressure_zero_of_gradient_zero (hpq.smooth.differentiable (by norm_num))\n    hpq.square_integrable hgrad"
+      },
+      "lean_introduced_by": "s58"
+    },
+    {
+      "id": "s59",
+      "title": "norm_num",
+      "assumes": [],
+      "proves": "Goal 59: 1 ≠ 0",
+      "views": {
+        "math": "⊢ 1 ≠ 0",
+        "code": "norm_num"
+      },
+      "lean_range": {
+        "start_line": 302,
+        "start_column": 75,
+        "end_line": 302,
+        "end_column": 83
+      }
+    },
+    {
+      "id": "s60",
+      "title": "intro x",
+      "assumes": [
+        "Goal 61: q t x = p t x"
+      ],
+      "proves": "Goal 60: ∀ (x : Space), q t x = p t x",
+      "depends_on": [
+        "s61"
+      ],
+      "views": {
+        "math": "⊢ ∀ (x : Space), q t x = p t x",
+        "code": "intro x"
+      },
+      "lean_range": {
+        "start_line": 304,
+        "start_column": 2,
+        "end_line": 304,
+        "end_column": 9
+      }
+    },
+    {
+      "id": "s61",
+      "title": "exact sub_eq_zero.mp (hh x)",
+      "assumes": [
+        "hh : ∀ (x : Space), q t x - p t x = 0"
+      ],
+      "proves": "Goal 61: q t x = p t x",
+      "depends_on": [
+        "s58-why1"
+      ],
+      "views": {
+        "math": "⊢ q t x = p t x",
+        "code": "exact sub_eq_zero.mp (hh x)"
+      },
+      "lean_range": {
+        "start_line": 305,
+        "start_column": 2,
+        "end_line": 305,
+        "end_column": 29
+      }
+    }
+  ],
+  "lean_source": {
+    "file": "OAI/MathematicalPhysics/NavierStokes/VelocityDetection/CylinderEnergy.lean",
+    "theorem": "OAI.VelocityDetection.Cylinder.unique_velocity_and_pressure",
+    "file_sha256": "c60dc59aa63c7a1868ce3a1f497cefbf750017efe9f983e6b60ab5bcb10a93fb",
+    "project": "/home/levib/projects/personal-projects/hekswerk-scry/lean-projects/openai-math/lean"
+  }
+}
