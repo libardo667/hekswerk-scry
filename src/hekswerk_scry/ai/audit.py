@@ -12,12 +12,16 @@ scope note, but only the links are read, never the note's text: the notes are th
 key used to judge audits (see `compare_with_scope_note`).
 """
 
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from hekswerk_scry.ai.openrouter import OpenRouterClient
+from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, LOG_VERSION, RunLog
 from hekswerk_scry.ai.session import Session, Turn
 from hekswerk_scry.ai.statement_tools import CHECK_THEOREM, VERDICTS, StatementToolbox
+from hekswerk_scry.ai.tools import Evidence
 from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.statement import read_statement
 from hekswerk_scry.lean.workspace import workspace_for_file
@@ -99,14 +103,53 @@ def audit_prompt(toolbox: StatementToolbox, item: openai_math.Challenge,
 
 
 def run_audit(client: OpenRouterClient, toolbox: StatementToolbox, prompt: str,
-              name: str, papers: tuple[str, ...]) -> Audit:
+              name: str, papers: tuple[str, ...], log: RunLog | None = None,
+              about: dict[str, Any] | None = None) -> Audit:
+    """Run one audit. With a `log`, every step is written to it as it happens, starting
+    with `about` (what the run is, for the people reading the log)."""
     session = Session(client=client, toolbox=toolbox, system_prompt=prompt,
                       max_rounds=AUDIT_ROUNDS)
-    turn = session.ask(AUDIT_REQUEST)
-    return Audit(name, turn, toolbox, papers, session.total_cost_usd)
+    if log is not None:
+        statement = toolbox.statement_file
+        log.write("start", format=LOG_FORMAT, version=LOG_VERSION, challenge=name,
+                  statement_file=toolbox.workspace.relative(statement),
+                  statement_text=statement.read_text(encoding="utf-8"),
+                  theorems=list(toolbox.reports), papers=list(papers),
+                  model=client.settings.model, effort=client.settings.effort,
+                  **(about or {}))
+        spent = [0.0]
+
+        def on_reply(text: str, tools: list[str], cost: float) -> None:
+            spent[0] += cost
+            log.write("model", text=text, tool_calls=tools, cost_usd=round(cost, 6),
+                      cost_so_far_usd=round(spent[0], 6))
+
+        def on_evidence(item: Evidence) -> None:
+            rows = len(toolbox.verdicts)
+            log.evidence(item)
+            if item.tool == "record_verdict" and rows and item.summary.startswith(
+                    f"verdict {rows}:"):
+                log.write("verdict", number=rows, evidence_id=item.evidence_id,
+                          **vars(toolbox.verdicts[-1]))
+
+        session.on_reply, session.on_evidence = on_reply, on_evidence
+    try:
+        turn = session.ask(AUDIT_REQUEST)
+    except BaseException as exc:
+        if log is not None:
+            log.write("stopped", reason=f"{type(exc).__name__}: {exc}",
+                      cost_usd=round(session.total_cost_usd, 6))
+        raise
+    audit = Audit(name, turn, toolbox, papers, session.total_cost_usd)
+    if log is not None:
+        log.write("finish", answer=turn.answer, cost_usd=round(audit.cost_usd, 6),
+                  hit_round_limit=turn.hit_round_limit,
+                  cited=[e.evidence_id for e in turn.cited],
+                  unknown_citations=turn.unknown_citations)
+    return audit
 
 
-def audit_challenge(client: OpenRouterClient, name: str) -> Audit:
+def audit_challenge(client: OpenRouterClient, name: str, log_folder: Path | None = None) -> Audit:
     item = openai_math.challenge(name)
     workspace = workspace_for_file(item.statement_file)
     papers, paper_files = paper_files_for(item)
@@ -117,7 +160,12 @@ def audit_challenge(client: OpenRouterClient, name: str) -> Audit:
         solution_module=item.solution_module, reports=reports, paper_files=paper_files,
     )
     prompt = audit_prompt(toolbox, item, papers, PROVED_CHALLENGE)
-    return run_audit(client, toolbox, prompt, item.name, papers)
+    log = None
+    if log_folder is not None:
+        stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
+        log = RunLog(log_folder / f"{item.name}-{stamp}{LOG_SUFFIX}")
+    return run_audit(client, toolbox, prompt, item.name, papers, log,
+                     {"title": f"Statement audit of {item.name}", "copy": None})
 
 
 def compare_with_scope_note(name: str, audit_text: str) -> str:

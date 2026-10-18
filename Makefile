@@ -1,4 +1,4 @@
-.PHONY: check test lint typecheck demo mutation-check lean-setup lean-test lean-demo ai-test openai-setup openai-test
+.PHONY: check test lint typecheck demo serve mutation-check lean-setup lean-test lean-demo ai-test openai-setup openai-test
 
 # Use the project's virtual environment when there is one (see README), else python3.
 PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
@@ -21,6 +21,9 @@ typecheck:
 
 demo:
 	$(PYTHON) -m hekswerk_scry demo
+
+serve:
+	$(PYTHON) -m hekswerk_scry serve
 
 mutation-check:
 	$(PYTHON) scripts/mutation_check.py

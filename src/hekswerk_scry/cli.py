@@ -1,6 +1,7 @@
 """The `scry` command line: check, scan, and poke at proof maps.
 
     scry demo                                    walk through the bundled example
+    scry serve [--port N] [--runs DIR] [--maps DIR]  the browser workbench (read-only)
     scry check MAP.json                          run the wiring check
     scry scan MAP.json                           find chokepoints, knots, and unused steps
     scry what-if MAP.json --remove-step ID       see what relies on a step
@@ -77,7 +78,12 @@ from hekswerk_scry.lean.importer import LeanImportError, import_theorem
 from hekswerk_scry.lean.statement import StatementError, read_statement
 from hekswerk_scry.lean.what_if import run_lean_what_if
 from hekswerk_scry.lean.worker import LeanWorkerError
-from hekswerk_scry.lean.workspace import LeanSetupError, find_workspace, workspace_for_file
+from hekswerk_scry.lean.workspace import (
+    REPOSITORY,
+    LeanSetupError,
+    find_workspace,
+    workspace_for_file,
+)
 from hekswerk_scry.models import (
     ProofMap,
     ProofStep,
@@ -99,6 +105,7 @@ from hekswerk_scry.text_reports import (
     render_turn,
     render_wiring_report,
 )
+from hekswerk_scry.web.server import Library, Source, serve
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -136,6 +143,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _openai_challenges()
         if args.command == "openai-challenge":
             return _openai_challenge(args.name, not args.no_probes)
+        if args.command == "serve":
+            return _serve(args.port, args.runs, args.maps)
         if args.command == "audit-statement":
             return _audit_statement(args.name, Path(args.out))
         if args.command == "statement-benchmark":
@@ -210,6 +219,14 @@ def _build_parser() -> argparse.ArgumentParser:
                                 help="line an openai/math statement up against its paper")
     audit.add_argument("name", help="the comparator challenge's name")
     audit.add_argument("--out", default="audits", help="folder for the report (default: audits)")
+    serve = commands.add_parser("serve", help="the browser workbench: follow audits, read "
+                                "benchmarks and proof maps (read-only)")
+    serve.add_argument("--port", type=int, default=8765, help="port on 127.0.0.1 (default 8765)")
+    serve.add_argument("--runs", action="append", default=None, metavar="DIR",
+                       help="a folder of audit runs to show (default: audits/ and "
+                       "lean-projects/audits/); repeat for more")
+    serve.add_argument("--maps", action="append", default=None, metavar="DIR",
+                       help="a folder of proof maps to show (default: the bundled examples)")
     bench = commands.add_parser("statement-benchmark",
                                 help="score statement audits on copies with planted differences")
     bench.add_argument("names", nargs="*", help="challenges to use (default: every one with "
@@ -431,10 +448,33 @@ def _audit_statement(name: str, out: Path) -> int:
     settings = load_ai_settings()
     print(f"Auditing {name} with {settings.model} (effort {settings.effort}). Reading the "
           "statement with Lean first; this can take several minutes.")
-    result = audit_challenge(OpenRouterClient(settings), name)
+    result = audit_challenge(OpenRouterClient(settings), name, log_folder=out)
     print(render_turn(result.turn))
     path = save_audit(result, out)
     print(f"\nSaved the audit next to OpenAI's scope note (which the helper did not see): {path}")
+    return 0
+
+
+def _serve(port: int, runs: list[str] | None, maps: list[str] | None) -> int:
+    run_folders = [Path(r) for r in runs] if runs else [
+        REPOSITORY / "audits", REPOSITORY / "lean-projects" / "audits"]
+    map_folders = [Path(m) for m in maps] if maps else [Path(__file__).parent / "examples"]
+    for folder in [Path(f) for f in (runs or []) + (maps or [])]:
+        if not folder.is_dir():
+            raise ValueError(f"'{folder}' is not a folder.")
+    library = Library([Source("runs", f) for f in run_folders] +
+                      [Source("maps", f) for f in map_folders])
+    server = serve(library, port)
+    print(f"Scry workbench: http://127.0.0.1:{port}/  (read-only; Ctrl-C to stop)")
+    for source in library.sources:
+        shown = "" if source.root.is_dir() else "  (not there yet)"
+        print(f"  {'audits' if source.kind == 'runs' else 'proof maps'}: {source.root}{shown}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopped.")
+    finally:
+        server.server_close()
     return 0
 
 

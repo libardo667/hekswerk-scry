@@ -13,6 +13,7 @@ These are statements about the conversation's own record, not judgements of the 
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -78,6 +79,10 @@ class Session:
     messages: list[dict[str, Any]] = field(default_factory=list)
     total_cost_usd: float = 0.0
     max_rounds: int = MAX_TOOL_ROUNDS
+    # Told about each model reply and each tool result as they happen, for a run log.
+    # Watching changes nothing: what the model sees is the same either way.
+    on_reply: Callable[[str, list[str], float], None] | None = None
+    on_evidence: Callable[[Evidence], None] | None = None
 
     def __post_init__(self) -> None:
         if not self.system_prompt:
@@ -98,6 +103,9 @@ class Session:
             cost += reply.cost_usd or 0.0
             # Keep the model's message exactly as returned: history is append-only.
             self.messages.append(reply.message)
+            if self.on_reply is not None:
+                names = [str((c.get("function") or {}).get("name", "")) for c in reply.tool_calls]
+                self.on_reply(reply.text or "", names, reply.cost_usd or 0.0)
             if not reply.tool_calls:
                 return self._finish(reply.text, first_evidence, cost)
             for call in reply.tool_calls:
@@ -113,6 +121,8 @@ class Session:
                 else:
                     evidence = self.toolbox.run(str(function.get("name", "")), arguments)
                     content = f"[{evidence.evidence_id}] {evidence.result}"
+                    if self.on_evidence is not None:
+                        self.on_evidence(evidence)
                 self.messages.append(
                     {"role": "tool", "tool_call_id": call.get("id", ""), "content": content}
                 )

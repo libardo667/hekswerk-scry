@@ -23,7 +23,7 @@ scry = "hekswerk_scry.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-hekswerk_scry = ["examples/*.json"]
+hekswerk_scry = ["examples/*.json", "web/static/*"]
 
 [tool.ruff]
 line-length = 100

@@ -24,6 +24,7 @@ about a real difference that was there before the plant, so a person should chec
 import hashlib
 import json
 import re
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,7 @@ from hekswerk_scry.ai.audit import (
     run_audit,
 )
 from hekswerk_scry.ai.openrouter import AIProviderError, OpenRouterClient
+from hekswerk_scry.ai.run_log import LOG_SUFFIX, RunLog
 from hekswerk_scry.ai.statement_tools import (
     CHECK_THEOREM,
     MATCHES,
@@ -388,8 +390,18 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
         else:
             toolbox = toolbox_for(variant, paper_files)
             prompt = audit_prompt(toolbox, variant.item, papers, COPY_STATUS)
+            log = RunLog(out / f"{variant.item.name}--{variant.name}-"
+                         f"{time.strftime('%Y%m%d-%H%M%S', time.gmtime())}{LOG_SUFFIX}")
+            about = {
+                "title": f"Benchmark audit of {variant.item.name} ({variant.name})",
+                "copy": variant.name,
+                "plant": None if variant.plant is None else {
+                    "id": variant.plant.plant_id, "kind": variant.plant.kind,
+                    "what": variant.plant.what, "lines": variant.planted_lines},
+            }
             try:
-                audit = run_audit(client, toolbox, prompt, variant.item.name, papers)
+                audit = run_audit(client, toolbox, prompt, variant.item.name, papers,
+                                  log, about)
             except AIProviderError as exc:
                 # Keep everything finished so far, and say where and why it stopped.
                 stopped = f"{variant.item.name} ({variant.name}): {exc}"

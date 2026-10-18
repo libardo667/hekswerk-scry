@@ -75,6 +75,12 @@ conversation history is append-only.
   `lean-exporters/<version>/ScryExport`). Change them together; they may differ only where
   the Lean versions' APIs differ. `make openai-test` checks that both versions make the same
   map of the same proof.
+- The browser workbench (`web/`) is read-only: it never starts a run, calls a model or
+  writes a file. It listens on 127.0.0.1 only, refuses foreign `Host` headers, and serves
+  only files named by tokens inside the folders it was given. Never put text from a run
+  log, paper or model reply into the page as HTML (no `innerHTML`); build DOM nodes.
+- Audits write an append-only run log (`ai/run_log.py`). Watching must never change what
+  the model sees.
 
 ## 3. Never swap steps without re-checking at the moment of the swap
 

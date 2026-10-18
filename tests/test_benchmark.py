@@ -279,9 +279,8 @@ class TestStoppedRuns(unittest.TestCase):
                 )
             calls: list[str] = []
 
-            def audit(
-                client: object, toolbox: object, prompt: object, name: str, papers: object
-            ) -> object:
+            def audit(client: object, toolbox: object, prompt: object, name: str,
+                      *rest: object) -> object:
                 calls.append(name)
                 if len(calls) == 2:
                     raise AIProviderError("status 402: out of credits")
