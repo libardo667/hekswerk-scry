@@ -29,7 +29,6 @@ from pathlib import Path
 from typing import Any
 
 from hekswerk_scry.ai.audit import (
-    Audit,
     audit_prompt,
     audit_text,
     paper_files_for,
@@ -39,6 +38,7 @@ from hekswerk_scry.ai.openrouter import OpenRouterClient
 from hekswerk_scry.ai.statement_tools import (
     CHECK_THEOREM,
     MATCHES,
+    VERDICTS,
     StatementToolbox,
     VerdictRow,
 )
@@ -62,6 +62,7 @@ COPY_CLAIM_NOTE = (
 )
 
 DEFAULT_BUDGET_USD = 6.0
+RESULTS_FILE = "results.json"
 
 CAUGHT = "caught"
 DANGEROUS_MISS = "dangerous miss"
@@ -249,8 +250,14 @@ def control_flagged(control_rows: list[VerdictRow], original_lines: tuple[int, i
 
 @dataclass
 class VariantResult:
+    """What one audit of one copy found. `reused` means it came from an earlier run."""
+
     variant: Variant
-    audit: Audit
+    rows: list[VerdictRow]
+    cost_usd: float
+    hit_round_limit: bool
+    copy_sha256: str
+    reused: bool = False
     score: str | None = None  # None for a control
     also_in_control: bool = False
     catching_rows: list[VerdictRow] = field(default_factory=list)
@@ -258,14 +265,14 @@ class VariantResult:
 
 def score_challenge(results: list[VariantResult]) -> None:
     control = next((r for r in results if r.variant.plant is None), None)
-    control_rows = control.audit.toolbox.verdicts if control else []
+    control_rows = control.rows if control else []
     for result in results:
         lines = result.variant.planted_lines
         if lines is None:
             continue
-        rows = result.audit.toolbox.verdicts
-        result.score = score_plant(rows, lines)
-        result.catching_rows = [r for r in rows if r.verdict != MATCHES and _overlaps(r, lines)]
+        result.score = score_plant(result.rows, lines)
+        result.catching_rows = [r for r in result.rows
+                                if r.verdict != MATCHES and _overlaps(r, lines)]
         assert result.variant.original_lines is not None
         result.also_in_control = (result.score == CAUGHT and
                                   control_flagged(control_rows, result.variant.original_lines))
@@ -298,27 +305,93 @@ def can_afford(spent: list[float], budget_usd: float) -> bool:
     return not spent or sum(spent) + max(spent) <= budget_usd
 
 
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+@dataclass(frozen=True)
+class EarlierResult:
+    copy_sha256: str
+    rows: list[VerdictRow]
+    cost_usd: float
+    hit_round_limit: bool
+
+
+def earlier_results(out: Path) -> dict[tuple[str, str], EarlierResult]:
+    """Audits an earlier run saved in `out`, by (challenge, copy). Refuses a results file it
+    can't read completely, rather than guessing at what it meant."""
+    path = out / RESULTS_FILE
+    if not path.is_file():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    found: dict[tuple[str, str], EarlierResult] = {}
+    try:
+        for challenge, entries in data.items():
+            for entry in entries:
+                rows = [VerdictRow(
+                    item=str(r["item"]), paper_says=str(r["paper_says"]),
+                    lean_says=str(r["lean_says"]), verdict=str(r["verdict"]),
+                    affects_main_result=bool(r["affects_main_result"]),
+                    lean_lines=_saved_lines(r["lean_lines"]),
+                    evidence=tuple(r["evidence"]),
+                ) for r in entry["rows"]]
+                if any(r.verdict not in VERDICTS for r in rows):
+                    raise TypeError("a row has an unknown verdict")
+                found[(challenge, str(entry["variant"]))] = EarlierResult(
+                    str(entry["copy_sha256"]), rows, float(entry["cost_usd"]),
+                    bool(entry["hit_round_limit"]))
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        raise BenchmarkError(f"{path} isn't a complete results file ({exc!r}). Move it away "
+                             "or choose another --out folder.") from exc
+    return found
+
+
+def reusable(before: EarlierResult, copy_sha256: str) -> bool:
+    """An earlier audit stands only for exactly the copy it audited."""
+    return before.copy_sha256 == copy_sha256
+
+
+def _saved_lines(value: Any) -> tuple[int, int] | None:
+    if value is None:
+        return None
+    first, last = value  # exactly two, or this raises
+    if not (isinstance(first, int) and isinstance(last, int)):
+        raise TypeError(f"lean_lines {value!r} aren't two line numbers")
+    return (first, last)
+
+
 def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
                   plants: dict[str, list[Plant]] | None = None,
                   budget_usd: float = DEFAULT_BUDGET_USD) -> Path:
+    """Audit every copy, reusing any audit an earlier run in `out` saved for a byte-identical
+    copy. `budget_usd` limits what this run spends; reused audits cost nothing again."""
     plants = plants if plants is not None else load_plants()
     prepared = prepare(names, plants)
     out.mkdir(parents=True, exist_ok=True)
+    earlier = earlier_results(out)
     by_challenge: dict[str, list[VariantResult]] = {}
     spent: list[float] = []
     skipped: list[str] = []
     for variant, paper_files, papers in prepared:
-        if not can_afford(spent, budget_usd):
+        sha = file_sha256(variant.statement_file)
+        before = earlier.get((variant.item.name, variant.name))
+        if before is not None and reusable(before, sha):
+            result = VariantResult(variant, before.rows, before.cost_usd,
+                                   before.hit_round_limit, sha, reused=True)
+        elif not can_afford(spent, budget_usd):
             skipped.append(f"{variant.item.name} ({variant.name})")
             continue
-        toolbox = toolbox_for(variant, paper_files)
-        prompt = audit_prompt(toolbox, variant.item, papers, COPY_STATUS)
-        audit = run_audit(client, toolbox, prompt, variant.item.name, papers)
-        spent.append(audit.cost_usd)
-        (out / f"{variant.item.name}--{variant.name}.md").write_text(
-            audit_text(audit), encoding="utf-8")
-        by_challenge.setdefault(variant.item.name, []).append(VariantResult(variant, audit))
-        _save_rows(out, by_challenge)
+        else:
+            toolbox = toolbox_for(variant, paper_files)
+            prompt = audit_prompt(toolbox, variant.item, papers, COPY_STATUS)
+            audit = run_audit(client, toolbox, prompt, variant.item.name, papers)
+            spent.append(audit.cost_usd)
+            (out / f"{variant.item.name}--{variant.name}.md").write_text(
+                audit_text(audit), encoding="utf-8")
+            result = VariantResult(variant, list(audit.toolbox.verdicts), audit.cost_usd,
+                                   audit.turn.hit_round_limit, sha)
+        by_challenge.setdefault(variant.item.name, []).append(result)
+        save_results(out, by_challenge)
     for results in by_challenge.values():
         score_challenge(results)
     summary = out / "summary.md"
@@ -327,36 +400,39 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
         text += ("\n## Not run (budget of $" + f"{budget_usd:.2f} reached)\n\n"
                  + "\n".join(f"- {name}" for name in skipped) + "\n")
     summary.write_text(text, encoding="utf-8")
-    _save_rows(out, by_challenge)
+    save_results(out, by_challenge)
     return summary
 
 
-def _save_rows(out: Path, by_challenge: dict[str, list[VariantResult]]) -> None:
+def save_results(out: Path, by_challenge: dict[str, list[VariantResult]]) -> None:
     data: dict[str, Any] = {
         name: [{
             "variant": r.variant.name,
+            "copy_sha256": r.copy_sha256,
             "planted_lines": r.variant.planted_lines,
             "score": r.score, "also_in_control": r.also_in_control,
-            "cost_usd": round(r.audit.cost_usd, 4),
-            "hit_round_limit": r.audit.turn.hit_round_limit,
-            "rows": [vars(row) for row in r.audit.toolbox.verdicts],
+            "cost_usd": round(r.cost_usd, 4),
+            "hit_round_limit": r.hit_round_limit,
+            "rows": [vars(row) for row in r.rows],
         } for r in results]
         for name, results in by_challenge.items()
     }
-    (out / "results.json").write_text(json.dumps(data, indent=2, ensure_ascii=False),
-                                      encoding="utf-8")
+    (out / RESULTS_FILE).write_text(json.dumps(data, indent=2, ensure_ascii=False),
+                                    encoding="utf-8")
 
 
 def render_summary(by_challenge: dict[str, list[VariantResult]]) -> str:
     plants = [r for results in by_challenge.values() for r in results if r.score is not None]
     counts = {s: sum(r.score == s for r in plants) for s in (CAUGHT, DANGEROUS_MISS, MISSED)}
-    cost = sum(r.audit.cost_usd for results in by_challenge.values() for r in results)
+    cost = sum(r.cost_usd for results in by_challenge.values() for r in results)
+    reused = sum(r.reused for results in by_challenge.values() for r in results)
     lines = [
         "# Statement audit benchmark", "",
         f"{len(plants)} planted differences in {len(by_challenge)} statements: "
         f"{counts[CAUGHT]} caught, {counts[DANGEROUS_MISS]} dangerous misses (a row said "
         f"\"matches\" over the planted lines), {counts[MISSED]} missed. Total cost "
-        f"${cost:.2f}.", "",
+        f"${cost:.2f}" + (f" ({reused} audits reused from an earlier run)" if reused else "")
+        + ".", "",
         "Scored mechanically from the rows each audit recorded. The audits are the AI "
         "helper's reading; the scores only say whether a row pointed at the planted lines "
         "with a verdict other than \"matches\".", "",
@@ -378,7 +454,7 @@ def render_summary(by_challenge: dict[str, list[VariantResult]]) -> str:
             continue
         scope = openai_math.scope_note(control.variant.item)
         lines.append(f"### {name} (scope note {scope.name if scope else 'none'})")
-        differences = [r for r in control.audit.toolbox.verdicts if r.verdict != MATCHES]
+        differences = [r for r in control.rows if r.verdict != MATCHES]
         lines += [f"- {r.item}: {r.verdict}"
                   + (" (affects the main result)" if r.affects_main_result else "")
                   for r in differences] or ["- nothing flagged"]

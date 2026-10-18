@@ -202,6 +202,54 @@ class TestBudget(unittest.TestCase):
                     self.assertLessEqual(sum(spent) + max(spent), budget)
 
 
+class TestResuming(unittest.TestCase):
+    def results(self, root: Path) -> list[benchmark.VariantResult]:
+        item = openai_math.Challenge("Thing", root / "S.lean", "M", root / "M.lean", ("t",), ())
+        variant = benchmark.Variant(item, None, root / "S.lean", None, None)
+        rows = [
+            row("differs", (3, 4)),
+            row("not in the formalization", None),
+            VerdictRow("conclusion", "p ↔ q", "p → q", MATCHES, False, (9, 9), ("E2", "E5")),
+        ]
+        return [benchmark.VariantResult(variant, rows, 0.4321, False, "a" * 64)]
+
+    def test_saved_results_read_back_exactly(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            out = Path(folder)
+            saved = self.results(out)
+            benchmark.save_results(out, {"Thing": saved})
+            back = benchmark.earlier_results(out)[("Thing", benchmark.CONTROL)]
+            self.assertEqual(back.rows, saved[0].rows)
+            self.assertEqual(
+                (back.copy_sha256, back.cost_usd, back.hit_round_limit), ("a" * 64, 0.4321, False)
+            )
+
+    def test_only_an_identical_copy_reuses_an_audit(self) -> None:
+        before = benchmark.EarlierResult("a" * 64, [], 1.0, False)
+        self.assertTrue(benchmark.reusable(before, "a" * 64))
+        self.assertFalse(benchmark.reusable(before, "b" * 64))
+
+    def test_an_incomplete_results_file_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            out = Path(folder)
+            self.assertEqual(benchmark.earlier_results(out), {})
+            benchmark.save_results(out, {"Thing": self.results(out)})
+            path = out / benchmark.RESULTS_FILE
+            good = json.loads(path.read_text(encoding="utf-8"))
+            for damage in ("copy_sha256", "rows"):
+                broken = json.loads(json.dumps(good))
+                del broken["Thing"][0][damage]
+                path.write_text(json.dumps(broken), encoding="utf-8")
+                with self.subTest(damage), self.assertRaisesRegex(BenchmarkError, "complete"):
+                    benchmark.earlier_results(out)
+            for field_name, value in (("verdict", "fine"), ("lean_lines", [3])):
+                broken = json.loads(json.dumps(good))
+                broken["Thing"][0]["rows"][0][field_name] = value
+                path.write_text(json.dumps(broken), encoding="utf-8")
+                with self.subTest(field_name), self.assertRaisesRegex(BenchmarkError, "complete"):
+                    benchmark.earlier_results(out)
+
+
 class TestBlindness(unittest.TestCase):
     """Nothing the helper is given may say which copy it is auditing."""
 
