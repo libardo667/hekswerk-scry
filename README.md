@@ -157,7 +157,9 @@ scry serve        # then open http://127.0.0.1:8765/
 A read-only workbench: follow an audit while it runs (each piece of evidence, labelled with
 who produced it; the helper's rows lighting up the Lean lines they are about), read benchmark
 results, and look at proof maps drawn as steps and arrows. It starts nothing, spends nothing
-and changes nothing. Details: [`docs/decisions/0007-the-workbench.md`](docs/decisions/0007-the-workbench.md).
+and changes nothing. Besides the bundled example, it shows the proof maps saved in
+`lean-projects/maps/` (for example `scry lean-import File.lean Name -o lean-projects/maps/name.json`);
+`--maps DIR` shows another folder instead. Details: [`docs/decisions/0007-the-workbench.md`](docs/decisions/0007-the-workbench.md).
 
 ## Lean checks that cost seconds
 

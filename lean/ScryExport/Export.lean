@@ -50,7 +50,7 @@ structure Collected where
   top? : Option (ContextInfo × TacticInfo) := none
   /-- The goals of `by` blocks nested inside terms, such as `pow_pos (by linarith) 3`,
   with the step they are written in. -/
-  nestedBlocks : Array (MVarId × Option Nat) := #[]
+  nestedBlocks : Array (MVarId × Option Nat × Bool) := #[]
 
 def belongsTo (thm : Name) (ctx : ContextInfo) : Bool :=
   match ctx.parentDecl? with
@@ -87,10 +87,8 @@ partial def collect (thm : Name) (ctx? : Option ContextInfo) (parent? : Option N
       if (← get).top?.isNone then
         modify fun s => { s with top? := some (ctx, ti) }
       else if let some g := ti.goalsBefore.head? then
-        -- Only blocks written in the source have steps inside them. Blocks that tactics
-        -- generate for themselves (as `use` does to tidy up) stay part of their step.
-        if (ti.stx.getPos? (canonicalOnly := true)).isSome then
-          modify fun s => { s with nestedBlocks := s.nestedBlocks.push (g, parent?) }
+        let written := (ti.stx.getPos? (canonicalOnly := true)).isSome
+        modify fun s => { s with nestedBlocks := s.nestedBlocks.push (g, parent?, written) }
       descend parent? insideStep byRanges
       return
     let start? := ti.stx.getPos? (canonicalOnly := true)
@@ -210,18 +208,69 @@ partial def usesOutside (boundary : MVarIdSet) (skip : Array Expr) (e : Expr) :
   | .mdata _ b | .proj _ _ b => usesOutside boundary skip b
   | _ => return #[]
 
+/-- Is `sub` a copy of a nested block's finished proof `pat`? Under binders, as in
+`have h (k : ℕ) (hk : k ≤ 3) : T := … (by omega)`, the copy has the block's own hypotheses
+(`locals`) replaced by the binders' variables, so each of them may stand for one term, the
+same one everywhere. `depth` counts the binders entered inside the copy; a stand-in can't
+mention those. -/
+partial def matchesCopy (locals : Array FVarId) (pat sub : Expr) (depth : Nat := 0) :
+    StateT (Array (FVarId × Expr)) Option Unit := do
+  match pat, sub with
+  | .fvar f, _ =>
+    if !locals.contains f then
+      if pat != sub then failure
+    else
+      if (List.range depth).any sub.hasLooseBVar then failure
+      let standIn := sub.lowerLooseBVars depth depth
+      match (← get).find? (·.1 == f) with
+      | some (_, earlier) => if earlier != standIn then failure
+      | none => modify (·.push (f, standIn))
+  | .mdata _ p, _ => matchesCopy locals p sub depth
+  | _, .mdata _ s => matchesCopy locals pat s depth
+  | .app pf pa, .app sf sa => do
+    matchesCopy locals pf sf depth
+    matchesCopy locals pa sa depth
+  | .lam _ pt pb _, .lam _ st sb _ | .forallE _ pt pb _, .forallE _ st sb _ => do
+    matchesCopy locals pt st depth
+    matchesCopy locals pb sb (depth + 1)
+  | .letE _ pt pv pb _, .letE _ st sv sb _ => do
+    matchesCopy locals pt st depth
+    matchesCopy locals pv sv depth
+    matchesCopy locals pb sb (depth + 1)
+  | .proj pn pi pb, .proj sn si sb =>
+    if pn != sn || pi != si then failure
+    matchesCopy locals pb sb depth
+  | _, _ => if pat != sub then failure
+
+/-- A nested `by` block's goal, its finished proof, and the hypotheses of its own context that
+the step's goal doesn't have (bound inside the step's term, as by `have h (k : ℕ) : …`). -/
+structure Block where
+  goal : MVarId
+  proof : Expr
+  locals : Array FVarId
+
+def Block.isCopy (b : Block) (sub : Expr) : Bool :=
+  if b.locals.isEmpty then sub.hash == b.proof.hash && sub == b.proof
+  else
+    let head := b.proof.getAppFn
+    let headIsLocal := match head with
+      | .fvar f => b.locals.contains f
+      | _ => false
+    (headIsLocal || (sub.getAppFn == head && sub.getAppNumArgs == b.proof.getAppNumArgs)) &&
+      ((matchesCopy b.locals b.proof sub).run #[]).isSome
+
 /-- When Lean finishes a term such as `pow_pos (by linarith) 3`, it copies the finished `by`
 block into the surrounding proof, so no hole is left behind. Put the holes back: replace each
 copy of a nested block's finished proof with that block's goal. When several blocks have
 identical proofs (as in `⟨by left, by left⟩`), each copy is matched to a different block. -/
-partial def restoreNestedHoles (blocks : Array (MVarId × Expr)) (e : Expr) : Expr :=
+partial def restoreNestedHoles (blocks : Array Block) (e : Expr) : Expr :=
   if blocks.isEmpty then e else (go e).run' #[]
 where
   go (sub : Expr) : StateM (Array MVarId) Expr := do
     if !(sub.hasMVar || sub.isFVar || sub.isConst || sub.isSort || sub.isLit) then
       let used ← get
-      if let some (m, _) := blocks.find? fun (m, v) =>
-          !used.contains m && sub.hash == v.hash && sub == v then
+      if let some { goal := m, .. } := blocks.find? fun b =>
+          !used.contains b.goal && b.isCopy sub then
         modify (·.push m)
         return mkMVar m
     match sub with
@@ -283,6 +332,14 @@ def recordHyp (owner : MVarId) (f : FVarId) (fromStatement : Bool) : StateT Seen
     ("name", toString ldecl.userName), ("type", type), ("is_prop", isProp),
     ("from_statement", fromStatement), ("is_auxiliary", ldecl.isImplementationDetail)]) }
 
+/-- Lean's finished record can hold a goal's value with later steps' work already copied in:
+filling in a term also stores the filled-in result back. Read each assignment as it stood
+right after the step ran, when the goals it left were still open. Anything filled in later
+comes from the finished record. -/
+def asOfStep (final afterStep : MetavarContext) (boundary : MVarIdSet) : MetavarContext :=
+  afterStep.eAssignment.foldl (init := final) fun m mv v =>
+    if boundary.contains mv then m else { m with eAssignment := m.eAssignment.insert mv v }
+
 /-- Build the trace for theorem `thm` from the collected steps. -/
 def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected) :
     MetaM Json := do
@@ -297,7 +354,12 @@ def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected
   let consumed : Array (List MVarId) := c.steps.map fun s =>
     s.info.goalsBefore.filter fun g =>
       s.info.mctxAfter.eAssignment.contains g && inProof g && final.eAssignment.contains g
-  let nested := c.nestedBlocks.filter fun (m, _) => inProof m
+  -- Blocks with steps inside them: those written in the source, and those a macro wrote
+  -- (as `show T by tac` does) whose goal a step works on. Blocks that tactics generate for
+  -- themselves (as `use` does to tidy up) have no steps, and stay part of their step.
+  let workedOn : MVarIdSet := consumed.foldl (fun acc gs => gs.foldl (·.insert ·) acc) {}
+  let nested := c.nestedBlocks.filterMap fun (m, owner, written) =>
+    if inProof m && (written || workedOn.contains m) then some (m, owner) else none
   let everyConsumed : MVarIdSet := consumed.foldl (fun acc gs => gs.foldl (·.insert ·) acc)
     (nested.foldl (fun acc (m, _) => acc.insert m) {})
   -- Goals a step leaves behind that no step ever works on, but which are filled in in the
@@ -321,15 +383,19 @@ def buildTrace (thm : Name) (fileMap : FileMap) (source : String) (c : Collected
     let boundary := after.foldl (·.insert ·)
       (own.foldl (fun acc g => acc.erase g) everyConsumed)
     -- Forget how the other steps filled their goals, then read back this step's own piece.
-    let erased := boundary.fold (init := final) fun m b =>
+    let erased := boundary.fold (init := asOfStep final s.info.mctxAfter boundary) fun m b =>
       { m with eAssignment := m.eAssignment.erase b, dAssignment := m.dAssignment.erase b }
     let mut parts := #[]
     let mut introsJson := #[]
     for g in own do
       setMCtx erased
       -- Only blocks written inside this very step: identical proofs elsewhere don't count.
+      let gLocals := (final.getDecl g).lctx
       let others := blockValues.filterMap fun (m, owner, v) =>
-        if owner == some i && m != g then some (m, v) else none
+        if owner == some i && m != g then
+          some { goal := m, proof := v,
+                 locals := (collectFVars {} v).fvarIds.filter (!gLocals.contains ·) }
+        else none
       let term := restoreNestedHoles others (← instantiateMVars (mkMVar g))
       let found ← introduced boundary term []
       let allHoles := dedup (← holesIn boundary term)

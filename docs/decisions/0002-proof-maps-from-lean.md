@@ -15,7 +15,8 @@ The arrows come from Lean's own record of the finished proof. The exporter
 (`lean/ScryExport/Export.lean`) elaborates the file and, for each tactic step, reads:
 
 - **the goal it works on**: a goal that was open before the tactic and filled in by it;
-- **its own piece of the finished proof**: Lean's final record of the whole proof, with
+- **its own piece of the finished proof**: Lean's record of the whole proof as it stood
+  just after the step ran, with anything filled in later taken from the final record and
   every *other* step's goal temporarily un-filled, read back at this step's goal;
 - **the holes in that piece**: goals left for other steps;
 - **the hypotheses that piece uses**, and the hypotheses it introduces together with
@@ -42,6 +43,14 @@ inside one of the step's own `by` blocks, which are steps of their own.
   copies the finished block into the surrounding proof, leaving no hole. The exporter
   restores the hole by matching the copy, and only against blocks written inside that
   same step, matching each copy once (two identical `by left` blocks are two holes).
+  Under binders, as in `have h (k : ℕ) (hk : k ≤ 3) : T := … (by omega)`, the copy has the
+  block's own hypotheses replaced by the binders' variables, and the match allows that.
+  Blocks a macro writes (`show T by tac` is one) count when a step works on their goal.
+- **Copies in the final record.** Filling in a term also stores the filled-in result back,
+  so in Lean's final record a goal's value can already contain the next steps' work
+  (found on openai/math's Navier–Stokes proofs: `simp only` seemed to finish its block
+  alone, and every step after it looked unused). Reading each step from the record as it
+  stood just after that step ran avoids this, because the goals it left were still open.
 - **Abandoned attempts.** Tactics such as `use` try things and back out. Lean keeps a
   record of those attempts, but their goals are not part of the finished proof, so they
   are ignored.
@@ -71,6 +80,9 @@ way.
   the interesting parts of large Lean maps are future work.
 - **What-If tests only make a step do nothing (`skip`).** Dropping a starting fact would
   mean editing the theorem statement, which Scry doesn't do yet.
-- **Checked against AlphaProof P1, P2, and P6** and Scry's own example. Other proof
-  styles may expose cases the exporter doesn't handle yet. When the wiring check fails on
-  a freshly imported map, that is the signal.
+- **Checked against AlphaProof P1, P2, and P6**, Scry's own example, and openai/math proofs
+  on Lean v4.34.1. Other proof styles may expose cases the exporter doesn't handle yet.
+  The import refuses, as a Scry bug, a map that doesn't line up, and a map in which a step
+  leaves a goal for a later step that its own piece doesn't contain (that loss would make
+  working steps look unused). A nested block that no piece contains is not refused: a
+  tactic may elaborate a hint and then not use it, and that is a real unused step.

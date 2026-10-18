@@ -93,6 +93,49 @@ class TestImportedMap(unittest.TestCase):
             trace_to_checked_map(lossy, SOURCE)
         self.assertTrue(check_wiring(trace_to_checked_map(trace(), SOURCE)).passed)
 
+    def test_a_trace_that_loses_a_hole_is_refused_even_though_it_lines_up(self) -> None:
+        # Forget that the first step leaves the goal the next step works on, as reading a
+        # step from a record with the next step's work already copied in would. No fact
+        # goes missing, so the wiring still passes, but every later step now looks unused
+        # although Lean's proof relies on it. The import must refuse.
+        lossy = copy.deepcopy(trace())
+        first = lossy["steps"][0]
+        lost = first["leaves"][0]
+        first["parts"][0]["holes"].remove(lost)
+        worker = next(s for s in lossy["steps"] if any(p["goal"] == lost for p in s["parts"]))
+        self.assertTrue(check_wiring(trace_to_proof_map(lossy, SOURCE)).passed)
+        self.assertTrue(scan_proof_map(trace_to_proof_map(lossy, SOURCE)).unused_steps)
+        refusal = f"step s{worker['index'] + 1} .*step s1 leaves for it"
+        with self.assertRaisesRegex(LeanImportError, refusal):
+            trace_to_checked_map(lossy, SOURCE)
+
+    def test_a_sibling_goal_a_step_passes_along_is_held_by_the_step_that_left_it(self) -> None:
+        # After `constructor`-like steps, the step on the first goal still lists the second
+        # among its leftovers. Only the step that made it holds it, and that is enough.
+        passing = copy.deepcopy(trace())
+        first, second = passing["steps"][0], passing["steps"][1]
+        sibling = first["leaves"][0]
+        second["leaves"].append(sibling)
+        self.assertNotIn(sibling, {h for p in second["parts"] for h in p["holes"]})
+        trace_to_checked_map(passing, SOURCE)
+
+    def test_an_unused_hint_is_an_unused_step_not_a_lost_hole(self) -> None:
+        # `linarith [(by norm_num : (0 : ℝ) < 2)]`: Lean elaborates the hint, then doesn't use
+        # it. Its block is in no step's piece, and that is what Lean did.
+        fixture = Path(__file__).parent / "fixtures" / "unused_hint.trace.json"
+        hint = json.loads(fixture.read_text(encoding="utf-8"))
+        proof_map = trace_to_checked_map(hint, SOURCE)
+        self.assertEqual([u.step_id for u in scan_proof_map(proof_map).unused_steps], ["s3"])
+
+    def test_a_goal_left_for_a_hypothesis_s_justification_is_held(self) -> None:
+        # Mathlib's `have h : 0 < n` (no `:=`) leaves the goal `0 < n`, which only the
+        # "why h holds" step relies on. Real exporter output on HaveWithoutValue.lean.
+        fixture = Path(__file__).parent / "fixtures" / "have_without_value.trace.json"
+        have = json.loads(fixture.read_text(encoding="utf-8"))
+        proof_map = trace_to_checked_map(have, SOURCE)
+        self.assertEqual(proof_map.steps["s1-why1"].depends_on, ("s2",))
+        self.assertEqual(scan_proof_map(proof_map).unused_steps, ())
+
     def test_trace_whose_goal_nobody_works_on_is_rejected(self) -> None:
         broken = copy.deepcopy(trace())
         broken["steps"] = [s for s in broken["steps"] if s["index"] != 0]

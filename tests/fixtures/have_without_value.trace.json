@@ -1,0 +1,141 @@
+{
+    "version": 1,
+    "theorem": "have_without_value",
+    "steps": [
+        {
+            "value_range": null,
+            "start": {
+                "line": 4,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [],
+                    "holes": [
+                        "_uniq.172"
+                    ],
+                    "goal": "_uniq.140"
+                }
+            ],
+            "parent": null,
+            "leaves": [
+                "_uniq.169",
+                "_uniq.172"
+            ],
+            "kind": "Mathlib.Tactic.tacticHave_",
+            "introduces": [
+                {
+                    "value_holes": [
+                        "_uniq.169"
+                    ],
+                    "uses": [],
+                    "hypothesis": "_uniq.171",
+                    "alias_of": null
+                }
+            ],
+            "index": 0,
+            "end": {
+                "line": 4,
+                "column": 16
+            },
+            "code": "have h : 0 < n"
+        },
+        {
+            "value_range": null,
+            "start": {
+                "line": 5,
+                "column": 4
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.139"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.169"
+                }
+            ],
+            "parent": null,
+            "leaves": [],
+            "kind": "Lean.Parser.Tactic.exact",
+            "introduces": [],
+            "index": 1,
+            "end": {
+                "line": 5,
+                "column": 12
+            },
+            "code": "exact hn"
+        },
+        {
+            "value_range": null,
+            "start": {
+                "line": 6,
+                "column": 2
+            },
+            "parts": [
+                {
+                    "uses": [
+                        "_uniq.138",
+                        "_uniq.171"
+                    ],
+                    "holes": [],
+                    "goal": "_uniq.172"
+                }
+            ],
+            "parent": null,
+            "leaves": [],
+            "kind": "Lean.Parser.Tactic.exact",
+            "introduces": [],
+            "index": 2,
+            "end": {
+                "line": 6,
+                "column": 27
+            },
+            "code": "exact Nat.lt_succ_of_lt h"
+        }
+    ],
+    "starting_facts": [
+        {
+            "type": "0 < n",
+            "name": "hn",
+            "hypothesis": "_uniq.139"
+        }
+    ],
+    "root_goal": "_uniq.140",
+    "lean_version": "4.10.0-rc2",
+    "hypotheses": {
+        "_uniq.171": {
+            "type": "0 < n",
+            "name": "h",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": false
+        },
+        "_uniq.139": {
+            "type": "0 < n",
+            "name": "hn",
+            "is_prop": true,
+            "is_auxiliary": false,
+            "from_statement": true
+        },
+        "_uniq.138": {
+            "type": "ℕ",
+            "name": "n",
+            "is_prop": false,
+            "is_auxiliary": false,
+            "from_statement": true
+        }
+    },
+    "goals": {
+        "_uniq.172": {
+            "target": "0 < n + 1"
+        },
+        "_uniq.169": {
+            "target": "0 < n"
+        },
+        "_uniq.140": {
+            "target": "0 < n + 1"
+        }
+    },
+    "format": "hekswerk-scry/lean-trace"
+}

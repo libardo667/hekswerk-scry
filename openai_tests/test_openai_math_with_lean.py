@@ -8,7 +8,7 @@ import shutil
 import unittest
 from pathlib import Path
 
-from hekswerk_scry.checker import check_wiring
+from hekswerk_scry.checker import check_wiring, scan_proof_map
 from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.checks import check_map_with_lean, workspace_of
 from hekswerk_scry.lean.importer import import_theorem
@@ -137,6 +137,25 @@ class TestTruffetCounterexample(unittest.TestCase):
         self.assertIsNotNone(proof_map.lean_source)
         report = check_map_with_lean(workspace_of(proof_map), proof_map)
         self.assertTrue(report.passed, report.check.problems)
+
+
+class TestNavierStokesProofMap(unittest.TestCase):
+    def test_each_step_is_read_as_it_was_when_it_ran(self) -> None:
+        # Lean's finished record of this proof holds some goals with later steps' work already
+        # copied in. Read naively, `simp only` seems to finish its block alone, the `intro`s
+        # after `apply` and the steps after it look unused, and `linear_combination` seems to
+        # use `huv` and `hvv` from before `simp only ... at huv hvv ⊢` rewrote them.
+        path = (openai_math.lean_project() / "OAI" / "MathematicalPhysics" / "NavierStokes" /
+                "VelocityDetection" / "CylinderEnergy.lean")
+        ws = workspace_for_file(path)
+        proof_map = import_theorem(
+            ws, path, "OAI.VelocityDetection.Cylinder.unique_velocity_and_pressure")
+        self.assertEqual(scan_proof_map(proof_map).unused_steps, ())
+        by_code = {(step.views.code or "").splitlines()[0]: step_id
+                   for step_id, step in proof_map.steps.items() if "-why" not in step_id}
+        rewrite = by_code["simp only [Fin.sum_univ_three] at huv hvv ⊢"]
+        combination = proof_map.steps[by_code["linear_combination hvv - huv"]]
+        self.assertEqual(set(combination.depends_on), {f"{rewrite}-why1", f"{rewrite}-why2"})
 
 
 if __name__ == "__main__":

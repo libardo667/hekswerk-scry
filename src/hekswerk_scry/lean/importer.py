@@ -67,10 +67,22 @@ def trace_to_checked_map(trace: Mapping[str, Any], source: LeanSource) -> ProofM
     """Build the map and insist that it lines up.
 
     Everything in a trace comes from a proof Lean finished, so every fact a step needs
-    must be provided somewhere. If the map doesn't line up, the exporter or the importer
-    lost something Lean recorded. That is a Scry bug, and a map built from it would be
-    misleading, so the import fails instead of returning it.
+    must be provided somewhere, and every goal a step leaves for later steps must be a hole
+    in some step's piece of the proof. If either fails, the exporter or the importer lost
+    something Lean recorded. That is a Scry bug, and a map built from it would be
+    misleading (a lost hole makes the steps after it look unused), so the import fails
+    instead of returning it.
     """
+    lost = _goal_left_but_held_by_no_step(trace)
+    if lost is not None:
+        leaver, worker = lost
+        first_line = str(worker["code"]).splitlines()[0] if worker["code"] else ""
+        raise LeanImportError(
+            f"Scry bug: in the map made from '{source.theorem}', step s{worker['index'] + 1} "
+            f"(line {worker['start']['line']}: {first_line}) works on a goal that step "
+            f"s{leaver['index'] + 1} leaves for it, but no step's piece of the proof contains "
+            f"that goal, so part of what Lean recorded was lost on the way."
+        )
     proof_map = trace_to_proof_map(trace, source)
     report = check_wiring(proof_map)
     if not report.passed:
@@ -83,6 +95,32 @@ def trace_to_checked_map(trace: Mapping[str, Any], source: LeanSource) -> ProofM
             f"what Lean recorded was lost on the way. {report.summary} First problem: {first}"
         )
     return proof_map
+
+
+def _goal_left_but_held_by_no_step(
+    trace: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], Mapping[str, Any]] | None:
+    """A goal that some step leaves and a later step works on, but that is a hole in no
+    step's piece or hypothesis's justification: the first step that leaves it and the step
+    that works on it, if there is such a goal.
+
+    A step's leftover goals include siblings it never touched (after `constructor`, the step
+    on the first goal still lists the second), so a goal only has to be held by some step.
+    A nested `by` block is not "left": a tactic may elaborate a hint such as
+    `linarith [(by norm_num : (0 : ℝ) < 2)]` and then not use it, which is a real unused
+    step."""
+    held: set[str] = set()
+    for raw in trace["steps"]:
+        for part in raw["parts"]:
+            held.update(part["holes"])
+        for intro in raw["introduces"]:
+            held.update(intro["value_holes"])
+    workers = {part["goal"]: raw for raw in trace["steps"] for part in raw["parts"]}
+    for raw in trace["steps"]:
+        for goal in raw["leaves"]:
+            if goal not in held and goal in workers:
+                return raw, workers[goal]
+    return None
 
 
 def run_exporter(

@@ -113,6 +113,30 @@ class TestExampleWithLean(unittest.TestCase):
         self.assertEqual(scan_proof_map(obtain_map).unused_steps, ())
         self.assertIn("hpq : P ∧ Q", obtain_map.steps["s1"].contract.assumes)
 
+    def test_nested_blocks_under_binders_and_inside_show_are_holes(self) -> None:
+        # Lean copies a nested block's finished proof into the surrounding term. Under the
+        # binders of `have ha (k) (hk)`, the copy's hypotheses are bound variables; `show T by`
+        # writes its block through a macro. Either way the block's step must stay attached.
+        ws = workspace()
+        runs = ws.root / ".scry-runs" / "tests"
+        runs.mkdir(parents=True, exist_ok=True)
+        probe = runs / "NestedBlocks.lean"
+        probe.write_text(
+            "theorem under_binders (n : Nat) (hn : n = 1) : n < 5 := by\n"
+            "  have ha (k : Nat) (hk : k ≤ 3) : k < 5 := Nat.lt_of_le_of_lt hk (by omega)\n"
+            "  exact ha n (by omega)\n\n"
+            "theorem inside_show (n : Nat) (h0 : n = 0) : n + 0 = 0 := by\n"
+            "  have hz := (show n + 0 = n by simp)\n"
+            "  rw [hz, h0]\n",
+            encoding="utf-8",
+        )
+        for theorem, block in [("under_binders", "omega"), ("inside_show", "simp")]:
+            with self.subTest(theorem):
+                proof_map = import_theorem(ws, probe, theorem)
+                self.assertEqual(scan_proof_map(proof_map).unused_steps, ())
+                self.assertEqual(proof_map.steps["s2"].views.code, block)
+                self.assertIn("s2", proof_map.steps["s1-why1"].depends_on)
+
 
 class TestStatementsWithLean(unittest.TestCase):
     def test_an_imo_statement_is_read_without_generated_helpers(self) -> None:
