@@ -108,6 +108,23 @@ class TestKeptRunningLeanOnV434(unittest.TestCase):
             read_statement(ws, path, "p", probes=False)
 
 
+class TestStatementBenchmarkCopies(unittest.TestCase):
+    def test_every_plant_applies_and_lean_accepts_every_copy(self) -> None:
+        # Fails if OpenAI's statements change under the plants, or a copy stops compiling.
+        from hekswerk_scry.ai.benchmark import load_plants, prepare
+
+        plants = load_plants()
+        prepared = prepare(sorted(plants), plants)
+        self.assertEqual(len(prepared), sum(1 + len(p) for p in plants.values()))
+        for variant, paper_files, _ in prepared:
+            self.assertTrue(paper_files, variant.item.name)
+            if variant.plant is not None:
+                assert variant.planted_lines is not None
+                text = variant.statement_file.read_text(encoding="utf-8").split("\n")
+                first, last = variant.planted_lines
+                self.assertEqual("\n".join(text[first - 1:last]), variant.plant.new)
+
+
 class TestTruffetCounterexample(unittest.TestCase):
     def test_statement_proof_map_and_lean_check(self) -> None:
         item = openai_math.challenge("TruffetCounterexample")

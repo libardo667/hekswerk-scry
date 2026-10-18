@@ -24,7 +24,11 @@ from hekswerk_scry.lean.workspace import REPOSITORY
 
 CLONE_URL = "https://github.com/openai/math.git"
 DEFAULT_FOLDER = REPOSITORY / "lean-projects" / "openai-math"
-_PAPER_LINK = re.compile(r"\(\.\./\.\./preprints/([^/)]+)/paper\.pdf\)")
+# A Markdown link into the repository's preprints folder. The file name varies (paper.pdf,
+# main.pdf, article.pdf, ...) and a folder name can itself contain parentheses, so the
+# link runs to the first `.pdf)`.
+_PREPRINT_LINK = re.compile(r"\]\(\.\./\.\./preprints/(.+?)\.pdf\)")
+_PREPRINT_MENTION = "](../../preprints/"
 
 
 class OpenAIMathError(RuntimeError):
@@ -122,8 +126,28 @@ def scope_note(item: Challenge) -> Path | None:
 
 
 def papers_of(note: Path) -> tuple[str, ...]:
-    """The paper folders (under `preprints/`) a scope note is about."""
-    return tuple(dict.fromkeys(_PAPER_LINK.findall(note.read_text(encoding="utf-8"))))
+    """The paper folders (under `preprints/`) a scope note is about.
+
+    Every link into `preprints/` must be understood: if one isn't, the note is refused
+    rather than read with a paper silently missing.
+    """
+    text = note.read_text(encoding="utf-8")
+    targets = _PREPRINT_LINK.findall(text)
+    if len(targets) != text.count(_PREPRINT_MENTION):
+        raise OpenAIMathError(
+            f"Scope note {note.name} links to a paper in a way Scry doesn't recognise; "
+            "update openai_math._PREPRINT_LINK."
+        )
+    folders: list[str] = []
+    for target in targets:
+        folder, _, file_name = target.rpartition("/")
+        if not folder or "/" in folder or not file_name:
+            raise OpenAIMathError(
+                f"Scope note {note.name} links to 'preprints/{target}.pdf', which isn't a "
+                "paper file directly inside a paper's folder."
+            )
+        folders.append(folder)
+    return tuple(dict.fromkeys(folders))
 
 
 # --- Paper sources -------------------------------------------------------------------

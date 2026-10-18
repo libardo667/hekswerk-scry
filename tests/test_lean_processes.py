@@ -21,6 +21,7 @@ from hekswerk_scry.lean.processes import run_program
 from hekswerk_scry.lean.runner import check_file
 from hekswerk_scry.lean.statement import StatementError, read_statement
 from hekswerk_scry.lean.workspace import LeanSetupError, LeanWorkspace
+from tests.process_helpers import alive
 
 SLOW_LAKE = f"""#!{sys.executable}
 import os, subprocess, sys
@@ -29,21 +30,6 @@ with open(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "children.
     f.write(f"{{child.pid}}\\n")
 sys.exit(child.wait())
 """
-
-
-def alive(pid: int) -> bool:
-    for _ in range(50):
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            return False
-        try:
-            if Path(f"/proc/{pid}/stat").read_text().split()[2] == "Z":
-                return False  # stopped; only its exit status is left to collect
-        except FileNotFoundError:
-            return False
-        time.sleep(0.1)
-    return True
 
 
 class TestTimeoutsStopEverything(unittest.TestCase):

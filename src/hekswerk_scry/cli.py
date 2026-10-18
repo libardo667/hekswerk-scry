@@ -26,6 +26,9 @@ OpenAI's mathematics repository (github.com/openai/math):
     scry openai-challenge NAME [--no-probes]     what one formal result states
     scry audit-statement NAME [--out FOLDER]     the AI helper lines the statement up against
                                                  its paper; saved next to OpenAI's scope note
+    scry statement-benchmark [NAME ...] [--prepare-only] [--out FOLDER]
+                                                 audit unchanged and planted copies of
+                                                 statements blind, and score the audits
 
 With an OpenRouter key in .env (see "The AI helper" in README.md):
 
@@ -39,6 +42,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from hekswerk_scry.ai.audit import audit_challenge, save_audit
+from hekswerk_scry.ai.benchmark import BenchmarkError, load_plants, prepare, run_benchmark
 from hekswerk_scry.ai.openrouter import AIProviderError, OpenRouterClient
 from hekswerk_scry.ai.session import Session
 from hekswerk_scry.ai.tools import Toolbox
@@ -128,7 +132,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _openai_challenge(args.name, not args.no_probes)
         if args.command == "audit-statement":
             return _audit_statement(args.name, Path(args.out))
-    except (ValueError, LeanSetupError, LeanImportError, LeanWorkerError, AlphaProofFetchError,
+        if args.command == "statement-benchmark":
+            return _statement_benchmark(args.names, Path(args.out), args.prepare_only)
+    except (ValueError, LeanSetupError, LeanImportError, LeanWorkerError, BenchmarkError,
+            AlphaProofFetchError,
             AIProviderError, StatementError, openai_math.OpenAIMathError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
@@ -196,6 +203,14 @@ def _build_parser() -> argparse.ArgumentParser:
                                 help="line an openai/math statement up against its paper")
     audit.add_argument("name", help="the comparator challenge's name")
     audit.add_argument("--out", default="audits", help="folder for the report (default: audits)")
+    bench = commands.add_parser("statement-benchmark",
+                                help="score statement audits on copies with planted differences")
+    bench.add_argument("names", nargs="*", help="challenges to use (default: every one with "
+                       "plants in benchmarks/statement-plants.json)")
+    bench.add_argument("--prepare-only", action="store_true",
+                       help="make and Lean-check the copies, without calling the model")
+    bench.add_argument("--out", default="audits/benchmark",
+                       help="folder for the results (default: audits/benchmark)")
     return parser
 
 
@@ -410,6 +425,28 @@ def _audit_statement(name: str, out: Path) -> int:
     print(render_turn(result.turn))
     path = save_audit(result, out)
     print(f"\nSaved the audit next to OpenAI's scope note (which the helper did not see): {path}")
+    return 0
+
+
+def _statement_benchmark(names: list[str], out: Path, prepare_only: bool) -> int:
+    plants = load_plants()
+    names = names or sorted(plants)
+    count = sum(1 + len(plants.get(n, [])) for n in names)
+    if prepare_only:
+        prepared = prepare(names, plants)
+        for variant, _, _ in prepared:
+            where = (f"planted at line(s) {variant.planted_lines[0]}-{variant.planted_lines[1]}"
+                     if variant.planted_lines else "unchanged")
+            print(f"Lean accepts the {variant.name} copy of {variant.item.name} ({where}).")
+        print(f"\n{len(prepared)} copies ready. Run without --prepare-only to audit them.")
+        return 0
+    settings = load_ai_settings()
+    print(f"Auditing {count} copies of {len(names)} statements with {settings.model} (effort "
+          f"{settings.effort}). Each audit is a separate conversation; expect roughly $0.50 "
+          "each.")
+    summary = run_benchmark(OpenRouterClient(settings), names, out, plants)
+    print(summary.read_text(encoding="utf-8"))
+    print(f"\nSaved in {summary.parent}.")
     return 0
 
 

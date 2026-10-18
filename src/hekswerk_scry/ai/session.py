@@ -77,6 +77,7 @@ class Session:
     system_prompt: str = ""
     messages: list[dict[str, Any]] = field(default_factory=list)
     total_cost_usd: float = 0.0
+    max_rounds: int = MAX_TOOL_ROUNDS
 
     def __post_init__(self) -> None:
         if not self.system_prompt:
@@ -92,7 +93,7 @@ class Session:
         first_evidence = len(self.toolbox.evidence)
         cost = 0.0
         tools = self.toolbox.definitions()
-        for _ in range(MAX_TOOL_ROUNDS):
+        for _ in range(self.max_rounds):
             reply = self.client.chat(self.messages, tools)
             cost += reply.cost_usd or 0.0
             # Keep the model's message exactly as returned: history is append-only.

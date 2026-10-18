@@ -7,6 +7,13 @@ says the result covers, or a concrete example meeting the hypotheses) that Lean 
 against the real proof. Everything else is the helper's reading of the paper and the
 statement, with citations, for a person to judge.
 
+The helper also records each row of its point-by-point comparison with `record_verdict`:
+the item, what the paper and Lean say, a verdict from a fixed list, whether it changes what
+the formal result establishes, the Lean lines it is about, and the evidence it rests on.
+Rows are what statement audits are scored on (`ai/benchmark.py`), so they are checked as
+they are recorded: an unknown verdict, a line outside the file, or a citation of evidence
+that doesn't exist is refused.
+
 The scope notes OpenAI wrote are deliberately not available here: they are the answer
 key for judging how well this works.
 """
@@ -24,13 +31,38 @@ from hekswerk_scry.lean.statement import StatementReport
 from hekswerk_scry.lean.workspace import LeanWorkspace
 
 MAX_LINES = 200
+MAX_VERDICT_LINES = 25
 CHECK_THEOREM = "scry_check"
+NOT_IN_FORMALIZATION = "not in the formalization"
+MATCHES = "matches"
+VERDICTS = (
+    MATCHES, "Lean assumes more", "Lean concludes less", "Lean covers a special case",
+    "differs", NOT_IN_FORMALIZATION, "unclear",
+)
 _THEOREM_LINE = re.compile(rf"^\s*theorem\s+{CHECK_THEOREM}\b", re.MULTILINE)
+
+
+@dataclass(frozen=True)
+class VerdictRow:
+    """One row of the helper's comparison of paper and formal statement (its reading)."""
+
+    item: str
+    paper_says: str
+    lean_says: str
+    verdict: str
+    affects_main_result: bool
+    lean_lines: tuple[int, int] | None  # None only for "not in the formalization"
+    evidence: tuple[str, ...]
 
 
 @dataclass
 class StatementToolbox(ToolRunner):
-    """Everything the helper may look at while auditing one formal statement."""
+    """Everything the helper may look at while auditing one formal statement.
+
+    `claim_preamble` is the Lean text the helper's own claims are checked under. By default
+    it imports the module that proves the result, so claims can use its theorems. An audit
+    of a copy of a statement uses the copy's own definitions instead (`ai/benchmark.py`).
+    """
 
     workspace: LeanWorkspace
     statement_file: Path
@@ -39,6 +71,19 @@ class StatementToolbox(ToolRunner):
     paper_files: list[Path]
     evidence: list[Evidence] = field(default_factory=list)
     checks_run: int = 0
+    claim_preamble: str = ""
+    claim_note: str = ""
+    proof_note: str = "(This file states the result; its proof is in the solution module.)"
+    claims_folder: Path | None = None
+    verdicts: list[VerdictRow] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not self.claim_preamble:
+            self.claim_preamble = f"import {self.solution_module}"
+            self.claim_note = (f"The proved result is imported from `{self.solution_module}`, "
+                               "so you can use its theorems by name.")
+        if self.claims_folder is None:
+            self.claims_folder = self.workspace.root / ".scry-runs" / "claims"
 
     def definitions(self) -> list[dict[str, Any]]:
         theorem = {"theorem": {"type": "string", "description": "The theorem's full name."}}
@@ -61,13 +106,35 @@ class StatementToolbox(ToolRunner):
                  {"file": {"type": "string", "description": "As listed by list_paper_files."},
                   "first_line": {"type": "integer"}, "last_line": {"type": "integer"}},
                  ["file", "first_line", "last_line"]),
-            tool("check_lean_claim", "Ask Lean to check a small claim of your own against the "
-                 "real proof, for example a special case the paper says the result covers, or a "
-                 f"concrete example satisfying the hypotheses. Write one `theorem {CHECK_THEOREM}"
-                 " : ... := by ...` (you may add helper lemmas above it). The proved result is "
-                 f"imported from `{self.solution_module}`, so you can use its theorems by name. "
-                 "Lean accepts it only with no errors, no sorry and standard axioms.",
+            tool("check_lean_claim", "Ask Lean to check a small claim of your own, for "
+                 "example a special case the paper says the result covers, or a concrete "
+                 "example satisfying the hypotheses. Write one `theorem "
+                 f"{CHECK_THEOREM} : ... := by ...` (you may add helper lemmas above it). "
+                 f"{self.claim_note} Lean accepts it only with no errors, no sorry and "
+                 "standard axioms.",
                  {"lean_code": {"type": "string"}}, ["lean_code"]),
+            tool("record_verdict", "Record one row of your point-by-point comparison, before "
+                 "writing your report. One row per item (an assumption, a quantifier, a "
+                 "domain, a constant, a definition, the conclusion). Rows are checked: the "
+                 "verdict must be one of the listed ones, the Lean lines must be the specific "
+                 f"lines the row is about (at most {MAX_VERDICT_LINES}), and the evidence must "
+                 "be earlier tool results.",
+                 {"item": {"type": "string"},
+                  "paper_says": {"type": "string"},
+                  "lean_says": {"type": "string"},
+                  "verdict": {"type": "string", "enum": list(VERDICTS)},
+                  "affects_main_result": {
+                      "type": "boolean",
+                      "description": "True if this changes what the formal result establishes "
+                                     "about the paper's main claim; false for side remarks or "
+                                     "things the main claim doesn't need."},
+                  "lean_first_line": {"type": "integer", "description": "Omit only for 'not "
+                                      "in the formalization'."},
+                  "lean_last_line": {"type": "integer"},
+                  "evidence": {"type": "array", "items": {"type": "string"},
+                               "description": "Evidence ids such as E3."}},
+                 ["item", "paper_says", "lean_says", "verdict", "affects_main_result",
+                  "evidence"]),
         ]
 
     def handlers(self) -> dict[str, Callable[[dict[str, Any]], Outcome]]:
@@ -79,6 +146,7 @@ class StatementToolbox(ToolRunner):
             "search_paper": self._search_paper,
             "read_paper": self._read_paper,
             "check_lean_claim": self._check_lean_claim,
+            "record_verdict": self._record_verdict,
         }
 
     # --- Lean's reading of the statement -------------------------------------------
@@ -97,7 +165,7 @@ class StatementToolbox(ToolRunner):
         lines += [f"- [depth {d.depth}] {d.name} ({d.kind})" for d in report.definitions]
         lines += [f"Probe {p.kind}: {p.headline}" for p in report.probes]
         if report.proof_left_open:
-            lines.append("(This file states the result; its proof is in the solution module.)")
+            lines.append(self.proof_note)
         return Outcome(f"Lean's reading of the statement of {name.split('.')[-1]}",
                        "\n".join(lines), CheckKind.LEAN, report.receipt.receipt_id)
 
@@ -165,19 +233,66 @@ class StatementToolbox(ToolRunner):
         if not _THEOREM_LINE.search(code):
             raise ValueError(f"Write the claim as `theorem {CHECK_THEOREM} : ... := by ...`.")
         self.checks_run += 1
-        folder = self.workspace.root / ".scry-runs" / "claims"
-        folder.mkdir(parents=True, exist_ok=True)
-        path = folder / f"Claim{self.checks_run}.lean"
-        path.write_text(f"import {self.solution_module}\n\n{code.strip()}\n", encoding="utf-8")
+        assert self.claims_folder is not None
+        self.claims_folder.mkdir(parents=True, exist_ok=True)
+        path = self.claims_folder / f"Claim{self.checks_run}.lean"
+        preamble = self.claim_preamble.rstrip()
+        offset = len(preamble.splitlines()) + 1  # the preamble, then one blank line
+        path.write_text(f"{preamble}\n\n{code.strip()}\n", encoding="utf-8")
         check = check_file(self.workspace, path, CHECK_THEOREM)
         problems = "\n".join(f"- {p}" for p in check.problems)
         verdict = ("Lean accepts the claim." if check.passed
                    else f"Lean does not accept the claim:\n{problems}")
-        errors = "".join(f"\n  line {e.line - 2}: {e.text.strip().splitlines()[0][:200]}"
-                         for e in check.errors()[:5])
+        errors = "".join(
+            f"\n  {'line ' + str(e.line - offset) if e.line > offset else 'before your code'}: "
+            f"{e.text.strip().splitlines()[0][:200]}"
+            for e in check.errors()[:5])
         return Outcome(f"Lean check of claim {self.checks_run}: "
                        f"{'accepted' if check.passed else 'not accepted'}",
                        verdict + errors, CheckKind.LEAN, check.receipt.receipt_id)
+
+
+    # --- the comparison table ------------------------------------------------------
+
+    def _record_verdict(self, arguments: dict[str, Any]) -> Outcome:
+        verdict = str(arguments["verdict"])
+        if verdict not in VERDICTS:
+            raise ValueError(f"'{verdict}' isn't a verdict. Use one of: {', '.join(VERDICTS)}.")
+        if not isinstance(arguments["affects_main_result"], bool):
+            raise ValueError("affects_main_result must be true or false.")
+        first, last = arguments.get("lean_first_line"), arguments.get("lean_last_line")
+        lines: tuple[int, int] | None = None
+        if first is None and last is None:
+            if verdict != NOT_IN_FORMALIZATION:
+                raise ValueError("Give the Lean lines this row is about (lean_first_line and "
+                                 f"lean_last_line); only '{NOT_IN_FORMALIZATION}' may omit them.")
+        else:
+            total = len(self.statement_file.read_text(encoding="utf-8").splitlines())
+            if first is None or last is None:
+                raise ValueError("Give both lean_first_line and lean_last_line.")
+            lines = (int(first), int(last))
+            if not 1 <= lines[0] <= lines[1] <= total:
+                raise ValueError(f"Lines {lines[0]}-{lines[1]} aren't in the statement file "
+                                 f"(it has {total} lines).")
+            if lines[1] - lines[0] + 1 > MAX_VERDICT_LINES:
+                raise ValueError(f"Point at the specific lines (at most {MAX_VERDICT_LINES}), "
+                                 "not a whole region of the file.")
+        cited = tuple(dict.fromkeys(str(e).strip().strip("[]") for e in arguments["evidence"]))
+        known = {e.evidence_id for e in self.evidence if e.tool != "record_verdict"}
+        unknown = [e for e in cited if e not in known]
+        if not cited or unknown:
+            raise ValueError("Cite at least one earlier tool result; these aren't any: "
+                             f"{', '.join(unknown) or '(none given)'}.")
+        row = VerdictRow(
+            item=str(arguments["item"]), paper_says=str(arguments["paper_says"]),
+            lean_says=str(arguments["lean_says"]), verdict=verdict,
+            affects_main_result=arguments["affects_main_result"], lean_lines=lines,
+            evidence=cited,
+        )
+        self.verdicts.append(row)
+        where = f"lines {lines[0]}-{lines[1]}" if lines else "no Lean lines"
+        return Outcome(f"verdict {len(self.verdicts)}: {row.item} ({verdict})",
+                       f"Recorded row {len(self.verdicts)}: {row.item}: {verdict} ({where}).")
 
 
 def _span(arguments: dict[str, Any], total: int) -> tuple[int, int]:

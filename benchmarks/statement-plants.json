@@ -1,0 +1,55 @@
+{
+  "format": "hekswerk-scry/statement-plants",
+  "version": 1,
+  "about": "Known differences planted in copies of openai/math comparator statements, to measure whether a statement audit notices them. Each `old` must occur exactly once in the challenge's statement file. All but `placement-reversed` weaken a proven statement, so a proof of the planted version would still exist: those are the differences a Lean check can never catch.",
+  "challenges": {
+    "FiniteCongruenceGraph": [
+      {
+        "id": "one-direction",
+        "kind": "conclusion",
+        "what": "Only one direction of the paper's 'if and only if': a graph witness gives a representation, but not the converse.",
+        "old": "    Representable Lat ↔ HasGraphWitness Lat := by",
+        "new": "    HasGraphWitness Lat → Representable Lat := by"
+      },
+      {
+        "id": "placement-reversed",
+        "kind": "definition",
+        "what": "Admissible placements must raise edge colours where the paper's lower them: d(p,q) ≤ d(f(p),f(q)) instead of d(f(p),f(q)) ≤ d(p,q).",
+        "old": "  ∀ left right, color (placement left) (placement right) ≤ color left right",
+        "new": "  ∀ left right, color left right ≤ color (placement left) (placement right)"
+      }
+    ],
+    "FourRowPermanent": [
+      {
+        "id": "exponent-two-allowed",
+        "kind": "constant",
+        "what": "Allows p₀ = 2, where the inequality was already known; the paper's point is an exponent strictly below two.",
+        "old": "  ∃ p₀ : ℝ, 4 / 3 < p₀ ∧ p₀ < 2 ∧",
+        "new": "  ∃ p₀ : ℝ, 4 / 3 < p₀ ∧ p₀ ≤ 2 ∧"
+      },
+      {
+        "id": "unnormalized-norm",
+        "kind": "definition",
+        "what": "Row norms drop the paper's 1/4 normalization, which enlarges the right-hand side and weakens the inequality. The file's own comment still says the norms are normalized.",
+        "old": "  ((∑ j, (f j) ^ p) / 4) ^ (1 / p)",
+        "new": "  (∑ j, (f j) ^ p) ^ (1 / p)"
+      }
+    ],
+    "PlaneColoring": [
+      {
+        "id": "line-not-plane",
+        "kind": "domain",
+        "what": "Colours the real line, not the plane.",
+        "old": "abbrev Plane := EuclideanSpace ℝ (Fin 2)",
+        "new": "abbrev Plane := EuclideanSpace ℝ (Fin 1)"
+      },
+      {
+        "id": "bounded-region",
+        "kind": "special case",
+        "what": "Only points within distance 100 of the origin need different colours at distance one.",
+        "old": "    ∀ x y : Plane, dist x y = 1 → c x ≠ c y",
+        "new": "    ∀ x y : Plane, ‖x‖ ≤ 100 → ‖y‖ ≤ 100 → dist x y = 1 → c x ≠ c y"
+      }
+    ]
+  }
+}

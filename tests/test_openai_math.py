@@ -44,7 +44,9 @@ def fake_repository(folder: Path) -> None:
     )
     (lean / "docs" / "001.md").write_text(
         "# Thing\n\n- [Paper one](../../preprints/Paper-One-September-1-2026/paper.pdf)\n"
-        "- [Paper two](../../preprints/Paper-Two-October-2-2026/paper.pdf)\n\n"
+        "- [Paper two](../../preprints/Paper-Two-October-2-2026/main.pdf)\n"
+        "- [Paper three](../../preprints/Fillings-in-CAT(0)-spaces/article.pdf)\n"
+        "- [Paper one again](../../preprints/Paper-One-September-1-2026/paper.pdf)\n\n"
         "| Result | Comparator statement |\n| --- | --- |\n"
         "| Main | [Thing.lean](../ComparatorChallenges/Thing.lean) |\n",
         encoding="utf-8",
@@ -76,8 +78,20 @@ class TestOpenAIMath(unittest.TestCase):
         assert note is not None
         self.assertEqual(note.name, "001.md")
         self.assertEqual(
-            openai_math.papers_of(note), ("Paper-One-September-1-2026", "Paper-Two-October-2-2026")
+            openai_math.papers_of(note),
+            ("Paper-One-September-1-2026", "Paper-Two-October-2-2026", "Fillings-in-CAT(0)-spaces"),
         )
+        # A link Scry can't read is refused, not skipped.
+        odd = note.with_name("002.md")
+        odd.write_text(
+            "- [Slides](../../preprints/Paper-One-September-1-2026/slides.key)\n", encoding="utf-8"
+        )
+        with self.assertRaisesRegex(openai_math.OpenAIMathError, "doesn't recognise"):
+            openai_math.papers_of(odd)
+        nested = note.with_name("003.md")
+        nested.write_text("- [A](../../preprints/Paper-One/figures/a.pdf)\n", encoding="utf-8")
+        with self.assertRaisesRegex(openai_math.OpenAIMathError, "directly inside"):
+            openai_math.papers_of(nested)
         support = openai_math.scope_note(openai_math.challenge("ThingSupport"))
         assert support is not None
         self.assertEqual(support.name, "000.md")

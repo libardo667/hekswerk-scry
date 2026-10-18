@@ -25,6 +25,7 @@ from hekswerk_scry.lean.worker import (
     worker_for,
 )
 from hekswerk_scry.lean.workspace import LeanWorkspace
+from tests.process_helpers import alive
 
 STAND_IN = f"""#!{sys.executable}
 import json, os, sys, time
@@ -116,13 +117,13 @@ class TestKeptRunningLean(WorkerTestCase):
         self.assertTrue(reply.timed_out)
         self.assertIsNone(reply.result)
         # Not just `lake`: the Lean program it started must be gone too.
-        self.assertFalse(_alive(first))
+        self.assertFalse(alive(first))
         self.assertNotEqual(self.pid(), first)
 
     def test_closing_leaves_no_lean_running(self) -> None:
         running = self.pid()
         self.worker.close()
-        self.assertFalse(_alive(running))
+        self.assertFalse(alive(running))
 
     def test_printed_output_is_kept_apart_from_the_reply(self) -> None:
         reply = self.worker.ask("check", self.file, "prints", timeout=20)
@@ -151,7 +152,7 @@ class TestKeptRunningLean(WorkerTestCase):
         reply = self.worker.ask("check", other, "t", timeout=20)
         assert reply.result is not None
         self.assertNotEqual(reply.result["pid"], first)
-        self.assertFalse(_alive(first))
+        self.assertFalse(alive(first))
 
 
 class TestProcessPool(WorkerTestCase):
@@ -183,7 +184,7 @@ class TestProcessPool(WorkerTestCase):
         pid_b = self.pid_for(b)
         self.pid_for(a)  # A is now more recent than B
         self.pid_for(c)
-        self.assertFalse(_alive(pid_b))
+        self.assertFalse(alive(pid_b))
         self.assertEqual(self.pid_for(a), pid_a)
 
     def test_import_lines(self) -> None:
@@ -225,22 +226,6 @@ class TestSkippedBuilds(WorkerTestCase):
         (self.root / "lake-manifest.json").write_text(json.dumps({}), encoding="utf-8")
         self.ws.build_imports(checked)
         self.assertEqual(len(self.builds()), 4)
-
-
-def _alive(pid: int) -> bool:
-    """Whether a process is still running (waiting briefly for it to finish stopping)."""
-    for _ in range(50):
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            return False
-        try:
-            if Path(f"/proc/{pid}/stat").read_text().split()[2] == "Z":
-                return False  # stopped; only its exit status is left to collect
-        except FileNotFoundError:
-            return False
-        time.sleep(0.1)
-    return True
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from hekswerk_scry.ai.openrouter import OpenRouterClient
 from hekswerk_scry.ai.session import Session, Turn
-from hekswerk_scry.ai.statement_tools import CHECK_THEOREM, StatementToolbox
+from hekswerk_scry.ai.statement_tools import CHECK_THEOREM, VERDICTS, StatementToolbox
 from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.statement import read_statement
 from hekswerk_scry.lean.workspace import workspace_for_file
@@ -43,15 +43,16 @@ hypotheses. Name the claim `theorem {CHECK_THEOREM}`. A claim Lean accepts is ev
 rejects is not evidence of the opposite (your Lean may just be wrong), so say so.
 - Cite evidence for every claim, in square brackets: [E3]. Paper quotes cite the paper \
 lookup that showed them; Lean facts cite Lean's reading.
-- Never say the paper's result is proven. At most: the formal statement is proven (it is, if \
-it is a comparator challenge), and it does or does not match the paper on each point.
+- Record every row of your point-by-point comparison with record_verdict before you write \
+the report, pointing at the specific Lean lines each row is about. The table in your report \
+must match the rows you recorded.
+- {{proof_status}} Never say the paper's result is proven.
 
 Finish with a report in this shape (Markdown):
 1. **The paper's claim**, quoted, with its location.
 2. **The formal statement**, in plain words.
 3. **Point by point**: a table with columns Item | Paper says | Lean says | Verdict, where \
-the verdict is one of: matches, Lean assumes more, Lean concludes less, Lean covers a \
-special case, differs, not in the formalization, unclear. Cite evidence in every row.
+the verdict is one of: {", ".join(VERDICTS)}. Cite evidence in every row.
 4. **Definitions a person should read closely**, and why.
 5. **Lean checks you ran** and what each one shows.
 6. **Overall**: what the formal result establishes about the paper's claim, in two or three \
@@ -60,6 +61,12 @@ sentences. This whole report is your reading, except where it cites a Lean check
 Use plain technical English. The challenge you are auditing:
 {{overview}}
 """
+
+
+PROVED_CHALLENGE = ("This statement is a comparator challenge: Lean has checked a proof of it, "
+                    "and that proof settles the formal statement and nothing more.")
+AUDIT_ROUNDS = 40
+AUDIT_REQUEST = "Audit this formal statement against the paper, and finish with the report."
 
 
 @dataclass
@@ -71,32 +78,46 @@ class Audit:
     cost_usd: float
 
 
+def paper_files_for(item: openai_math.Challenge) -> tuple[tuple[str, ...], list[Path]]:
+    """The papers a challenge formalizes (found through its scope note's links), and their
+    LaTeX files."""
+    note = openai_math.scope_note(item)
+    papers = openai_math.papers_of(note) if note else ()
+    return papers, [path for paper in papers for path in openai_math.paper_source(paper)]
+
+
+def audit_prompt(toolbox: StatementToolbox, item: openai_math.Challenge,
+                 papers: tuple[str, ...], proof_status: str) -> str:
+    overview = "\n".join([
+        f"Challenge: {item.name}",
+        f"Theorems: {', '.join(item.theorem_names)}",
+        f"Lean statement file: {toolbox.workspace.relative(toolbox.statement_file)}",
+        f"Paper(s): {', '.join(papers) or '(none found)'}",
+        f"Paper files: {len(toolbox.paper_files)} LaTeX file(s); use list_paper_files.",
+    ])
+    return AUDIT_PROMPT.format(overview=overview, proof_status=proof_status)
+
+
+def run_audit(client: OpenRouterClient, toolbox: StatementToolbox, prompt: str,
+              name: str, papers: tuple[str, ...]) -> Audit:
+    session = Session(client=client, toolbox=toolbox, system_prompt=prompt,
+                      max_rounds=AUDIT_ROUNDS)
+    turn = session.ask(AUDIT_REQUEST)
+    return Audit(name, turn, toolbox, papers, session.total_cost_usd)
+
+
 def audit_challenge(client: OpenRouterClient, name: str) -> Audit:
     item = openai_math.challenge(name)
     workspace = workspace_for_file(item.statement_file)
-    note = openai_math.scope_note(item)
-    papers = openai_math.papers_of(note) if note else ()
-    paper_files = [path for paper in papers for path in openai_math.paper_source(paper)]
+    papers, paper_files = paper_files_for(item)
     reports = {theorem: read_statement(workspace, item.statement_file, theorem)
                for theorem in item.theorem_names}
     toolbox = StatementToolbox(
         workspace=workspace, statement_file=item.statement_file,
         solution_module=item.solution_module, reports=reports, paper_files=paper_files,
     )
-    overview = "\n".join([
-        f"Challenge: {item.name}",
-        f"Theorems: {', '.join(item.theorem_names)}",
-        f"Lean statement file: {workspace.relative(item.statement_file)}",
-        f"Proved in: {item.solution_module}",
-        f"Paper(s): {', '.join(papers) or '(none found)'}",
-        f"Paper files: {len(paper_files)} LaTeX file(s); use list_paper_files.",
-    ])
-    session = Session(client=client, toolbox=toolbox,
-                      system_prompt=AUDIT_PROMPT.format(overview=overview))
-    turn = session.ask(
-        "Audit this formal statement against the paper, and finish with the report."
-    )
-    return Audit(item.name, turn, toolbox, papers, session.total_cost_usd)
+    prompt = audit_prompt(toolbox, item, papers, PROVED_CHALLENGE)
+    return run_audit(client, toolbox, prompt, item.name, papers)
 
 
 def compare_with_scope_note(name: str, audit_text: str) -> str:
@@ -113,13 +134,28 @@ def compare_with_scope_note(name: str, audit_text: str) -> str:
     ])
 
 
-def save_audit(audit: Audit, folder: Path) -> Path:
-    folder.mkdir(parents=True, exist_ok=True)
+def audit_text(audit: Audit) -> str:
+    """The helper's report, then the rows it recorded and the evidence it gathered."""
     evidence = "\n".join(f"- {e.label}" for e in audit.toolbox.evidence)
-    text = "\n".join([
-        audit.turn.answer.strip(), "", "## Evidence", "", evidence, "",
+    rows = "\n".join(
+        f"| {r.item} | {r.verdict} | {'yes' if r.affects_main_result else 'no'} | "
+        f"{f'{r.lean_lines[0]}-{r.lean_lines[1]}' if r.lean_lines else '-'} | "
+        f"{', '.join(r.evidence)} |"
+        for r in audit.toolbox.verdicts
+    ) or "| (no rows recorded) | | | | |"
+    return "\n".join([
+        audit.turn.answer.strip(), "",
+        "## Rows the helper recorded", "",
+        "| Item | Verdict | Affects main result | Lean lines | Evidence |",
+        "| --- | --- | --- | --- | --- |", rows, "",
+        "## Evidence", "", evidence, "",
         f"(Cost of this audit: ${audit.cost_usd:.4f}.)", "",
     ])
+
+
+def save_audit(audit: Audit, folder: Path) -> Path:
+    folder.mkdir(parents=True, exist_ok=True)
+    text = audit_text(audit)
     path = folder / f"{audit.challenge}.md"
     path.write_text(compare_with_scope_note(audit.challenge, text), encoding="utf-8")
     return path
