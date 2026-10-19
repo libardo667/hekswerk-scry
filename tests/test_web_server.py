@@ -175,6 +175,44 @@ class TestOutlines(WorkbenchCase):
                         encoding="utf-8")
         self.assertEqual(self.library.outline(self.token())["lean_version"], "9.9.9")
 
+    def test_benchmark_results_are_scored_by_today_s_rule(self) -> None:
+        # Saved before "unclear" stopped counting as a catch: the score shown is today's,
+        # with the saved one beside it.
+        def entry(variant: str, verdicts: list[str], saved: str | None) -> dict[str, Any]:
+            return {"variant": variant, "copy_sha256": "a" * 64,
+                    "planted_lines": None if saved is None else [5, 5], "score": saved,
+                    "also_in_control": False, "cost_usd": 0.1, "hit_round_limit": False,
+                    "rows": [{"item": "i", "paper_says": "p", "lean_says": "l", "verdict": v,
+                              "affects_main_result": True, "lean_lines": [5, 5],
+                              "evidence": ["E1"]} for v in verdicts]}
+
+        path = self.root / "runs" / "bench" / "results.json"
+        path.write_text(json.dumps({"Thing": [
+            entry("control", ["matches"], None), entry("p", ["unclear"], "caught"),
+            entry("q", ["matches", "unclear"], "caught"), entry("r", ["differs"], "caught")]}),
+            encoding="utf-8")
+        served = self.library.results(self.library.token(path))
+        scores = [(v["variant"], v["score"], v["saved_score"])
+                  for v in served["challenges"]["Thing"]]
+        self.assertEqual(scores, [("control", None, None), ("p", "unresolved", "caught"),
+                                  ("q", "dangerous miss", "caught"), ("r", "caught", "caught")])
+        self.assertIn("unresolved", served["meanings"])
+        path.write_text(json.dumps({"format": "something-else", "version": 1}), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "isn't a results file Scry can read"):
+            self.library.results(self.library.token(path))
+
+    def test_an_edited_lean_file_is_noticed_while_the_outline_file_is_unchanged(self) -> None:
+        # The outline itself is kept between requests, but not what it says about the
+        # Lean files it was made from.
+        token = self.token()
+        self.assertEqual(self.library.outline(token)["changed_files"], [])
+        source = self.root / "project" / "Examples" / "Outline.lean"
+        original = source.read_text(encoding="utf-8")
+        source.write_text(original + "-- edited\n", encoding="utf-8")
+        self.assertEqual(self.library.outline(token)["changed_files"], ["Examples/Outline.lean"])
+        source.write_text(original, encoding="utf-8")
+        self.assertEqual(self.library.outline(token)["changed_files"], [])
+
     def test_only_outline_files_are_read_as_outlines(self) -> None:
         with self.assertRaises(NotAllowedError):
             self.library.outline(self.library.token(self.root / "maps" / "map.json"))

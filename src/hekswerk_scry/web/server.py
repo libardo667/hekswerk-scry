@@ -28,6 +28,13 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from hekswerk_scry.ai.benchmark import (
+    SCORE_MEANINGS,
+    BenchmarkError,
+    read_results,
+    saved_rows,
+    score_plant,
+)
 from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, read_events
 from hekswerk_scry.checker import check_wiring, scan_proof_map
 from hekswerk_scry.files import (
@@ -199,9 +206,21 @@ class Library:
         return {"name": path.name, "text": path.read_text(encoding="utf-8")}
 
     def results(self, token: str) -> dict[str, Any]:
+        """A benchmark's results, scored again from the rows it saved, by today's rule (a
+        results file keeps the score of the rule it was saved under)."""
         path = self.resolve(token, suffixes=(RESULTS_FILE,))
-        data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-        return data
+        try:
+            challenges = read_results(path)
+            for entries in challenges.values():
+                for entry in entries:
+                    planted = entry.get("planted_lines")
+                    entry["saved_score"] = entry.get("score")
+                    entry["score"] = (score_plant(saved_rows(entry["rows"]),
+                                                  (int(planted[0]), int(planted[1])))
+                                      if planted else None)
+        except (BenchmarkError, KeyError, TypeError, IndexError) as exc:
+            raise ValueError(f"{path.name} isn't a results file Scry can read: {exc}") from exc
+        return {"challenges": challenges, "meanings": SCORE_MEANINGS}
 
     def proof_map(self, token: str) -> dict[str, Any]:
         path = self.resolve(token, suffixes=(".json",))
@@ -232,11 +251,14 @@ class Library:
 
 
     def outline(self, token: str) -> dict[str, Any]:
-        _, index = self._outline(self.resolve(token, suffixes=(OUTLINE_SUFFIX,)))
+        outline, index = self._outline(self.resolve(token, suffixes=(OUTLINE_SUFFIX,)))
         theorem_maps = {m["theorem"]: m["token"] for m in self.overview()["maps"]
                         if m.get("theorem")}
-        return {**index, "maps": {part: theorem_maps[part] for part in index["ids"]
-                                  if part in theorem_maps}}
+        # The index is kept while the outline file is unchanged; the Lean files it was made
+        # from can change at any time, so they are compared afresh on every request.
+        return {**index, "changed_files": changed_files(outline),
+                "maps": {part: theorem_maps[part] for part in index["ids"]
+                         if part in theorem_maps}}
 
     def outline_part(self, token: str, part_id: str) -> dict[str, Any]:
         outline, _ = self._outline(self.resolve(token, suffixes=(OUTLINE_SUFFIX,)))
@@ -265,10 +287,11 @@ class Library:
 
 
 def _outline_index(outline: Outline) -> dict[str, Any]:
-    """Everything the outline view needs up front. To keep this small enough for a phone,
-    parts and files are referred to by their position in `ids` and `files`, a part's name is
-    left out when it is the same as its ID, and "used by" is left for the page to work out.
-    One part's text is fetched when it is chosen."""
+    """Everything the outline view needs up front that depends on the outline file alone
+    (whether its Lean files have changed since is added on each request). To keep this
+    small enough for a phone, parts and files are referred to by their position in `ids`
+    and `files`, a part's name is left out when it is the same as its ID, and "used by" is
+    left for the page to work out. One part's text is fetched when it is chosen."""
     ids = list(outline.parts)
     number = {part_id: n for n, part_id in enumerate(ids)}
     files = sorted({p.file for p in outline.parts.values() if p.file is not None})
@@ -279,7 +302,6 @@ def _outline_index(outline: Outline) -> dict[str, Any]:
         "result": number[outline.result],
         "lean_version": outline.lean_version,
         "axioms": list(outline.axioms),
-        "changed_files": changed_files(outline),
         "ids": ids,
         "files": files,
         "parts": [{

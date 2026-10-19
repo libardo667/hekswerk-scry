@@ -324,6 +324,11 @@ def render_statement(report: StatementReport) -> str:
             where = f"{d.module or 'this file'}" + (f", lines {d.start_line}-{d.end_line}"
                                                     if d.start_line else "")
             lines.append(_wrap(f"[{d.depth}] {d.name}  ({d.kind}; {where})", "    "))
+        if not report.definitions_complete:
+            lines.append(_wrap(
+                f"(Only the first {len(report.definitions)} of {report.definitions_total} are "
+                "listed: Lean's report stops printing there. The rest still need reading.)",
+                "    "))
     else:
         lines.append("  It relies on no project-specific definitions, only Lean and Mathlib.")
     lines.append("")
@@ -336,6 +341,7 @@ def render_statement(report: StatementReport) -> str:
                        f"{report.receipt.summary}"))
     if report.reused_from:
         lines.append(_wrap(f"(Reused the stored result of a Lean run at {report.reused_from}, on "
-                           "exactly this file, theorem, Lean version and exporter.)"))
+                           "exactly this file, the project files it imports, its packages, Lean "
+                           "version and exporter.)"))
     return "\n".join(lines)
 

@@ -32,7 +32,9 @@ drift, so each one is listed for a person to read.
 
 A short list of standard tactics is tried, each with a fixed amount of work (heartbeats). A
 probe counts as found only when the Lean kernel accepts the resulting proof as a
-declaration. When the tactics find nothing, the report says exactly that and never treats
+declaration and it rests on Lean's standard axioms alone (added after the review of
+2026-10-19: a proof through a lemma left as `sorry` had counted; see
+[0009](0009-evidence-identity.md)). When the tactics find nothing, the report says exactly that and never treats
 it as evidence that the statement is sound. For the triviality probe, the hypotheses are
 removed from the context so the tactics cannot use them; an early version left them in, and
 `positivity` failed on a goal it proves instantly.
@@ -62,7 +64,9 @@ identical maps.
 390 of `openai/math`'s 416 comparator challenges need only Mathlib and OpenAI's own files.
 The rest also depend on outside libraries (the prime number theorem projects, Rellich–
 Kondrachov, and others). Lean loads all of Mathlib for most files, so each statement read
-takes a few minutes; results are stored, keyed by everything that could change them.
+takes a few minutes; results are stored, keyed by everything that could change them: the
+file, every project file it imports, and the packages as checked out
+([0009](0009-evidence-identity.md)).
 
 ## First result
 
@@ -100,12 +104,20 @@ unchanged one blind, and scores them from the rows the helper records with `reco
 Copies share a name, sit in folders with meaningless names, and get identical instructions
 and tools; a test checks the helper can't tell them apart. The helper's Lean claims are
 checked against the copy's own definitions, so a planted definition shows up in Lean too. A
-plant is *caught* when a row other than "matches" points at its lines, a *dangerous miss*
-when only a "matches" row does, and *missed* otherwise.
+plant is *caught* when a row naming a difference points at its lines and no "matches" row
+does; *conflicting* when both do; a *dangerous miss* when a "matches" row does and no
+difference does; *unresolved* when only "unclear" rows do; and *missed* otherwise. (Until
+2026-10-19, any row but "matches" counted as a catch, "unclear" included; see
+[0009](0009-evidence-identity.md).)
 
 The first run is in [`docs/examples/statement-benchmark-1.md`](../examples/statement-benchmark-1.md):
 six plants in three statements (FiniteCongruenceGraph, FourRowPermanent, PlaneColoring),
-**six caught, no dangerous misses**, nine audits for $8.77. Five of the six plants weaken a
+nine audits for $8.77. First scored as six caught; re-scored from its saved rows under the
+stricter rule, **three caught and three conflicting, no dangerous misses**. In each
+conflicting case the "matches" row is about another item whose lines overlap the plant, so
+a person reads all six as catches, but that is a person's reading, not the score. The
+FourRowPermanent audits could read only one paper's copy of file names its ten papers
+share, so they may have quoted the wrong paper's introduction. Five of the six plants weaken a
 proven statement, so a proof of the planted version exists: Lean alone could never catch them.
 
 - The subtlest plants were pinned to their exact lines: one flipped `≤` inside a

@@ -58,6 +58,15 @@ class Receipt:
     summary: str
     lean_run: LeanRunEvidence | None = None
 
+    def __post_init__(self) -> None:
+        run = self.lean_run
+        if self.checked_by is CheckKind.LEAN and self.passed and (
+                run is None or run.timed_out or run.exit_code != 0):
+            raise ValueError(
+                "A Lean receipt can only say the check passed when Lean's run ended normally "
+                "(exit code 0, in time). This run didn't, so it proves nothing."
+            )
+
     @classmethod
     def create(
         cls,

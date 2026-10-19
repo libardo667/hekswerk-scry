@@ -31,13 +31,15 @@ from hekswerk_scry.lean.statement import StatementReport
 from hekswerk_scry.lean.workspace import LeanWorkspace
 
 MAX_LINES = 200
+DEFINITION_PAGE = 4000  # characters of a definition's body shown at a time
 MAX_VERDICT_LINES = 25
 CHECK_THEOREM = "scry_check"
 NOT_IN_FORMALIZATION = "not in the formalization"
 MATCHES = "matches"
+UNCLEAR = "unclear"
 VERDICTS = (
     MATCHES, "Lean assumes more", "Lean concludes less", "Lean covers a special case",
-    "differs", NOT_IN_FORMALIZATION, "unclear",
+    "differs", NOT_IN_FORMALIZATION, UNCLEAR,
 )
 _THEOREM_LINE = re.compile(rf"^\s*theorem\s+{CHECK_THEOREM}\b", re.MULTILINE)
 
@@ -76,12 +78,14 @@ class StatementToolbox(ToolRunner):
     proof_note: str = "(This file states the result; its proof is in the solution module.)"
     claims_folder: Path | None = None
     verdicts: list[VerdictRow] = field(default_factory=list)
+    paper_labels: dict[str, Path] = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
+        self.paper_labels = label_paper_files(self.paper_files)
         if not self.claim_preamble:
             self.claim_preamble = f"import {self.solution_module}"
-            self.claim_note = (f"The proved result is imported from `{self.solution_module}`, "
-                               "so you can use its theorems by name.")
+            self.claim_note = (f"The solution module `{self.solution_module}` is imported, so "
+                               "you can use its theorems by name.")
         if self.claims_folder is None:
             self.claims_folder = self.workspace.root / ".scry-runs" / "claims"
 
@@ -91,9 +95,12 @@ class StatementToolbox(ToolRunner):
             tool("read_statement", "What a theorem states, as Lean reads it: hypotheses, "
                  "conclusion, the project's own definitions it relies on, and Lean's probes "
                  "for contradictory or unneeded hypotheses.", theorem, ["theorem"]),
-            tool("read_definition", "One of the project's definitions in full: its statement, "
-                 "body, and source lines.",
-                 {"name": {"type": "string", "description": "Full or last part of the name."}},
+            tool("read_definition", "One of the project's definitions: its statement, body, and "
+                 f"source lines. A long body comes {DEFINITION_PAGE} characters at a time; the "
+                 "reply says where to start for the rest.",
+                 {"name": {"type": "string", "description": "Full or last part of the name."},
+                  "start": {"type": "integer", "description": "Character of the body to start "
+                            "at (from 0). Leave out to start at the beginning."}},
                  ["name"]),
             tool("read_lean_lines", "Lines of the Lean statement file (numbered from 1).",
                  {"first_line": {"type": "integer"}, "last_line": {"type": "integer"}},
@@ -161,9 +168,14 @@ class StatementToolbox(ToolRunner):
         lines += [f"- {b.name} : {b.type}  ({'hypothesis' if b.is_prop else b.binder})"
                   for b in report.binders] or ["- (none)"]
         lines += [f"Conclusion: {report.conclusion}",
-                  f"Project definitions it relies on ({len(report.definitions)}):"]
+                  f"Project definitions it relies on ({report.definitions_total}):"]
         lines += [f"- [depth {d.depth}] {d.name} ({d.kind})" for d in report.definitions]
-        lines += [f"Probe {p.kind}: {p.headline}" for p in report.probes]
+        if not report.definitions_complete:
+            lines.append(f"(Lean's report lists only the first {len(report.definitions)}; the "
+                         "other definitions exist but can't be read here.)")
+        lines += [f"Probe {p.kind}: {p.headline}"
+                  + (f" Axioms of that proof: {', '.join(p.axioms) or 'none'}." if p.found else "")
+                  for p in report.probes]
         if report.proof_left_open:
             lines.append(self.proof_note)
         return Outcome(f"Lean's reading of the statement of {name.split('.')[-1]}",
@@ -171,14 +183,24 @@ class StatementToolbox(ToolRunner):
 
     def _read_definition(self, arguments: dict[str, Any]) -> Outcome:
         wanted = str(arguments["name"])
+        start = int(arguments.get("start") or 0)
         for report in self.reports.values():
             for d in report.definitions:
                 if d.name == wanted or d.name.endswith("." + wanted):
                     where = (f"{d.module or self.workspace.relative(self.statement_file)}"
                              + (f", lines {d.start_line}-{d.end_line}" if d.start_line else ""))
-                    body = f"\nBody: {d.value}" if d.value else ""
-                    return Outcome(f"definition {d.name.split('.')[-1]}",
-                                   f"{d.name} ({d.kind}; {where})\nType: {d.type}{body}",
+                    value = d.value or ""
+                    if not 0 <= start < max(len(value), 1):
+                        raise ValueError(f"The body of {d.name} has {len(value)} characters.")
+                    end = min(len(value), start + DEFINITION_PAGE)
+                    body = f"\nBody: {value[start:end]}" if value else ""
+                    if value and (start > 0 or end < len(value)):
+                        body += (f"\n(Characters {start}-{end} of {len(value)}."
+                                 + (f" Ask again with start={end} for the rest.)"
+                                    if end < len(value) else ")"))
+                    title = f"definition {d.name.split('.')[-1]}" + (
+                        f" from character {start}" if start else "")
+                    return Outcome(title, f"{d.name} ({d.kind}; {where})\nType: {d.type}{body}",
                                    CheckKind.LEAN, report.receipt.receipt_id)
         raise ValueError(f"'{wanted}' isn't one of the project definitions the statement uses.")
 
@@ -191,26 +213,22 @@ class StatementToolbox(ToolRunner):
     # --- the paper ------------------------------------------------------------------
 
     def _list_paper_files(self, _: dict[str, Any]) -> Outcome:
-        rows = [f"{self.label(p)} ({len(p.read_text(encoding='utf-8').splitlines())} lines)"
-                for p in self.paper_files]
+        rows = [f"{label} ({len(p.read_text(encoding='utf-8').splitlines())} lines)"
+                for label, p in self.paper_labels.items()]
         return Outcome("list of paper files", "\n".join(rows))
 
     def label(self, path: Path) -> str:
-        """A short, stable name for a paper file: its path inside the paper's build folder."""
-        for parent in path.parents:
-            if parent.name == "build":
-                return path.relative_to(parent).as_posix()
-        return path.name
+        return next(label for label, file in self.paper_labels.items() if file == path)
 
     def _search_paper(self, arguments: dict[str, Any]) -> Outcome:
         phrase = str(arguments["phrase"]).strip().lower()
         if len(phrase) < 3:
             raise ValueError("Search for at least three characters.")
         hits: list[str] = []
-        for path in self.paper_files:
+        for label, path in self.paper_labels.items():
             for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
                 if phrase in line.lower():
-                    hits.append(f"{self.label(path)}:{n}: {line.strip()[:200]}")
+                    hits.append(f"{label}:{n}: {line.strip()[:200]}")
         shown = hits[:40]
         more = f"\n(and {len(hits) - 40} more)" if len(hits) > 40 else ""
         return Outcome(f"paper search for '{phrase}'",
@@ -218,7 +236,7 @@ class StatementToolbox(ToolRunner):
 
     def _read_paper(self, arguments: dict[str, Any]) -> Outcome:
         name = str(arguments["file"])
-        path = next((p for p in self.paper_files if self.label(p) == name), None)
+        path = self.paper_labels.get(name)
         if path is None:
             raise ValueError(f"No paper file '{name}'. Use list_paper_files.")
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -293,6 +311,29 @@ class StatementToolbox(ToolRunner):
         where = f"lines {lines[0]}-{lines[1]}" if lines else "no Lean lines"
         return Outcome(f"verdict {len(self.verdicts)}: {row.item} ({verdict})",
                        f"Recorded row {len(self.verdicts)}: {row.item}: {verdict} ({where}).")
+
+
+def label_paper_files(files: list[Path]) -> dict[str, Path]:
+    """A name for each paper file that says which file it is: its path inside its paper's
+    `build` folder, led by the paper's folder when there is more than one paper (two papers
+    can each have a `main.tex`). Names that would still be the same are refused."""
+    def inside(path: Path) -> tuple[str, str]:
+        for parent in path.parents:
+            if parent.name == "build":
+                return parent.parent.name, path.relative_to(parent).as_posix()
+        return path.parent.name, path.name
+
+    unique = list(dict.fromkeys(files))
+    several = len({inside(p)[0] for p in unique}) > 1
+    labels: dict[str, Path] = {}
+    for path in unique:
+        paper, name = inside(path)
+        label = f"{paper}/{name}" if several else name
+        if label in labels:
+            raise ValueError(f"Two paper files would both be called '{label}' ({labels[label]} "
+                             f"and {path}); Scry can't tell them apart.")
+        labels[label] = path
+    return labels
 
 
 def _span(arguments: dict[str, Any], total: int) -> tuple[int, int]:

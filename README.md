@@ -143,10 +143,20 @@ scry statement-benchmark                   # audit them blind and score (costs m
   scope notes; the saved audit puts the note next to the report so you can judge it.
 
 - **Audits are measured:** `scry statement-benchmark` plants known differences into copies of
-  real statements and scores blind audits of them. First run: six of six caught, no audit
-  passing a planted error as "matches" ([results](docs/examples/statement-benchmark-1.md)).
+  real statements and scores blind audits of them. A score says only where an audit pointed:
+  "unclear" is not a catch, and a "matches" row on the same lines makes it "conflicting". First
+  run, re-scored under that rule: three caught, three conflicting (each time, a "matches" row
+  about another item on overlapping lines), none passed as "matches"
+  ([results](docs/examples/statement-benchmark-1.md)). An audit is reused only for an identical
+  setup (model, instructions, tools, statement and its imports, papers) that finished.
 
-Details: [`docs/decisions/0005-statement-checking.md`](docs/decisions/0005-statement-checking.md).
+- **Evidence says what it was checked against:** a stored Lean reading is reused only while
+  the file, every project file it imports and the packages are unchanged; a probe counts only
+  on Lean's standard axioms; the helper is told what Scry checked about a challenge's proof,
+  not what the repository says.
+
+Details: [`docs/decisions/0005-statement-checking.md`](docs/decisions/0005-statement-checking.md)
+and [`docs/decisions/0009-evidence-identity.md`](docs/decisions/0009-evidence-identity.md).
 
 ## Following along in the browser
 

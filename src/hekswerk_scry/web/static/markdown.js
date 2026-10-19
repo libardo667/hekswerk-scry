@@ -41,12 +41,16 @@ export function renderMarkdown(text, onCite) {
         list.append(h('li', {}, inline(item, onCite)))
       }
       root.append(list)
-    } else if (line.trim() === '' || line.trim().startsWith('<!--')) {
+    } else if (line.trim().startsWith('<!--')) {
+      // A comment is left out whole, however many lines it runs to.
+      while (i < lines.length && !lines[i].includes('-->')) i += 1
+      i += 1
+    } else if (line.trim() === '') {
       i += 1
     } else {
       const para = [line]
       i += 1
-      while (i < lines.length && lines[i].trim() !== '' && !/^(#|```|\s*\||\s*>|\s*([-*]|\d+\.)\s)/.test(lines[i])) {
+      while (i < lines.length && lines[i].trim() !== '' && !/^(#|```|\s*\||\s*>|\s*<!--|\s*([-*]|\d+\.)\s)/.test(lines[i])) {
         para.push(lines[i++])
       }
       root.append(h('p', {}, inline(para.join(' '), onCite)))

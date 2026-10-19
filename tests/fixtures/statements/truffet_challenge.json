@@ -601,6 +601,7 @@
             "value": "fun r => if \u2200 (k : Fin 3), r.rhs k \u2264 r.lhs k then { lhs := nullForm, rhs := nullForm } else r"
         }
     ],
+    "definitions_total": 37,
     "format": "hekswerk-scry/lean-statement",
     "kind": "theorem",
     "lean_version": "4.34.1",

@@ -22,7 +22,9 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
+from hekswerk_scry.core.hashing import fingerprint_data
 from hekswerk_scry.lean.processes import run_program
 
 REPOSITORY = Path(__file__).resolve().parents[3]
@@ -103,6 +105,57 @@ class LeanWorkspace:
                 modules.append(found.group(1))
         return modules
 
+    def imported_files(self, path: Path) -> list[Path]:
+        """The project's own files `path` imports, directly or through each other, in a
+        fixed order. Modules from packages (Mathlib, ...) are not included: see `inputs`."""
+        found: dict[Path, None] = {}
+        todo = [path]
+        while todo:
+            for module in self.project_imports(todo.pop()):
+                file = self.root / (module.replace(".", "/") + ".lean")
+                if file not in found:
+                    found[file] = None
+                    todo.append(file)
+        return sorted(found)
+
+    def inputs(self, path: Path) -> dict[str, Any]:
+        """Everything besides Lean and Scry that Lean's answer about `path` depends on, by
+        content: the file, every project file it imports (directly or not), the project's
+        Lake setup, and each package as it is actually checked out (a git package by its
+        commit, a local one by its Lean files). Two runs with the same inputs read the same
+        Lean code."""
+        def digest(file: Path) -> str:
+            try:
+                return hashlib.sha256(file.read_bytes()).hexdigest()
+            except OSError:
+                return "missing"
+
+        return {
+            "files": {self.relative(f): digest(f) for f in [path, *self.imported_files(path)]},
+            "setup": {name: digest(self.root / name) for name in (
+                "lakefile.lean", "lakefile.toml", "lake-manifest.json", "lean-toolchain")},
+            "packages": self._package_states(),
+        }
+
+    def _package_states(self) -> dict[str, str]:
+        manifest = self.root / "lake-manifest.json"
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+        except OSError:
+            return {}
+        states: dict[str, str] = {}
+        for package in data.get("packages", []):
+            name = str(package.get("name"))
+            if package.get("type") == "path":
+                folder = (self.root / str(package.get("dir", ""))).resolve()
+                files = sorted(folder.rglob("*.lean")) if folder.is_dir() else []
+                states[name] = fingerprint_data({
+                    f.relative_to(folder).as_posix(): hashlib.sha256(f.read_bytes()).hexdigest()
+                    for f in files if ".lake" not in f.relative_to(folder).parts})
+            else:
+                states[name] = _checked_out(self.root / ".lake" / "packages" / name)
+        return states
+
     def build_imports(self, path: Path, *, timeout: float = BUILD_TIMEOUT_SECONDS) -> None:
         """Build the project's own modules that `path` imports, so Lean can load them.
 
@@ -153,6 +206,30 @@ class LeanWorkspace:
                     path = Path(folder) / name
                     digest.update(f"{path.relative_to(self.root)}:{_stat_key(path)}\n".encode())
         return digest.hexdigest()
+
+
+def _checked_out(folder: Path) -> str:
+    """The commit a package's folder is checked out at, or "missing"."""
+    git = folder / ".git"
+    try:
+        head = (git / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
+        return "missing"
+    if not head.startswith("ref: "):
+        return head
+    ref = head.removeprefix("ref: ")
+    try:
+        return (git / ref).read_text(encoding="utf-8").strip()
+    except OSError:
+        pass
+    try:
+        packed = (git / "packed-refs").read_text(encoding="utf-8")
+    except OSError:
+        return head
+    for line in packed.splitlines():
+        if line.endswith(" " + ref):
+            return line.split(" ")[0]
+    return head
 
 
 def _stat_key(path: Path) -> str:

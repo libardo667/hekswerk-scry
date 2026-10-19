@@ -132,6 +132,13 @@ class TestAuditsAreLogged(ToolboxCase):
             start["statement_text"], self.box.statement_file.read_text(encoding="utf-8")
         )
         self.assertEqual((start["title"], start["model"]), ("Audit of Thing", SETTINGS.model))
+        # The setup it ran under, by content, so the run can be told apart from another.
+        setup = start["setup"]
+        self.assertEqual(setup["model"], SETTINGS.model)
+        self.assertEqual(setup["statement_file"], "Statement.lean")
+        self.assertEqual(set(setup["lean_inputs"]["files"]), {"Statement.lean"})
+        self.assertEqual(set(setup["papers"]), {"main.tex", "sections/intro.tex"})
+        self.assertEqual(len(setup["instructions_sha256"]), 64)
         # Conservation: every piece of evidence appears exactly once, in order, unchanged.
         logged = [(e["id"], e["tool"], e["result"]) for e in events if e["kind"] == "evidence"]
         self.assertEqual(

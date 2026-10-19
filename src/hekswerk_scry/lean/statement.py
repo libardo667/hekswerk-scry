@@ -8,14 +8,18 @@ of the answer that Lean itself can give:
   depends on (definitions are where meaning can quietly differ from the paper);
 - two probes: whether the hypotheses contradict each other (so the theorem says nothing),
   and whether the conclusion follows without them. A probe counts only when a standard
-  tactic finds a proof and the Lean kernel accepts it. When the tactics find nothing, that
-  is reported as exactly that, never as evidence that all is well.
+  tactic finds a proof, the Lean kernel accepts it, and it relies on Lean's standard axioms
+  alone. A proof that needs more (say `sorryAx`, through a lemma left as `sorry`) is kept,
+  with its axioms, but shows nothing. When the tactics find nothing, that is reported as
+  exactly that, never as evidence that all is well.
 
 Reading a statement means loading the file's imports (often all of Mathlib), which takes
 minutes. Each run's result is stored in the project's run folder, keyed by everything that
-could change Lean's answer: the file's exact contents, the theorem, the Lean version, the
-exporter build, and whether probes ran. A stored result is marked as reused, with the time
-of the Lean run it came from.
+could change Lean's answer: the file's exact contents and those of every project file it
+imports, the packages as checked out, the theorem, the Lean version, the exporter build,
+and whether probes ran (`LeanWorkspace.inputs`). A definition changed in an imported file
+means a new run, even when the theorem's own file is untouched. A stored result is marked
+as reused, with the time of the Lean run it came from.
 """
 
 import hashlib
@@ -27,6 +31,7 @@ from typing import Any
 
 from hekswerk_scry.core.hashing import fingerprint_data
 from hekswerk_scry.lean.processes import run_program
+from hekswerk_scry.lean.runner import STANDARD_AXIOMS
 from hekswerk_scry.lean.worker import LeanWorkerError, worker_for
 from hekswerk_scry.lean.workspace import LeanWorkspace
 from hekswerk_scry.models.receipts import LeanRunEvidence, Receipt
@@ -67,8 +72,17 @@ class ProjectDefinition:
 
 
 @dataclass(frozen=True)
+class ProbeProof:
+    """A proof a probe's tactic found and the kernel accepted, with every axiom it relies on."""
+
+    tactic: str
+    axioms: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class ProbeOutcome:
-    """One Lean probe. `found` is True only when the kernel accepted a proof."""
+    """One Lean probe. `found` is True only when the kernel accepted a proof that relies on
+    Lean's standard axioms alone. Proofs that needed more are kept in `untrusted`."""
 
     kind: str
     found: bool
@@ -76,6 +90,17 @@ class ProbeOutcome:
     tactic: str | None
     axioms: tuple[str, ...]
     note: str
+    untrusted: tuple[ProbeProof, ...] = ()
+
+    def __post_init__(self) -> None:
+        extra = sorted(set(self.axioms) - STANDARD_AXIOMS)
+        if self.found and extra:
+            raise ValueError(
+                f"The {self.kind} probe is reported as found, but its proof relies on "
+                f"{', '.join(extra)}, beyond Lean's standard axioms. That proof shows nothing "
+                "about the statement. Rebuild Scry's exporter (`make lean-setup`) and read the "
+                "statement again."
+            )
 
     @property
     def headline(self) -> str:
@@ -83,12 +108,21 @@ class ProbeOutcome:
             if self.found:
                 return (f"Red flag: Lean derived False from the hypotheses (with `{self.tactic}`). "
                         "They contradict each other, so the theorem says nothing.")
-            return self.note
+            return self.note + self._untrusted_note()
         if self.found:
             return (f"Red flag: Lean proved the conclusion without the hypotheses (with "
                     f"`{self.tactic}`). They aren't needed, or the conclusion is weaker than it "
                     "looks.")
-        return self.note
+        return self.note + self._untrusted_note()
+
+    def _untrusted_note(self) -> str:
+        if not self.untrusted:
+            return ""
+        found = "; ".join(
+            f"`{p.tactic}`, relying on {', '.join(sorted(set(p.axioms) - STANDARD_AXIOMS))}"
+            for p in self.untrusted)
+        return (f" (A proof was found only with axioms beyond Lean's standard three, such as "
+                f"a lemma left as `sorry`: {found}. That shows nothing about the statement.)")
 
 
 @dataclass(frozen=True)
@@ -100,6 +134,7 @@ class StatementReport:
     binders: tuple[Binder, ...]
     conclusion: str
     definitions: tuple[ProjectDefinition, ...]
+    definitions_total: int  # how many there are; past Lean's limit, the rest aren't printed
     axioms: tuple[str, ...]
     probes: tuple[ProbeOutcome, ...]
     receipt: Receipt
@@ -109,6 +144,10 @@ class StatementReport:
     def proof_left_open(self) -> bool:
         """True for a statement whose proof is `sorry` (such as a comparator challenge)."""
         return "sorryAx" in self.axioms
+
+    @property
+    def definitions_complete(self) -> bool:
+        return self.definitions_total == len(self.definitions)
 
     @property
     def red_flags(self) -> tuple[ProbeOutcome, ...]:
@@ -190,10 +229,10 @@ def stored_result_path(
     workspace: LeanWorkspace, path: Path, theorem: str, *, probes: bool
 ) -> Path:
     """Where a statement result is stored. It changes when anything that could change
-    Lean's answer changes: the file's contents, the theorem, the Lean version, the exporter
-    build, or whether probes ran."""
+    Lean's answer changes: the file or any project file it imports, the packages, the
+    theorem, the Lean version, the exporter build, or whether probes ran."""
     key = fingerprint_data({
-        "file_sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "theorem": theorem,
+        "inputs": workspace.inputs(path), "theorem": theorem,
         "toolchain": workspace.toolchain, "probes": probes,
         "exporter_sha256": hashlib.sha256(workspace.exporter.read_bytes()).hexdigest(),
     }).split(":")[1]
@@ -228,6 +267,7 @@ def report_from_json(
                       for b in data["binders"]),
         conclusion=str(data["conclusion"]),
         definitions=tuple(_definition(d) for d in data["definitions"]),
+        definitions_total=int(data["definitions_total"]),
         axioms=tuple(data["axioms"]),
         probes=probes,
         receipt=receipt,
@@ -257,5 +297,7 @@ def _probes(raw: Any) -> tuple[ProbeOutcome, ...]:
             applicable=not probe.get("not_applicable", False),
             tactic=probe.get("tactic"), axioms=tuple(probe.get("axioms", ())),
             note=str(probe.get("note", "")),
+            untrusted=tuple(ProbeProof(str(u["tactic"]), tuple(u["axioms"]))
+                            for u in probe.get("untrusted", ())),
         ))
     return tuple(out)

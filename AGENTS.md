@@ -52,10 +52,11 @@ conversation history is append-only.
 - Do not add regex or keyword "checks" of math, code, or prose that present their
   results as verification. That was tried in the first draft and approved broken
   proofs (see `docs/decisions/0001-only-lean-says-proven.md`).
-- A theorem is Lean-checked only when Lean reports no errors, no `sorry`, and no axioms
-  beyond the standard three (propext, Classical.choice, Quot.sound). Results labelled
-  `CheckKind.LEAN` may only come from `lean/runner.py` actually running Lean; a test
-  enforces this.
+- A theorem is Lean-checked only when Lean's run ends normally (exit code 0, in time) and
+  reports no errors, no `sorry`, and no axioms beyond the standard three (propext,
+  Classical.choice, Quot.sound). A statement probe counts only on those three axioms too.
+  Results labelled `CheckKind.LEAN` may only come from `lean/runner.py` actually running
+  Lean; a test enforces this.
 - A Lean-backed map records the fingerprint of the file it came from. Never check a map
   against a file that has changed since; re-import instead.
 - The arrows of a Lean-backed map come from Lean's own record of the finished proof (see
@@ -65,6 +66,12 @@ conversation history is append-only.
   separate question. A statement probe counts only when the kernel accepts its proof.
 - OpenAI's scope notes are the answer key for statement audits. Never give them to the AI
   helper, in prompts or tools.
+- Tell the AI helper only what Scry itself checked. "The repository says a proof exists" is
+  not "Lean checked a proof here" (see `docs/decisions/0009-evidence-identity.md`).
+- A stored or reused result stands only for the exact inputs it was made from. Key Lean
+  results by `LeanWorkspace.inputs` (the file, every project file it imports, the packages),
+  benchmark audits by their whole setup, and compute anything that can go stale (such as
+  whether an outline's files changed) when it is asked for, not once.
 - Lean usually runs in a kept-running process (`lean/worker.py`, see
   `docs/decisions/0006-kept-running-lean.md`). It must judge every file exactly as a fresh
   `lean` run does; `lean_tests/test_lean_worker.py` checks that. One process holds one set

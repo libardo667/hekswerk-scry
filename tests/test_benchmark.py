@@ -6,17 +6,21 @@ No Lean and no model: the parts that decide what a score means are tested on the
 import json
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
+from typing import Any
 
 from hekswerk_scry.ai import benchmark
 from hekswerk_scry.ai.audit import audit_prompt
 from hekswerk_scry.ai.benchmark import (
     CAUGHT,
+    CONFLICTING,
     COPY_CLAIM_NOTE,
     COPY_PROOF_NOTE,
     COPY_STATUS,
     DANGEROUS_MISS,
     MISSED,
+    UNRESOLVED,
     BenchmarkError,
     Plant,
     control_flagged,
@@ -26,7 +30,13 @@ from hekswerk_scry.ai.benchmark import (
     score_plant,
     without_theorems,
 )
-from hekswerk_scry.ai.statement_tools import MATCHES, StatementToolbox, VerdictRow
+from hekswerk_scry.ai.statement_tools import (
+    MATCHES,
+    UNCLEAR,
+    VERDICTS,
+    StatementToolbox,
+    VerdictRow,
+)
 from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.statement import report_from_json
 from hekswerk_scry.lean.workspace import LeanWorkspace
@@ -158,20 +168,50 @@ class TestTheoremsTakenOut(unittest.TestCase):
         )
 
 
+DIFFERENCES = [v for v in VERDICTS if v not in (MATCHES, UNCLEAR)]
+
+
 class TestScoring(unittest.TestCase):
-    def test_the_three_outcomes(self) -> None:
+    def test_the_five_outcomes(self) -> None:
         planted = (10, 11)
         self.assertEqual(score_plant([row("differs", (11, 12))], planted), CAUGHT)
         self.assertEqual(score_plant([row(MATCHES, (9, 10))], planted), DANGEROUS_MISS)
+        self.assertEqual(score_plant([row(UNCLEAR, (10, 10))], planted), UNRESOLVED)
         self.assertEqual(
             score_plant([row("differs", (12, 20)), row(MATCHES, (1, 9))], planted), MISSED
         )
         self.assertEqual(score_plant([row("not in the formalization", None)], planted), MISSED)
         self.assertEqual(score_plant([], planted), MISSED)
-        # A flag anywhere over the lines wins over a "matches" over them.
+        # Uncertainty never hides a "matches": the audit still passed the planted lines.
         self.assertEqual(
-            score_plant([row(MATCHES, (10, 10)), row("unclear", (8, 10))], planted), CAUGHT
+            score_plant([row(MATCHES, (10, 10)), row(UNCLEAR, (8, 10))], planted), DANGEROUS_MISS
         )
+        self.assertEqual(
+            score_plant([row("differs", (10, 10)), row(UNCLEAR, (8, 10))], planted), CAUGHT
+        )
+        # A difference and a "matches" over the same lines contradict each other.
+        self.assertEqual(
+            score_plant([row(MATCHES, (10, 10)), row("Lean concludes less", (8, 10))], planted),
+            CONFLICTING,
+        )
+
+    def test_only_a_named_difference_is_a_catch(self) -> None:
+        # Invariant, over every mix of verdicts at the planted lines: the plant is caught or
+        # conflicting exactly when some row names a difference; "unclear" rows change a
+        # score only from missed to unresolved; and no plant with a "matches" row is caught.
+        planted = (5, 5)
+        mixes = [[], [MATCHES], [UNCLEAR], [MATCHES, UNCLEAR], *([d] for d in DIFFERENCES),
+                 *([d, MATCHES] for d in DIFFERENCES), *([d, UNCLEAR] for d in DIFFERENCES)]
+        for mix in mixes:
+            rows = [row(v, planted) for v in mix]
+            with self.subTest(mix=mix):
+                score = score_plant(rows, planted)
+                named = any(v in DIFFERENCES for v in mix)
+                self.assertEqual(score in (CAUGHT, CONFLICTING), named)
+                if MATCHES in mix:
+                    self.assertNotEqual(score, CAUGHT)
+                unsure = score_plant([*rows, row(UNCLEAR, planted)], planted)
+                self.assertEqual(unsure, UNRESOLVED if score == MISSED else score)
 
     def test_scores_depend_only_on_rows_over_the_planted_lines(self) -> None:
         # Invariant: adding rows that don't touch the planted lines never changes a score.
@@ -186,6 +226,7 @@ class TestScoring(unittest.TestCase):
     def test_control_flags_are_noticed(self) -> None:
         self.assertTrue(control_flagged([row("differs", (5, 7))], (7, 7)))
         self.assertFalse(control_flagged([row(MATCHES, (5, 7))], (7, 7)))
+        self.assertFalse(control_flagged([row(UNCLEAR, (5, 7))], (7, 7)))
         self.assertFalse(control_flagged([row("differs", (8, 9))], (7, 7)))
 
 
@@ -202,8 +243,14 @@ class TestBudget(unittest.TestCase):
                     self.assertLessEqual(sum(spent) + max(spent), budget)
 
 
+SETUP: dict[str, Any] = {
+    "model": "m", "effort": "high", "instructions_sha256": "1" * 64,
+    "lean_inputs": {"files": {"S.lean": "2" * 64}}, "papers": {"main.tex": "3" * 64},
+}
+
+
 class TestResuming(unittest.TestCase):
-    def results(self, root: Path) -> list[benchmark.VariantResult]:
+    def results(self, root: Path, *, stopped: bool = False) -> list[benchmark.VariantResult]:
         item = openai_math.Challenge("Thing", root / "S.lean", "M", root / "M.lean", ("t",), ())
         variant = benchmark.Variant(item, None, root / "S.lean", None, None)
         rows = [
@@ -211,7 +258,8 @@ class TestResuming(unittest.TestCase):
             row("not in the formalization", None),
             VerdictRow("conclusion", "p ↔ q", "p → q", MATCHES, False, (9, 9), ("E2", "E5")),
         ]
-        return [benchmark.VariantResult(variant, rows, 0.4321, False, "a" * 64)]
+        return [benchmark.VariantResult(variant, rows, 0.4321, stopped, "a" * 64, SETUP,
+                                        "2026-10-19 10:00:00 UTC")]
 
     def test_saved_results_read_back_exactly(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
@@ -221,13 +269,62 @@ class TestResuming(unittest.TestCase):
             back = benchmark.earlier_results(out)[("Thing", benchmark.CONTROL)]
             self.assertEqual(back.rows, saved[0].rows)
             self.assertEqual(
-                (back.copy_sha256, back.cost_usd, back.hit_round_limit), ("a" * 64, 0.4321, False)
+                (back.copy_sha256, back.cost_usd, back.hit_round_limit, back.setup, back.ran_at),
+                ("a" * 64, 0.4321, False, SETUP, "2026-10-19 10:00:00 UTC"),
             )
 
-    def test_only_an_identical_copy_reuses_an_audit(self) -> None:
-        before = benchmark.EarlierResult("a" * 64, [], 1.0, False)
-        self.assertTrue(benchmark.reusable(before, "a" * 64))
-        self.assertFalse(benchmark.reusable(before, "b" * 64))
+    def test_only_the_same_experiment_reuses_an_audit(self) -> None:
+        before = benchmark.EarlierResult("a" * 64, [], 1.0, False, SETUP, "then")
+        self.assertTrue(benchmark.reusable(before, json.loads(json.dumps(SETUP))))
+        for key, value in (("model", "other"), ("effort", "low"),
+                           ("instructions_sha256", "9" * 64), ("papers", {}),
+                           ("lean_inputs", {"files": {"S.lean": "4" * 64}}), ("tools", "new")):
+            with self.subTest(changed=key):
+                self.assertFalse(benchmark.reusable(before, {**SETUP, key: value}))
+
+    def test_an_unfinished_or_unrecorded_audit_is_never_reused(self) -> None:
+        stopped = benchmark.EarlierResult("a" * 64, [], 1.0, True, SETUP, "then")
+        self.assertFalse(benchmark.reusable(stopped, SETUP))
+        unrecorded = benchmark.EarlierResult("a" * 64, [], 1.0, False, None, None)
+        self.assertFalse(benchmark.reusable(unrecorded, SETUP))
+
+    def test_results_saved_before_setups_were_recorded_are_read_but_not_reused(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            out = Path(folder)
+            benchmark.save_results(out, {"Thing": self.results(out)})
+            path = out / benchmark.RESULTS_FILE
+            old = json.loads(path.read_text(encoding="utf-8"))["challenges"]
+            for entry in old["Thing"]:
+                for key in ("setup", "ran_at", "reused_from"):
+                    del entry[key]
+            path.write_text(json.dumps(old), encoding="utf-8")
+            back = benchmark.earlier_results(out)[("Thing", benchmark.CONTROL)]
+            self.assertIsNone(back.setup)
+            self.assertFalse(benchmark.reusable(back, SETUP))
+            path.write_text(json.dumps({"format": benchmark.RESULTS_FORMAT, "version": 9,
+                                        "challenges": {}}), encoding="utf-8")
+            with self.assertRaisesRegex(BenchmarkError, "version 9"):
+                benchmark.earlier_results(out)
+
+    def test_the_summary_says_what_was_reused_and_what_did_not_finish(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            item = openai_math.Challenge("Thing", root / "S.lean", "M", root / "M.lean", ("t",), ())
+            plant = Plant("Thing", "p", "k", "what", "x", "y")
+            fresh, reused = (benchmark.VariantResult(
+                benchmark.Variant(item, plant, root / "S.lean", (3, 3), (3, 3)),
+                [row(UNCLEAR, (3, 3))], 0.1, stopped, "a" * 64, SETUP, "2026-10-19 10:00 UTC",
+                reused_from="2026-10-18 09:00 UTC" if stopped is False else None)
+                for stopped in (True, False))
+            benchmark.score_challenge([fresh, reused])
+            with unittest.mock.patch.object(openai_math, "scope_note", return_value=None):
+                text = " ".join(benchmark.render_summary({"Thing": [fresh, reused]}).split())
+        self.assertIn("0 caught, 0 conflicting, 0 dangerous miss, 2 unresolved, 0 missed", text)
+        self.assertIn("1 of 2 audits were not run again", text)
+        self.assertIn("Reused audits are not new tries", text)
+        self.assertIn("1 audit(s) stopped at the round limit", text)
+        self.assertIn("reused, ran 2026-10-18 09:00 UTC", text)
+        self.assertIn("ran 2026-10-19 10:00 UTC; stopped at the round limit", text)
 
     def test_an_incomplete_results_file_is_refused(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
@@ -238,13 +335,13 @@ class TestResuming(unittest.TestCase):
             good = json.loads(path.read_text(encoding="utf-8"))
             for damage in ("copy_sha256", "rows"):
                 broken = json.loads(json.dumps(good))
-                del broken["Thing"][0][damage]
+                del broken["challenges"]["Thing"][0][damage]
                 path.write_text(json.dumps(broken), encoding="utf-8")
                 with self.subTest(damage), self.assertRaisesRegex(BenchmarkError, "complete"):
                     benchmark.earlier_results(out)
             for field_name, value in (("verdict", "fine"), ("lean_lines", [3])):
                 broken = json.loads(json.dumps(good))
-                broken["Thing"][0]["rows"][0][field_name] = value
+                broken["challenges"]["Thing"][0]["rows"][0][field_name] = value
                 path.write_text(json.dumps(broken), encoding="utf-8")
                 with self.subTest(field_name), self.assertRaisesRegex(BenchmarkError, "complete"):
                     benchmark.earlier_results(out)
@@ -259,7 +356,7 @@ class TestStoppedRuns(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
             item = openai_math.Challenge("Thing", root / "S.lean", "M", root / "M.lean", ("t",), ())
-            variants: list[tuple[benchmark.Variant, list[Path], tuple[str, ...]]] = []
+            variants: list[tuple[benchmark.Variant, object, tuple[str, ...]]] = []
             for name in ("a", "b", "c"):
                 path = root / f"{name}.lean"
                 path.write_text(name, encoding="utf-8")
@@ -273,7 +370,7 @@ class TestStoppedRuns(unittest.TestCase):
                             None if plant is None else (1, 1),
                             None if plant is None else (1, 1),
                         ),
-                        [],
+                        mock.Mock(),
                         ("Paper",),
                     )
                 )
@@ -290,8 +387,8 @@ class TestStoppedRuns(unittest.TestCase):
             out = root / "out"
             with (
                 mock.patch.object(benchmark, "prepare", return_value=variants),
-                mock.patch.object(benchmark, "toolbox_for"),
                 mock.patch.object(benchmark, "audit_prompt"),
+                mock.patch.object(benchmark, "audit_setup", return_value=SETUP),
                 mock.patch.object(benchmark, "audit_text", return_value="report"),
                 mock.patch.object(benchmark, "run_audit", side_effect=audit),
                 mock.patch.object(openai_math, "scope_note", return_value=None),
@@ -304,6 +401,58 @@ class TestStoppedRuns(unittest.TestCase):
             self.assertIn("- Thing (c)", summary)
             saved = benchmark.earlier_results(out)
             self.assertEqual(list(saved), [("Thing", benchmark.CONTROL)])
+
+
+class TestReuseAcrossRuns(unittest.TestCase):
+    def test_a_later_run_reuses_only_the_same_finished_experiment(self) -> None:
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            item = openai_math.Challenge("Thing", root / "S.lean", "M", root / "M.lean", ("t",), ())
+            variants = []
+            for name in ("a", "b"):
+                path = root / f"{name}.lean"
+                path.write_text(name, encoding="utf-8")
+                plant = None if name == "a" else Plant("Thing", name, "k", "w", "x", "y")
+                lines = None if plant is None else (1, 1)
+                variants.append((benchmark.Variant(item, plant, path, lines, lines), mock.Mock(),
+                                 ("Paper",)))
+            audited: list[str] = []
+            tries_of_b = [0]
+
+            def audit(client: object, toolbox: object, prompt: object, name: str,
+                      papers: object, log: object, about: dict[str, object]) -> object:
+                audited.append(str(about["copy"]))
+                box = mock.Mock(verdicts=[row("differs", (1, 1))])
+                tries_of_b[0] += about["copy"] == "b"
+                stopped = about["copy"] == "b" and tries_of_b[0] == 1  # b stops the first time
+                return mock.Mock(cost_usd=0.5, toolbox=box,
+                                 turn=mock.Mock(hit_round_limit=stopped))
+
+            out = root / "out"
+
+            def run(setup: dict[str, Any]) -> list[str]:
+                audited.clear()
+                with (
+                    mock.patch.object(benchmark, "prepare", return_value=variants),
+                    mock.patch.object(benchmark, "audit_prompt"),
+                    mock.patch.object(benchmark, "audit_setup", return_value=setup),
+                    mock.patch.object(benchmark, "audit_text", return_value="report"),
+                    mock.patch.object(benchmark, "run_audit", side_effect=audit),
+                    mock.patch.object(openai_math, "scope_note", return_value=None),
+                ):
+                    benchmark.run_benchmark(mock.Mock(), ["Thing"], out, plants={})
+                return list(audited)
+
+            self.assertEqual(run(SETUP), ["control", "b"])
+            # Same setup: the finished control is reused; b stopped early, so it runs again.
+            self.assertEqual(run(SETUP), ["b"])
+            saved = benchmark.read_results(out / benchmark.RESULTS_FILE)["Thing"]
+            self.assertEqual([e["reused_from"] is not None for e in saved], [True, False])
+            self.assertEqual(run(SETUP), [])
+            # Anything in the setup changed: every audit runs again.
+            self.assertEqual(run({**SETUP, "model": "another"}), ["control", "b"])
 
 
 class TestBlindness(unittest.TestCase):

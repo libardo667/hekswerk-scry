@@ -11,14 +11,27 @@ instructions, so nothing tells the helper which one it is looking at. Its Lean c
 checked against the copy's own definitions, with the challenge theorems taken out
 (they have no proof), so a planted definition shows up in Lean too.
 
-A plant counts as:
-- caught: a recorded row with a verdict other than "matches" points at the planted lines;
-- a dangerous miss: no such row, but a "matches" row points at them (the audit looked
-  and passed it);
+A plant is scored from the recorded rows that point at the planted lines:
+- caught: a row names a difference (any verdict but "matches" and "unclear"), and none
+  says "matches";
+- conflicting: one row names a difference and another says "matches" (a person must judge
+  which is about the plant);
+- dangerous miss: a row says "matches" and none names a difference (the audit looked and
+  passed it; an "unclear" row beside it doesn't change that);
+- unresolved: the only rows say "unclear" (an honest abstention, but not a catch);
 - missed: no row points at them at all.
+
+These only say *where* the audit pointed, not whether it named the planted change. Whether
+a catch's row describes the plant is for a person to judge, and the summary says so.
 
 A caught plant whose lines the control audit also flagged is marked: the catch may be
 about a real difference that was there before the plant, so a person should check it.
+
+Every audit records its setup: the model and settings, the instructions and tools and the
+code behind them, the copy and every Lean input of its reading, and the paper files
+(`audit_setup`). A later run reuses an earlier audit only when that setup is identical and
+the audit finished (it didn't stop at its round limit), and the summary says which audits
+were reused, from when.
 """
 
 import hashlib
@@ -31,6 +44,7 @@ from typing import Any
 
 from hekswerk_scry.ai.audit import (
     audit_prompt,
+    audit_setup,
     audit_text,
     paper_files_for,
     run_audit,
@@ -40,10 +54,12 @@ from hekswerk_scry.ai.run_log import LOG_SUFFIX, RunLog
 from hekswerk_scry.ai.statement_tools import (
     CHECK_THEOREM,
     MATCHES,
+    UNCLEAR,
     VERDICTS,
     StatementToolbox,
     VerdictRow,
 )
+from hekswerk_scry.core.hashing import fingerprint_data
 from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.runner import check_file
 from hekswerk_scry.lean.statement import read_statement
@@ -65,10 +81,15 @@ COPY_CLAIM_NOTE = (
 
 DEFAULT_BUDGET_USD = 6.0
 RESULTS_FILE = "results.json"
+RESULTS_FORMAT = "hekswerk-scry/benchmark-results"
+RESULTS_VERSION = 2
 
 CAUGHT = "caught"
+CONFLICTING = "conflicting"
 DANGEROUS_MISS = "dangerous miss"
+UNRESOLVED = "unresolved"
 MISSED = "missed"
+SCORES = (CAUGHT, CONFLICTING, DANGEROUS_MISS, UNRESOLVED, MISSED)
 
 
 class BenchmarkError(RuntimeError):
@@ -237,32 +258,47 @@ def _overlaps(row: VerdictRow, lines: tuple[int, int]) -> bool:
         row.lean_lines[0] <= lines[1] and lines[0] <= row.lean_lines[1])
 
 
+def names_difference(row: VerdictRow) -> bool:
+    return row.verdict not in (MATCHES, UNCLEAR)
+
+
 def score_plant(rows: list[VerdictRow], planted_lines: tuple[int, int]) -> str:
-    if any(r.verdict != MATCHES and _overlaps(r, planted_lines) for r in rows):
-        return CAUGHT
-    if any(r.verdict == MATCHES and _overlaps(r, planted_lines) for r in rows):
+    over = [r for r in rows if _overlaps(r, planted_lines)]
+    difference = any(names_difference(r) for r in over)
+    passed = any(r.verdict == MATCHES for r in over)
+    if difference:
+        return CONFLICTING if passed else CAUGHT
+    if passed:
         return DANGEROUS_MISS
-    return MISSED
+    return UNRESOLVED if over else MISSED
 
 
 def control_flagged(control_rows: list[VerdictRow], original_lines: tuple[int, int]) -> bool:
-    """Whether the control audit already flagged the lines the plant replaced."""
-    return any(r.verdict != MATCHES and _overlaps(r, original_lines) for r in control_rows)
+    """Whether the control audit already named a difference at the lines the plant replaced."""
+    return any(names_difference(r) and _overlaps(r, original_lines) for r in control_rows)
 
 
 @dataclass
 class VariantResult:
-    """What one audit of one copy found. `reused` means it came from an earlier run."""
+    """What one audit of one copy found. `reused_from` is when the audit ran, for one an
+    earlier run did; None for an audit this run did."""
 
     variant: Variant
     rows: list[VerdictRow]
     cost_usd: float
     hit_round_limit: bool
     copy_sha256: str
-    reused: bool = False
+    setup: dict[str, Any]
+    ran_at: str
+    reused_from: str | None = None
     score: str | None = None  # None for a control
     also_in_control: bool = False
     catching_rows: list[VerdictRow] = field(default_factory=list)
+    passing_rows: list[VerdictRow] = field(default_factory=list)
+
+    @property
+    def reused(self) -> bool:
+        return self.reused_from is not None
 
 
 def score_challenge(results: list[VariantResult]) -> None:
@@ -274,17 +310,19 @@ def score_challenge(results: list[VariantResult]) -> None:
             continue
         result.score = score_plant(result.rows, lines)
         result.catching_rows = [r for r in result.rows
-                                if r.verdict != MATCHES and _overlaps(r, lines)]
+                                if names_difference(r) and _overlaps(r, lines)]
+        result.passing_rows = [r for r in result.rows
+                               if r.verdict == MATCHES and _overlaps(r, lines)]
         assert result.variant.original_lines is not None
-        result.also_in_control = (result.score == CAUGHT and
+        result.also_in_control = (result.score in (CAUGHT, CONFLICTING) and
                                   control_flagged(control_rows, result.variant.original_lines))
 
 
 # --- running it ----------------------------------------------------------------------
 
 
-def prepare(names: list[str], plants: dict[str, list[Plant]]) -> list[tuple[Variant, list[Path],
-                                                                           tuple[str, ...]]]:
+def prepare(names: list[str], plants: dict[str, list[Plant]]
+            ) -> list[tuple[Variant, StatementToolbox, tuple[str, ...]]]:
     """Make and Lean-check every copy, before anything is spent on the model."""
     prepared = []
     for name in names:
@@ -296,8 +334,8 @@ def prepare(names: list[str], plants: dict[str, list[Plant]]) -> list[tuple[Vari
             raise BenchmarkError(f"{name} has no paper to audit against.")
         for plant in [None, *plants[name]]:
             variant = make_variant(item, plant)
-            toolbox_for(variant, paper_files)  # fails here, not after money is spent
-            prepared.append((variant, paper_files, papers))
+            # Fails here, not after money is spent.
+            prepared.append((variant, toolbox_for(variant, paper_files), papers))
     return prepared
 
 
@@ -317,6 +355,26 @@ class EarlierResult:
     rows: list[VerdictRow]
     cost_usd: float
     hit_round_limit: bool
+    setup: dict[str, Any] | None  # None: saved before Scry recorded each audit's setup
+    ran_at: str | None
+
+
+def read_results(path: Path) -> dict[str, list[dict[str, Any]]]:
+    """The audits a results file holds, by challenge. A file from before Scry recorded each
+    audit's setup (version 1, a bare mapping) is read with no setup, so nothing in it can
+    be reused. Anything else unexpected is refused."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and "format" in data:
+        if data.get("format") != RESULTS_FORMAT or data.get("version") != RESULTS_VERSION:
+            raise BenchmarkError(f"{path} is a {data.get('format')} file, version "
+                                 f"{data.get('version')}; this Scry reads {RESULTS_FORMAT} "
+                                 f"version {RESULTS_VERSION}.")
+        if set(data) != {"format", "version", "challenges"}:
+            raise BenchmarkError(f"{path} has fields Scry doesn't know.")
+        data = data["challenges"]
+    if not isinstance(data, dict):
+        raise BenchmarkError(f"{path} isn't a results file.")
+    return data
 
 
 def earlier_results(out: Path) -> dict[tuple[str, str], EarlierResult]:
@@ -325,32 +383,43 @@ def earlier_results(out: Path) -> dict[tuple[str, str], EarlierResult]:
     path = out / RESULTS_FILE
     if not path.is_file():
         return {}
-    data = json.loads(path.read_text(encoding="utf-8"))
     found: dict[tuple[str, str], EarlierResult] = {}
     try:
-        for challenge, entries in data.items():
+        for challenge, entries in read_results(path).items():
             for entry in entries:
-                rows = [VerdictRow(
-                    item=str(r["item"]), paper_says=str(r["paper_says"]),
-                    lean_says=str(r["lean_says"]), verdict=str(r["verdict"]),
-                    affects_main_result=bool(r["affects_main_result"]),
-                    lean_lines=_saved_lines(r["lean_lines"]),
-                    evidence=tuple(r["evidence"]),
-                ) for r in entry["rows"]]
-                if any(r.verdict not in VERDICTS for r in rows):
-                    raise TypeError("a row has an unknown verdict")
+                rows = saved_rows(entry["rows"])
+                setup = entry.get("setup")
+                if setup is not None and not isinstance(setup, dict):
+                    raise TypeError("an audit's setup isn't a mapping")
                 found[(challenge, str(entry["variant"]))] = EarlierResult(
                     str(entry["copy_sha256"]), rows, float(entry["cost_usd"]),
-                    bool(entry["hit_round_limit"]))
+                    bool(entry["hit_round_limit"]), setup,
+                    str(entry["ran_at"]) if entry.get("ran_at") else None)
     except (KeyError, TypeError, ValueError, AttributeError) as exc:
         raise BenchmarkError(f"{path} isn't a complete results file ({exc!r}). Move it away "
                              "or choose another --out folder.") from exc
     return found
 
 
-def reusable(before: EarlierResult, copy_sha256: str) -> bool:
-    """An earlier audit stands only for exactly the copy it audited."""
-    return before.copy_sha256 == copy_sha256
+def saved_rows(raw: list[dict[str, Any]]) -> list[VerdictRow]:
+    rows = [VerdictRow(
+        item=str(r["item"]), paper_says=str(r["paper_says"]),
+        lean_says=str(r["lean_says"]), verdict=str(r["verdict"]),
+        affects_main_result=bool(r["affects_main_result"]),
+        lean_lines=_saved_lines(r["lean_lines"]),
+        evidence=tuple(r["evidence"]),
+    ) for r in raw]
+    if any(r.verdict not in VERDICTS for r in rows):
+        raise TypeError("a row has an unknown verdict")
+    return rows
+
+
+def reusable(before: EarlierResult, setup: dict[str, Any]) -> bool:
+    """An earlier audit stands in for a new one only when it was the same experiment (the
+    same setup, which includes the exact copy) and it finished. An audit that stopped at its
+    round limit is run again."""
+    return (before.setup is not None and not before.hit_round_limit
+            and fingerprint_data(before.setup) == fingerprint_data(setup))
 
 
 def _saved_lines(value: Any) -> tuple[int, int] | None:
@@ -375,21 +444,24 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
     spent: list[float] = []
     skipped: list[str] = []
     stopped: str | None = None
-    for variant, paper_files, papers in prepared:
+    for variant, toolbox, papers in prepared:
         if stopped is not None:
             skipped.append(f"{variant.item.name} ({variant.name})")
             continue
         sha = file_sha256(variant.statement_file)
+        prompt = audit_prompt(toolbox, variant.item, papers, COPY_STATUS)
+        setup = audit_setup(client, toolbox, prompt)
         before = earlier.get((variant.item.name, variant.name))
-        if before is not None and reusable(before, sha):
+        if before is not None and reusable(before, setup):
+            assert before.ran_at is not None
             result = VariantResult(variant, before.rows, before.cost_usd,
-                                   before.hit_round_limit, sha, reused=True)
+                                   before.hit_round_limit, sha, setup, before.ran_at,
+                                   reused_from=before.ran_at)
         elif not can_afford(spent, budget_usd):
             skipped.append(f"{variant.item.name} ({variant.name})")
             continue
         else:
-            toolbox = toolbox_for(variant, paper_files)
-            prompt = audit_prompt(toolbox, variant.item, papers, COPY_STATUS)
+            ran_at = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
             log = RunLog(out / f"{variant.item.name}--{variant.name}-"
                          f"{time.strftime('%Y%m%d-%H%M%S', time.gmtime())}{LOG_SUFFIX}")
             about = {
@@ -411,7 +483,7 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
             (out / f"{variant.item.name}--{variant.name}.md").write_text(
                 audit_text(audit), encoding="utf-8")
             result = VariantResult(variant, list(audit.toolbox.verdicts), audit.cost_usd,
-                                   audit.turn.hit_round_limit, sha)
+                                   audit.turn.hit_round_limit, sha, setup, ran_at)
         by_challenge.setdefault(variant.item.name, []).append(result)
         save_results(out, by_challenge)
     for results in by_challenge.values():
@@ -432,7 +504,7 @@ def run_benchmark(client: OpenRouterClient, names: list[str], out: Path,
 
 
 def save_results(out: Path, by_challenge: dict[str, list[VariantResult]]) -> None:
-    data: dict[str, Any] = {
+    challenges: dict[str, Any] = {
         name: [{
             "variant": r.variant.name,
             "copy_sha256": r.copy_sha256,
@@ -440,38 +512,66 @@ def save_results(out: Path, by_challenge: dict[str, list[VariantResult]]) -> Non
             "score": r.score, "also_in_control": r.also_in_control,
             "cost_usd": round(r.cost_usd, 4),
             "hit_round_limit": r.hit_round_limit,
+            "ran_at": r.ran_at, "reused_from": r.reused_from,
+            "setup": r.setup,
             "rows": [vars(row) for row in r.rows],
         } for r in results]
         for name, results in by_challenge.items()
     }
+    data = {"format": RESULTS_FORMAT, "version": RESULTS_VERSION, "challenges": challenges}
     (out / RESULTS_FILE).write_text(json.dumps(data, indent=2, ensure_ascii=False),
                                     encoding="utf-8")
 
 
+SCORE_MEANINGS = {
+    CAUGHT: "a row named a difference there, and none said \"matches\"",
+    CONFLICTING: "one row named a difference there and another said \"matches\"",
+    DANGEROUS_MISS: "a row said \"matches\" there and none named a difference",
+    UNRESOLVED: "the only rows there said \"unclear\"",
+    MISSED: "no row pointed there",
+}
+
+
 def render_summary(by_challenge: dict[str, list[VariantResult]]) -> str:
     plants = [r for results in by_challenge.values() for r in results if r.score is not None]
-    counts = {s: sum(r.score == s for r in plants) for s in (CAUGHT, DANGEROUS_MISS, MISSED)}
-    cost = sum(r.cost_usd for results in by_challenge.values() for r in results)
-    reused = sum(r.reused for results in by_challenge.values() for r in results)
+    every = [r for results in by_challenge.values() for r in results]
+    counts = {s: sum(r.score == s for r in plants) for s in SCORES}
+    cost = sum(r.cost_usd for r in every)
+    reused = [r for r in every if r.reused]
+    unfinished = [r for r in every if r.hit_round_limit]
     lines = [
         "# Statement audit benchmark", "",
         f"{len(plants)} planted differences in {len(by_challenge)} statements: "
-        f"{counts[CAUGHT]} caught, {counts[DANGEROUS_MISS]} dangerous misses (a row said "
-        f"\"matches\" over the planted lines), {counts[MISSED]} missed. Total cost "
-        f"${cost:.2f}" + (f" ({reused} audits reused from an earlier run)" if reused else "")
-        + ".", "",
-        "Scored mechanically from the rows each audit recorded. The audits are the AI "
-        "helper's reading; the scores only say whether a row pointed at the planted lines "
-        "with a verdict other than \"matches\".", "",
-        "| Statement | Plant | What was planted | Result | Row that flagged it |",
-        "| --- | --- | --- | --- | --- |",
+        + ", ".join(f"{counts[s]} {s}" for s in SCORES) + f". Total cost ${cost:.2f}.", "",
+        "Scored mechanically from the rows each audit recorded, at the planted lines: "
+        + "; ".join(f"**{s}**: {m}" for s, m in SCORE_MEANINGS.items()) + ". "
+        "A score says where an audit pointed, not whether its row describes the planted "
+        "change: that is for a person to judge, row by row. The audits are the AI helper's "
+        "reading.", "",
+    ]
+    if reused:
+        lines += [f"{len(reused)} of {len(every)} audits were not run again: an earlier run "
+                  "did the same experiment (identical setup), and they are reused from it. "
+                  "Reused audits are not new tries.", ""]
+    if unfinished:
+        lines += [f"{len(unfinished)} audit(s) stopped at the round limit before finishing; "
+                  "their rows are what they recorded by then.", ""]
+    lines += [
+        "| Statement | Plant | What was planted | Result | Rows at the planted lines | Audit |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for result in plants:
         assert result.variant.plant is not None
-        flagged = "; ".join(f"{r.item} ({r.verdict})" for r in result.catching_rows) or "-"
+        flagged = "; ".join(f"{r.item} ({r.verdict})"
+                            for r in result.catching_rows + result.passing_rows) or "-"
         note = " (control flagged these lines too: check by hand)" if result.also_in_control else ""
+        when = (f"reused, ran {result.reused_from}" if result.reused
+                else f"ran {result.ran_at}")
+        if result.hit_round_limit:
+            when += "; stopped at the round limit"
         lines.append(f"| {result.variant.item.name} | {result.variant.plant.plant_id} | "
-                     f"{result.variant.plant.what} | {result.score}{note} | {flagged} |")
+                     f"{result.variant.plant.what} | {result.score}{note} | {flagged} | "
+                     f"{when} |")
     lines += ["", "## What the unchanged copies' audits flagged", "",
               "Differences the helper reported in the real statements, to compare with "
               "OpenAI's scope notes (which the helper never saw).", ""]
@@ -481,7 +581,7 @@ def render_summary(by_challenge: dict[str, list[VariantResult]]) -> str:
             continue
         scope = openai_math.scope_note(control.variant.item)
         lines.append(f"### {name} (scope note {scope.name if scope else 'none'})")
-        differences = [r for r in control.rows if r.verdict != MATCHES]
+        differences = [r for r in control.rows if r.verdict != MATCHES]  # with "unclear"
         lines += [f"- {r.item}: {r.verdict}"
                   + (" (affects the main result)" if r.affects_main_result else "")
                   for r in differences] or ["- nothing flagged"]

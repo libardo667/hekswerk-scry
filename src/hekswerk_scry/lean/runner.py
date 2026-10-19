@@ -3,7 +3,8 @@
 This is the only module that creates results labelled as coming from Lean. A theorem
 counts as proven ("Lean-checked") only when all of these hold:
 
-1. Lean finishes within the time limit and reports no errors.
+1. Lean finishes within the time limit, its process ends normally (exit code 0), and it
+   reports no errors.
 2. The proof doesn't use `sorry` (Lean's placeholder for a missing proof).
 3. The proof relies on no axioms beyond Lean's standard three
    (propext, Classical.choice, Quot.sound).
@@ -138,7 +139,8 @@ def _judged(
     messages, other = parse_output(stdout)
     other += tuple(line for line in stderr.splitlines() if line.strip())
     axioms = find_axioms(messages, theorem)
-    problems = judge(messages, axioms, theorem, timed_out=timed_out, timeout=timeout)
+    problems = judge(messages, axioms, theorem, exit_code=evidence.exit_code,
+                     timed_out=timed_out, timeout=timeout)
     passed = not problems
     recorded = workspace.relative(path)
     summary = (
@@ -225,10 +227,14 @@ def judge(
     axioms: tuple[str, ...] | None,
     theorem: str,
     *,
+    exit_code: int | None,
     timed_out: bool = False,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
 ) -> tuple[str, ...]:
-    """Plain-English reasons the theorem is not proven. Empty means it is."""
+    """Plain-English reasons the theorem is not proven. Empty means it is.
+
+    `exit_code` is how Lean's process ended. A run that didn't end normally proves nothing,
+    whatever it printed before it stopped: a crash need not leave an error message."""
     if timed_out:
         return (f"Lean took longer than {timeout:.0f} seconds and was stopped.",)
     problems: list[str] = []
@@ -239,6 +245,11 @@ def judge(
             f"Lean reported {len(errors)} error(s). The first, at line {first.line}: "
             f"{_first_line(first.text)}"
         )
+    elif exit_code != 0:
+        how = ("was stopped by signal " + str(-exit_code) if exit_code is not None and exit_code < 0
+               else f"ended with exit code {exit_code}")
+        problems.append(f"Lean's run failed: it {how} without reporting an error, so nothing "
+                        "was checked.")
     if any("declaration uses 'sorry'" in m.text for m in messages):
         problems.append("The proof uses `sorry`, Lean's placeholder for a missing proof.")
     if axioms is None:

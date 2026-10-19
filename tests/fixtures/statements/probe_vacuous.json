@@ -25,6 +25,7 @@
     ],
     "conclusion": "n = 42",
     "definitions": [],
+    "definitions_total": 0,
     "format": "hekswerk-scry/lean-statement",
     "kind": "theorem",
     "lean_version": "4.34.1",
@@ -44,7 +45,8 @@
         ],
         "triviality": {
             "found": false,
-            "note": "The tactics could not prove the conclusion without the hypotheses (or it refers to them)."
+            "note": "The tactics could not prove the conclusion without the hypotheses (or it refers to them).",
+            "untrusted": []
         },
         "vacuity": {
             "axioms": [
@@ -52,7 +54,8 @@
                 "Quot.sound"
             ],
             "found": true,
-            "tactic": "omega"
+            "tactic": "omega",
+            "untrusted": []
         }
     },
     "statement": "\u2200 n < 2, 5 < n \u2192 n = 42",

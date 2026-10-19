@@ -20,6 +20,7 @@
     ],
     "conclusion": "0 \u2264 x ^ 2 + 1",
     "definitions": [],
+    "definitions_total": 0,
     "format": "hekswerk-scry/lean-statement",
     "kind": "theorem",
     "lean_version": "4.34.1",
@@ -44,11 +45,13 @@
                 "Quot.sound"
             ],
             "found": true,
-            "tactic": "positivity"
+            "tactic": "positivity",
+            "untrusted": []
         },
         "vacuity": {
             "found": false,
-            "note": "The tactics found no contradiction among the hypotheses. That does not show they are consistent."
+            "note": "The tactics found no contradiction among the hypotheses. That does not show they are consistent.",
+            "untrusted": []
         }
     },
     "statement": "\u2200 (x : \u211d), 100 < x \u2192 0 \u2264 x ^ 2 + 1",

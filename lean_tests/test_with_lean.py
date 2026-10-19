@@ -169,6 +169,28 @@ class TestStatementsWithLean(unittest.TestCase):
         self.assertEqual([d.name.rsplit(".", 1)[-1] for d in report.definitions], ["double"])
 
 
+    def test_a_probe_proof_through_sorry_is_not_a_red_flag(self) -> None:
+        # `simp_all` derives False from the hypothesis only through a lemma left as `sorry`
+        # (the axioms of that proof include sorryAx). The triviality probe on the same
+        # theorem is the control: it is found on standard axioms.
+        from tests.test_outline import FIXTURES
+
+        from hekswerk_scry.lean.statement import read_statement
+
+        ws = workspace()
+        folder = ws.root / ".scry-runs" / "lean-tests"
+        folder.mkdir(parents=True, exist_ok=True)
+        copy = folder / "UntrustedProbe.lean"
+        shutil.copy(FIXTURES / "lean" / "UntrustedProbe.lean", copy)
+        report = read_statement(ws, copy, "probe_untrusted")
+        self.assertEqual([p.kind for p in report.red_flags], ["triviality"])
+        vacuity = next(p for p in report.probes if p.kind == "vacuity")
+        self.assertFalse(vacuity.found)
+        self.assertEqual([(u.tactic, set(u.axioms)) for u in vacuity.untrusted],
+                         [("simp_all", {"propext", "sorryAx"})])
+        self.assertEqual(report.definitions_total, 1)
+
+
 class TestAlphaProofWithLean(unittest.TestCase):
     def test_all_three_proofs_import_line_up_and_are_lean_checked(self) -> None:
         ws = workspace()

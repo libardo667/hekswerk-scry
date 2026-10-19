@@ -23,7 +23,7 @@ OUTPUT = Path(__file__).parent / "fixtures" / "lean_output"
 def lean_check(fixture: str) -> LeanCheck:
     messages, other = parse_output((OUTPUT / fixture).read_text(encoding="utf-8"))
     axioms = find_axioms(messages, "shifted_fraction_ne_one")
-    problems = judge(messages, axioms, "shifted_fraction_ne_one")
+    problems = judge(messages, axioms, "shifted_fraction_ne_one", exit_code=0)
     # A stand-in for the evidence of a Lean run: these tests replay recorded Lean output.
     evidence = LeanRunEvidence(("lean", "--json", "Check.lean"), 0, False, "0" * 64, 0.0)
     receipt = Receipt.from_lean_run(

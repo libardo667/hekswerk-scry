@@ -79,6 +79,9 @@ export function auditView(token, container) {
         h('span', { class: 'hint' }, 'You can see this; the helper could not.')) : null,
       start.copy === 'control' ? h('p', { class: 'plant' }, badge('control', 'unchanged copy'),
         " The statement exactly as OpenAI wrote it, audited the same way as the planted copies.") : null,
+      start.proof_status ? h('p', { class: 'plant' },
+        start.proof_status.checked ? badge('done', 'solution checked here') : badge('stopped', 'proof not checked here'),
+        ' ', start.proof_status.text) : null,
       stopped ? message(`Stopped: ${end.reason}`, 'warning') : null)
   }
 

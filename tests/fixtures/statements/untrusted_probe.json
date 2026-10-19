@@ -1,0 +1,81 @@
+{
+    "axioms": [
+        "sorryAx"
+    ],
+    "binders": [
+        {
+            "binder": "explicit",
+            "is_prop": false,
+            "name": "n",
+            "type": "Nat"
+        },
+        {
+            "binder": "explicit",
+            "is_prop": true,
+            "name": "h",
+            "type": "Shaky n"
+        }
+    ],
+    "conclusion": "n = n",
+    "definitions": [
+        {
+            "depth": 1,
+            "end": {
+                "column": 34,
+                "line": 14
+            },
+            "kind": "definition",
+            "module": null,
+            "name": "Shaky",
+            "start": {
+                "column": 0,
+                "line": 14
+            },
+            "type": "Nat \u2192 Prop",
+            "value": "fun x => True"
+        }
+    ],
+    "definitions_total": 1,
+    "format": "hekswerk-scry/lean-statement",
+    "kind": "theorem",
+    "lean_version": "4.34.1",
+    "module": null,
+    "probe_heartbeats": 20000,
+    "probes": {
+        "tactics": [
+            "simp_all",
+            "positivity",
+            "omega",
+            "linarith",
+            "nlinarith",
+            "norm_num at *",
+            "tauto",
+            "decide",
+            "aesop"
+        ],
+        "triviality": {
+            "axioms": [
+                "propext"
+            ],
+            "found": true,
+            "tactic": "simp_all",
+            "untrusted": []
+        },
+        "vacuity": {
+            "found": false,
+            "note": "The tactics found no contradiction among the hypotheses. That does not show they are consistent.",
+            "untrusted": [
+                {
+                    "axioms": [
+                        "propext",
+                        "sorryAx"
+                    ],
+                    "tactic": "simp_all"
+                }
+            ]
+        }
+    },
+    "statement": "\u2200 (n : Nat), Shaky n \u2192 n = n",
+    "theorem": "probe_untrusted",
+    "version": 1
+}

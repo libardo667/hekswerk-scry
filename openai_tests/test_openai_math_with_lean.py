@@ -95,6 +95,29 @@ class TestStatementProbesWithLean(unittest.TestCase):
                                  "probe_honest": []})
 
 
+    def test_a_probe_proof_through_sorry_is_not_a_red_flag(self) -> None:
+        ws = workspace_for_file(openai_math.lean_project() / "lean-toolchain")
+        shaky = scratch(ws, "UntrustedProbe.lean",
+                        REPOSITORY / "tests" / "fixtures" / "lean" / "UntrustedProbe.lean")
+        report = read_statement(ws, shaky, "probe_untrusted")
+        self.assertEqual([p.kind for p in report.red_flags], ["triviality"])
+        vacuity = next(p for p in report.probes if p.kind == "vacuity")
+        self.assertFalse(vacuity.found)
+        self.assertEqual([(u.tactic, set(u.axioms)) for u in vacuity.untrusted],
+                         [("simp_all", {"propext", "sorryAx"})])
+
+
+class TestSolutionChecks(unittest.TestCase):
+    def test_lean_here_accepts_the_truffet_solution(self) -> None:
+        from hekswerk_scry.ai.audit import check_solution
+
+        item = openai_math.challenge("TruffetCounterexample")
+        status = check_solution(workspace_for_file(item.statement_file), item)
+        self.assertTrue(status.checked, status.text)
+        self.assertIn("Lean, run here, accepts", status.text)
+        self.assertIn("has not checked that the solution's statement is exactly", status.text)
+
+
 class TestKeptRunningLeanOnV434(unittest.TestCase):
     def test_files_with_different_imports_in_turn(self) -> None:
         # Loading a second set of imports into one Lean v4.34.1 process broke its
