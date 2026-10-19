@@ -2,6 +2,7 @@
 on a free port; no browser."""
 
 import http.client
+import itertools
 import json
 import shutil
 import tempfile
@@ -11,8 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, RunLog
+from hekswerk_scry.files import save_outline
 from hekswerk_scry.web.access import TOKEN_HEADER
 from hekswerk_scry.web.server import Library, NotAllowedError, Source, serve
+from tests.test_outline import example_outline
 from tests.test_web_access import public_access
 from tests.test_web_access import token as sign_in
 
@@ -54,6 +57,8 @@ class WorkbenchCase(unittest.TestCase):
         maps.mkdir()
         shutil.copy(EXAMPLES / "shifted_fraction.json", maps / "map.json")
         (maps / "not-a-map.json").write_text('{"hello": 1}', encoding="utf-8")
+        self.outline = example_outline(self.root / "project")
+        save_outline(self.outline, maps / "example.outline.json")
         (self.root / "secret.md").write_text("outside every folder", encoding="utf-8")
         self.library = Library([Source("runs", runs), Source("maps", maps)])
 
@@ -76,6 +81,8 @@ class TestLibrary(WorkbenchCase):
         costs = {a["name"]: a.get("cost_usd") for a in run["audits"] if a["kind"] == "log"}
         self.assertEqual(sorted(costs.values()), [0.1, 0.1, 0.25])
         self.assertEqual([m["name"] for m in overview["maps"]], ["map.json"])
+        self.assertEqual([(o["name"], o["title"], o["parts"]) for o in overview["outlines"]],
+                         [("example.outline.json", "OutlineExample.result", 11)])
 
     def test_only_files_of_the_right_kind_inside_the_folders_are_served(self) -> None:
         good = self.library.token(self.root / "runs" / "bench" / "Old--control.md")
@@ -111,6 +118,66 @@ class TestLibrary(WorkbenchCase):
         self.assertEqual(set(data["order"]), {s["id"] for s in data["map"]["steps"]})
         self.assertEqual(len(data["scan"]["chokepoints"]), 1)
         self.assertEqual(data["blocks"], [])  # the bundled example has no Lean positions
+
+
+class TestOutlines(WorkbenchCase):
+    def token(self) -> str:
+        return self.library.token(self.root / "maps" / "example.outline.json")
+
+    def test_the_index_is_the_outline_in_short(self) -> None:
+        index = self.library.outline(self.token())
+        ids = index["ids"]
+        self.assertEqual(ids, list(self.outline.parts))
+        self.assertEqual(ids[index["result"]], self.outline.result)
+        rests_on = self.outline.rests_on()
+        for part_id, entry in zip(ids, index["parts"], strict=True):
+            part = self.outline.parts[part_id]
+            with self.subTest(part_id):
+                self.assertEqual(entry["name"] or part_id, part.name)
+                file = None if entry["file"] is None else index["files"][entry["file"]]
+                self.assertEqual(file, part.file)
+                self.assertEqual([ids[u] for u in entry["statement_uses"]],
+                                 list(part.statement_uses))
+                self.assertEqual([ids[u] for u in entry["body_uses"]], list(part.body_uses))
+                self.assertEqual(entry["rests_on"], len(rests_on[part_id]))
+                self.assertEqual(entry["rests_on_lines"],
+                                 sum(self.outline.parts[r].lines for r in rests_on[part_id]))
+                self.assertEqual(len(entry["unused"]), len(part.unused_hypotheses))
+        self.assertEqual([ids[c] for c in index["claim"]], list(self.outline.claim()))
+        self.assertEqual(index["changed_files"], [])
+
+    def test_a_part_comes_with_its_text_and_a_route_from_the_result(self) -> None:
+        for part_id, part in self.outline.parts.items():
+            answer = self.library.outline_part(self.token(), part_id)
+            self.assertEqual((answer["source"], answer["statement"]), (part.source, part.statement))
+            route = answer["route"]
+            self.assertEqual((route[0], route[-1]), (self.outline.result, part_id))
+            for here, nxt in itertools.pairwise(route):
+                self.assertIn(nxt, self.outline.parts[here].uses)
+        with self.assertRaises(NotAllowedError):
+            self.library.outline_part(self.token(), "OutlineExample.nothing")
+
+    def test_a_theorem_s_step_by_step_map_is_linked(self) -> None:
+        data = json.loads((self.root / "maps" / "map.json").read_text(encoding="utf-8"))
+        data["lean_source"] = {"file": "Examples/Outline.lean", "theorem": "OutlineExample.loose",
+                               "file_sha256": "0" * 64}
+        (self.root / "maps" / "map.json").write_text(json.dumps(data), encoding="utf-8")
+        map_token = self.library.token(self.root / "maps" / "map.json")
+        self.assertEqual(self.library.outline(self.token())["maps"],
+                         {"OutlineExample.loose": map_token})
+
+    def test_a_changed_outline_file_is_read_again(self) -> None:
+        version = self.outline.lean_version
+        self.assertEqual(self.library.outline(self.token())["lean_version"], version)
+        path = self.root / "maps" / "example.outline.json"
+        text = path.read_text(encoding="utf-8")
+        path.write_text(text.replace(f'"lean_version": "{version}"', '"lean_version": "9.9.9"'),
+                        encoding="utf-8")
+        self.assertEqual(self.library.outline(self.token())["lean_version"], "9.9.9")
+
+    def test_only_outline_files_are_read_as_outlines(self) -> None:
+        with self.assertRaises(NotAllowedError):
+            self.library.outline(self.library.token(self.root / "maps" / "map.json"))
 
 
 class TestServer(WorkbenchCase):

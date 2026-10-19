@@ -7,6 +7,7 @@ which takes a minute or two. Results of statement runs are stored, so reruns are
 import shutil
 import unittest
 from pathlib import Path
+from typing import Any
 
 from hekswerk_scry.checker import check_wiring, scan_proof_map
 from hekswerk_scry.lean import openai_math
@@ -15,6 +16,7 @@ from hekswerk_scry.lean.importer import import_theorem
 from hekswerk_scry.lean.runner import check_file
 from hekswerk_scry.lean.statement import StatementError, read_statement
 from hekswerk_scry.lean.workspace import LeanWorkspace, find_workspace, workspace_for_file
+from hekswerk_scry.models.outline import Outline
 
 REPOSITORY = Path(__file__).parents[1]
 
@@ -41,6 +43,43 @@ class TestTwoLeanVersions(unittest.TestCase):
         self.assertNotEqual(old_ws.toolchain, new_ws.toolchain)
         self.assertEqual({k: (s.contract, s.depends_on) for k, s in old.steps.items()},
                          {k: (s.contract, s.depends_on) for k, s in new.steps.items()})
+
+
+class TestOutlinesOnTwoLeanVersions(unittest.TestCase):
+    def test_both_exporters_outline_the_same_file_the_same_way(self) -> None:
+        from hekswerk_scry.lean.outline import make_outline
+
+        fixture = REPOSITORY / "tests" / "fixtures" / "lean" / "Outline.lean"
+        old_ws = find_workspace(REPOSITORY)
+        new_ws = workspace_for_file(openai_math.lean_project() / "lean-toolchain")
+        result = "OutlineExample.result"
+        old = make_outline(old_ws, scratch(old_ws, "Outline.lean", fixture), result)
+        new = make_outline(new_ws, scratch(new_ws, "Outline.lean", fixture), result)
+
+        def shape(outline: Outline) -> dict[str, Any]:
+            # Private names carry the module they are in, which differs between the two
+            # copies; the name as written doesn't.
+            name = {p.part_id: p.name for p in outline.parts.values()}
+            return {p.name: (p.kind, p.private, p.source, sorted(name[u] for u in p.statement_uses),
+                             sorted(name[u] for u in p.body_uses),
+                             [(h.name, h.statement) for h in p.unused_hypotheses])
+                    for p in outline.parts.values()}
+
+        self.assertNotEqual(old_ws.toolchain, new_ws.toolchain)
+        self.assertEqual(shape(old), shape(new))
+
+    def test_the_navier_stokes_result_never_uses_its_computability_hypothesis(self) -> None:
+        from hekswerk_scry.lean.outline import make_outline
+
+        ws = workspace_for_file(openai_math.lean_project() / "lean-toolchain")
+        result = "OAI.VelocityDetection.main_result"
+        outline = make_outline(ws, ws.root / "OAI" / "MathematicalPhysics" / "NavierStokes" /
+                               "VelocityDetection" / "MainResult.lean", result)
+        unused = outline.parts[result].unused_hypotheses
+        self.assertEqual([(h.name, h.statement) for h in unused],
+                         [("_hcomputable", "Effective.ComputableReal ν")])
+        self.assertEqual(set(outline.axioms), {"propext", "Classical.choice", "Quot.sound"})
+        self.assertGreater(len(outline.parts), 1000)
 
 
 class TestStatementProbesWithLean(unittest.TestCase):

@@ -19,6 +19,9 @@ With Lean (see "Setting up Lean" in README.md):
                                                  re-prove a fact with new tactics; Lean judges
     scry lean-statement FILE.lean THEOREM [--no-probes]
                                                  what a theorem states, and Lean's red-flag probes
+    scry lean-outline FILE.lean THEOREM -o NAME.outline.json
+                                                 a result and every theorem and definition in
+                                                 its project that it rests on
 
 OpenAI's mathematics repository (github.com/openai/math):
 
@@ -63,7 +66,7 @@ from hekswerk_scry.checker import (
 from hekswerk_scry.core.enums import CardStatus, WhatIfKind
 from hekswerk_scry.core.settings import load_ai_settings
 from hekswerk_scry.examples import load_example
-from hekswerk_scry.files import load_proof_map, save_proof_map
+from hekswerk_scry.files import OUTLINE_SUFFIX, load_proof_map, save_outline, save_proof_map
 from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.alphaproof import AlphaProofFetchError, fetch_alphaproof
 from hekswerk_scry.lean.cards import (
@@ -75,6 +78,7 @@ from hekswerk_scry.lean.cards import (
 )
 from hekswerk_scry.lean.checks import check_map_with_lean, source_path, workspace_of
 from hekswerk_scry.lean.importer import LeanImportError, import_theorem
+from hekswerk_scry.lean.outline import OutlineMakingError, make_outline
 from hekswerk_scry.lean.statement import StatementError, read_statement
 from hekswerk_scry.lean.what_if import run_lean_what_if
 from hekswerk_scry.lean.worker import LeanWorkerError
@@ -100,6 +104,7 @@ from hekswerk_scry.text_reports import (
     render_lean_region,
     render_lean_report,
     render_map_overview,
+    render_outline,
     render_scan,
     render_statement,
     render_turn,
@@ -137,6 +142,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _chat(Path(args.map_file))
         if args.command == "lean-statement":
             return _lean_statement(Path(args.lean_file), args.theorem, not args.no_probes)
+        if args.command == "lean-outline":
+            return _lean_outline(Path(args.lean_file), args.theorem, Path(args.out))
         if args.command == "fetch-openai-math":
             print(f"openai/math is at {openai_math.fetch()}. Next: `make openai-setup`.")
             return 0
@@ -154,7 +161,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                                         args.budget)
     except (ValueError, LeanSetupError, LeanImportError, LeanWorkerError, BenchmarkError,
             AlphaProofFetchError,
-            AIProviderError, StatementError, openai_math.OpenAIMathError) as exc:
+            AIProviderError, StatementError, OutlineMakingError,
+            openai_math.OpenAIMathError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     parser.print_help()
@@ -212,6 +220,12 @@ def _build_parser() -> argparse.ArgumentParser:
     statement.add_argument("lean_file", help="path to a .lean file")
     statement.add_argument("theorem", help="the theorem's full name")
     statement.add_argument("--no-probes", action="store_true", help="skip Lean's probes")
+    outline = commands.add_parser("lean-outline", help="a result and every theorem and "
+                                  "definition in its project that it rests on")
+    outline.add_argument("lean_file", help="path to the .lean file the result is in")
+    outline.add_argument("theorem", help="the result's full name")
+    outline.add_argument("-o", "--out", required=True,
+                         help=f"where to save the outline (a name ending in {OUTLINE_SUFFIX})")
     commands.add_parser("fetch-openai-math", help="clone openai/math's Lean formalizations")
     commands.add_parser("openai-challenges", help="list openai/math's comparator challenges")
     one = commands.add_parser("openai-challenge", help="what one openai/math result states")
@@ -428,6 +442,18 @@ def _lean_statement(lean_file: Path, theorem: str, probes: bool) -> int:
     report = read_statement(workspace_for_file(lean_file), lean_file, theorem, probes=probes)
     print(render_statement(report))
     return 1 if report.red_flags else 0
+
+
+def _lean_outline(lean_file: Path, theorem: str, out: Path) -> int:
+    if not out.name.endswith(OUTLINE_SUFFIX):
+        raise ValueError(f"Name the outline file so it ends in {OUTLINE_SUFFIX} (the "
+                         "workbench finds outlines by that ending).")
+    print("Lean is loading the project; for a large one this takes several minutes.")
+    outline = make_outline(workspace_for_file(lean_file), lean_file, theorem)
+    save_outline(outline, out)
+    print(render_outline(outline))
+    print(f"\nSaved to {out}. `scry serve` shows it.")
+    return 0
 
 
 def _openai_challenges() -> int:

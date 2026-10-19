@@ -1,6 +1,7 @@
 """Turn Scry's results into plain-English text for the terminal."""
 
 import textwrap
+from collections import Counter
 
 from hekswerk_scry.ai.session import Turn
 from hekswerk_scry.checker.cards import CardCheck
@@ -12,6 +13,7 @@ from hekswerk_scry.lean.checks import LeanMapReport
 from hekswerk_scry.lean.source_text import offsets
 from hekswerk_scry.lean.statement import StatementReport
 from hekswerk_scry.models.cards import SimplificationCard
+from hekswerk_scry.models.outline import Outline
 from hekswerk_scry.models.proof_map import LeanRange, ProofMap
 from hekswerk_scry.models.what_if import BreakageReport
 
@@ -274,6 +276,25 @@ def render_turn(turn: Turn) -> str:
     if turn.hit_round_limit:
         lines.append(_wrap("The helper hit its limit of tool calls for one turn.", "  ! "))
     lines.append(f"  (cost of this turn: ${turn.cost_usd:.4f})")
+    return "\n".join(lines)
+
+
+def render_outline(outline: Outline) -> str:
+    """A short account of an outline: its size, Lean's axioms, and hypotheses never used."""
+    result = outline.parts[outline.result]
+    kinds = Counter(p.kind for p in outline.parts.values())
+    rest = ", ".join(f"{n} {k}{'' if n == 1 else 's'}" for k, n in kinds.most_common())
+    lines = [f"Outline of '{result.name}' ({result.file})",
+             _wrap(f"It rests on {len(outline.parts) - 1} declarations from its project, "
+                   f"{len(outline.claim())} of them needed to read what it states. In all: "
+                   f"{rest}.", "  "),
+             _wrap(f"Lean reported it relies on: {', '.join(outline.axioms) or '(nothing)'}.",
+                   "  ")]
+    unused = [(p, h) for p in outline.parts.values() for h in p.unused_hypotheses]
+    if unused:
+        lines.append(_wrap(f"{len(unused)} hypothesis(es) a theorem's proof never uses:", "  "))
+        for part, h in unused:
+            lines.append(_wrap(f"{part.name}: {h.name or '(unnamed)'} : {h.statement}", "    - "))
     return "\n".join(lines)
 
 

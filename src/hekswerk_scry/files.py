@@ -1,4 +1,4 @@
-"""Reading and writing proof maps as JSON files.
+"""Reading and writing proof maps and outlines as JSON files.
 
 The format is deliberately strict: missing fields, unknown fields, and wrong types are
 all rejected with a message saying what to fix, so a typo never goes unnoticed.
@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from hekswerk_scry.models.outline import Outline, OutlineError, OutlinePart, UnusedHypothesis
 from hekswerk_scry.models.proof_map import (
     LeanRange,
     LeanSource,
@@ -38,6 +39,16 @@ _HISTORY_KEYS = frozenset(
     {"card_id", "card_title", "removed_step_ids", "added_step_ids", "receipt_id"}
 )
 _HISTORY_OPTIONAL = frozenset({"lean_before", "lean_after"})
+
+OUTLINE_FORMAT = "hekswerk-scry/outline"
+OUTLINE_SUFFIX = ".outline.json"  # how the workbench recognises an outline file
+OUTLINE_VERSION = 1
+_OUTLINE_KEYS = frozenset({"format", "version", "result", "project", "lean_version",
+                           "file_sha256", "axioms", "parts"})
+_PART_KEYS = frozenset({"id", "name", "kind", "private", "module", "file", "start_line",
+                        "end_line", "doc", "statement", "source", "statement_uses", "body_uses",
+                        "unused_hypotheses"})
+_HYPOTHESIS_KEYS = frozenset({"name", "statement"})
 
 
 class MapFileError(ValueError):
@@ -266,3 +277,110 @@ def _check_keys(
             f"{where} has field(s) Scry doesn't recognise: {', '.join(unknown)}. "
             "(Unknown fields are rejected so that typos don't go unnoticed.)"
         )
+
+
+# --- outlines --------------------------------------------------------------------------
+
+
+def load_outline(path: Path) -> Outline:
+    """Read an outline from a JSON file."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise MapFileError(f"Couldn't open '{path}': {exc.strerror}.") from exc
+    except json.JSONDecodeError as exc:
+        raise MapFileError(
+            f"'{path}' is not valid JSON (line {exc.lineno}, column {exc.colno}): {exc.msg}."
+        ) from exc
+    return outline_from_dict(data, source=str(path))
+
+
+def save_outline(outline: Outline, path: Path) -> None:
+    text = json.dumps(outline_to_dict(outline), indent=1, ensure_ascii=False)
+    path.write_text(text + "\n", encoding="utf-8")
+
+
+def outline_to_dict(outline: Outline) -> dict[str, Any]:
+    return {
+        "format": OUTLINE_FORMAT, "version": OUTLINE_VERSION, "result": outline.result,
+        "project": outline.project, "lean_version": outline.lean_version,
+        "file_sha256": dict(outline.file_sha256), "axioms": list(outline.axioms),
+        "parts": [{
+            "id": p.part_id, "name": p.name, "kind": p.kind, "private": p.private,
+            "module": p.module, "file": p.file, "start_line": p.start_line,
+            "end_line": p.end_line, "doc": p.doc, "statement": p.statement, "source": p.source,
+            "statement_uses": list(p.statement_uses), "body_uses": list(p.body_uses),
+            "unused_hypotheses": [{"name": h.name, "statement": h.statement}
+                                  for h in p.unused_hypotheses],
+        } for p in outline.parts.values()],
+    }
+
+
+def outline_from_dict(data: object, source: str = "The outline") -> Outline:
+    """Build an outline from parsed JSON, rejecting anything malformed."""
+    top = _object(data, source)
+    _check_keys(top, source, _OUTLINE_KEYS, frozenset())
+    if top["format"] != OUTLINE_FORMAT or top["version"] != OUTLINE_VERSION:
+        raise MapFileError(
+            f"{source} says it is format {top['format']!r} version {top['version']!r}. "
+            f"This version of Scry reads outlines in format '{OUTLINE_FORMAT}' version "
+            f"{OUTLINE_VERSION}."
+        )
+    hashes = _object(top["file_sha256"], f"{source}, 'file_sha256'")
+    parts: dict[str, OutlinePart] = {}
+    for index, raw in enumerate(_list(top["parts"], f"{source}, 'parts'")):
+        part = _part(raw, f"{source}, part {index + 1}")
+        if part.part_id in parts:
+            raise MapFileError(f"{source}: the part '{part.part_id}' is listed more than once.")
+        parts[part.part_id] = part
+    try:
+        return Outline(
+            result=_text(top["result"], f"{source}, 'result'"),
+            project=_text(top["project"], f"{source}, 'project'"),
+            lean_version=_text(top["lean_version"], f"{source}, 'lean_version'"),
+            file_sha256={_text(k, f"{source}, 'file_sha256'"): _text(v, f"{source}, "
+                         f"'file_sha256' of '{k}'") for k, v in hashes.items()},
+            axioms=_text_list(top["axioms"], f"{source}, 'axioms'"),
+            parts=parts,
+        )
+    except OutlineError as exc:
+        raise MapFileError(f"{source}: {exc}") from exc
+
+
+def _part(raw: object, where: str) -> OutlinePart:
+    obj = _object(raw, where)
+    _check_keys(obj, where, _PART_KEYS, frozenset())
+    hypotheses = []
+    for index, h in enumerate(_list(obj["unused_hypotheses"], f"{where}, 'unused_hypotheses'")):
+        h_where = f"{where}, unused hypothesis {index + 1}"
+        h_obj = _object(h, h_where)
+        _check_keys(h_obj, h_where, _HYPOTHESIS_KEYS, frozenset())
+        hypotheses.append(UnusedHypothesis(_maybe_text(h_obj["name"], f"{h_where}, 'name'"),
+                                           _text(h_obj["statement"], f"{h_where}, 'statement'")))
+    private = obj["private"]
+    if not isinstance(private, bool):
+        raise MapFileError(f"{where}, 'private' should be true or false.")
+    return OutlinePart(
+        part_id=_text(obj["id"], f"{where}, 'id'"),
+        name=_text(obj["name"], f"{where}, 'name'"),
+        kind=_text(obj["kind"], f"{where}, 'kind'"),
+        private=private,
+        module=_maybe_text(obj["module"], f"{where}, 'module'"),
+        file=_maybe_text(obj["file"], f"{where}, 'file'"),
+        start_line=_maybe_number(obj["start_line"], f"{where}, 'start_line'"),
+        end_line=_maybe_number(obj["end_line"], f"{where}, 'end_line'"),
+        doc=_maybe_text(obj["doc"], f"{where}, 'doc'"),
+        statement=_text(obj["statement"], f"{where}, 'statement'"),
+        source=_maybe_text(obj["source"], f"{where}, 'source'"),
+        statement_uses=_text_list(obj["statement_uses"], f"{where}, 'statement_uses'"),
+        body_uses=_text_list(obj["body_uses"], f"{where}, 'body_uses'"),
+        unused_hypotheses=tuple(hypotheses),
+    )
+
+
+def _maybe_text(value: object, where: str) -> str | None:
+    return None if value is None else _text(value, where)
+
+
+def _maybe_number(value: object, where: str) -> int | None:
+    return None if value is None else _whole_number(value, where)

@@ -32,16 +32,22 @@ def moduleOf? (env : Environment) (n : Name) : Option Name :=
   (env.getModuleIdxFor? n).map fun idx => env.header.moduleNames[idx.toNat]!
 
 /-- Helpers Lean generates by itself (pattern-match compilers, recursors, and the like).
-Nobody wrote them, so they don't belong on a list of definitions a person should read. -/
+Nobody wrote them, so they don't belong on a list of definitions a person should read.
+A `private` declaration is named `_private.<module>.0.<name>` inside Lean, which looks like a
+generated name; it is judged by the name its author wrote. -/
 def isGenerated (env : Environment) (n : Name) : Bool :=
-  n.isInternal || Meta.isMatcherCore env n || isAuxRecursor env n || isNoConfusion env n ||
-    isRecCore env n
+  ((privateToUserName? n).getD n).isInternal || Meta.isMatcherCore env n ||
+    isAuxRecursor env n || isNoConfusion env n || isRecCore env n
 
-/-- A constant from the project: defined in the file itself, or in a non-library module. -/
+/-- Defined in the file itself, or in a module outside the libraries. -/
+def inProject (env : Environment) (n : Name) : Bool :=
+  match moduleOf? env n with
+  | none => true
+  | some m => !libraryRoots.contains m.getRoot.toString
+
+/-- A constant from the project that a person wrote. -/
 def isProjectConstant (env : Environment) (n : Name) : Bool :=
-  !isGenerated env n && match moduleOf? env n with
-    | none => true
-    | some m => !libraryRoots.contains m.getRoot.toString
+  !isGenerated env n && inProject env n
 
 /-- The axioms a constant relies on (Lean v4.10 keeps this inside `#print axioms`). -/
 def collectAxioms (n : Name) : CoreM (Array Name) := do

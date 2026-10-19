@@ -19,6 +19,11 @@
   --flag-bg: #fde4dc;
   --match-bg: #e6f0e9;
   --lit: #ffd970;
+  --theorem: #2f5d8a;
+  --theorem-bg: #e6eef7;
+  --def: #8a5a2f;
+  --def-bg: #f6ece1;
+  --shadow: 0 1px 2px rgba(31, 35, 40, 0.06), 0 2px 8px rgba(31, 35, 40, 0.04);
   --mono: ui-monospace, "SF Mono", "Cascadia Code", "DejaVu Sans Mono", monospace;
 }
 
@@ -44,6 +49,11 @@
     --flag-bg: #43241c;
     --match-bg: #1d3326;
     --lit: #7a6416;
+    --theorem: #8fbbe6;
+    --theorem-bg: #1c2a3a;
+    --def: #e0b48a;
+    --def-bg: #36291c;
+    --shadow: none;
   }
 }
 
@@ -57,8 +67,8 @@ body {
 a { color: var(--accent); }
 code, pre { font-family: var(--mono); font-size: 13px; }
 pre { white-space: pre-wrap; word-break: break-word; margin: 0.4em 0; }
-h1 { font-size: 1.5rem; margin: 0 0 0.3em; }
-h2 { font-size: 1.1rem; margin: 1.2em 0 0.4em; }
+h1 { font-size: 1.6rem; margin: 0 0 0.3em; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; margin: 1.2em 0 0.4em; }
 h3 { font-size: 0.95rem; margin: 1em 0 0.3em; }
 h4 { font-size: 0.85rem; margin: 0.8em 0 0.2em; color: var(--muted); }
 
@@ -66,13 +76,17 @@ h4 { font-size: 0.85rem; margin: 0.8em 0 0.2em; color: var(--muted); }
   display: flex; align-items: baseline; gap: 1rem;
   padding: 0.6rem 1.2rem; border-bottom: 1px solid var(--line); background: var(--panel);
 }
-.brand { font-weight: 700; font-size: 1.2rem; text-decoration: none; color: var(--ink); }
+.brand { font-weight: 700; font-size: 1.2rem; text-decoration: none; color: var(--ink); letter-spacing: 0.02em; }
 .tagline { color: var(--muted); font-size: 0.9rem; }
 
 .layout { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 50px); }
 .sidebar {
   border-right: 1px solid var(--line); padding: 0.4rem 1rem 2rem; overflow-y: auto;
   max-height: calc(100vh - 50px); position: sticky; top: 0; background: var(--panel);
+}
+.sidebar h2 {
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+  margin: 1.4em 0 0.4em;
 }
 .sidebar ul { list-style: none; padding: 0; margin: 0.2em 0 0.8em; }
 .sidebar li { margin: 0.25em 0; font-size: 0.88rem; }
@@ -99,6 +113,8 @@ h4 { font-size: 0.85rem; margin: 0.8em 0 0.2em; color: var(--muted); }
 .badge-stopped { background: var(--bad-bg); color: var(--bad); }
 .badge-plant { background: var(--plant-bg); color: var(--ink); }
 .badge-control { background: var(--lookup-bg); color: var(--ink); }
+.badge-theorem { background: var(--theorem-bg); color: var(--theorem); }
+.badge-definition { background: var(--def-bg); color: var(--def); }
 
 /* An audit */
 .audit-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr); gap: 1.6rem; }
@@ -193,7 +209,97 @@ button.cite { border: none; padding: 0 0.2em; background: none; }
 .menu-toggle { display: none; margin-left: auto; }
 .map-title { overflow-wrap: anywhere; }
 
+/* The landing page */
+.lead { font-size: 1.08rem; max-width: 46em; }
+.levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.4rem 0; }
+.level {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0.4rem 1rem 0.8rem;
+  box-shadow: var(--shadow);
+}
+.level h2 { margin-top: 0.6em; }
+.level ul { padding-left: 1.1em; margin: 0.3em 0; }
+
+/* An outline */
+.outline-head { margin-bottom: 1rem; }
+.eyebrow { margin: 0 0 0.2em; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); overflow-wrap: anywhere; }
+.facts {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0.2rem 1rem;
+  margin: 0.8rem 0; box-shadow: var(--shadow); max-width: 52em;
+}
+.facts p { margin: 0.55em 0; }
+.jump { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.8rem; }
+.jump a {
+  text-decoration: none; font-size: 0.88rem; padding: 0.25em 0.8em; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+}
+.jump a:hover { border-color: var(--accent); }
+.outline-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr); gap: 1.6rem; }
+.outline-section {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.2rem 1.1rem 1rem; margin-bottom: 1.2rem; box-shadow: var(--shadow); scroll-margin-top: 0.8rem;
+}
+.outline-section > h2 { margin-top: 0.8em; }
+.outline-detail {
+  position: sticky; top: 0.6rem; align-self: start; max-height: calc(100vh - 1.2rem); overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0.4rem 1.1rem 1rem;
+  box-shadow: var(--shadow);
+}
+.part-title { margin: 0.6em 0 0.1em; font-size: 1.25rem; overflow-wrap: anywhere; }
+.full-name { margin: 0 0 0.4em; font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.route { font-size: 0.85rem; margin: 0.4em 0; line-height: 1.9; }
+.route-sep { color: var(--muted); }
+.lean-text {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 0.6em 0.8em;
+  max-height: 24em; overflow: auto; font-size: 12.5px; line-height: 1.45;
+}
+.statement { max-height: 30em; }
+.source > summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; margin: 0.6em 0 0.3em; }
+.doc { font-style: italic; }
+.callout {
+  border-left: 4px solid var(--warn); background: var(--warn-bg); border-radius: 7px;
+  padding: 0.5em 0.9em; margin: 0.8em 0;
+}
+.callout p { margin: 0.4em 0; }
+.callout ul { margin: 0.3em 0; padding-left: 1.2em; }
+.callout code { overflow-wrap: anywhere; }
+button.part-link {
+  border: none; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600;
+  cursor: pointer; text-align: left; overflow-wrap: anywhere;
+}
+button.part-link:hover { text-decoration: underline; }
+.chips { display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; font-size: 0.88rem; }
+.chips button.part-link {
+  font-weight: 500; padding: 0.05em 0.5em; border-radius: 5px; background: var(--bg); border: 1px solid var(--line);
+}
+.chips button.more { font-size: 0.82rem; padding: 0.05em 0.6em; }
+.part-list { padding-left: 1.3em; margin: 0.4em 0; }
+.part-list li { margin: 0.3em 0; }
+.part-list.found { list-style: none; padding-left: 0; }
+.tree li.is-chosen > .tree-row, .part-list li.is-chosen { background: var(--lit); border-radius: 5px; }
+.find {
+  width: 100%; font: inherit; padding: 0.45em 0.7em; border-radius: 7px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); margin-bottom: 0.4em;
+}
+.weight { display: inline-flex; align-items: center; gap: 0.4em; font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+.weight-bar { display: inline-block; width: 4.5em; height: 0.45em; border-radius: 3px; background: var(--lookup-bg); overflow: hidden; }
+.weight-bar > span { display: block; height: 100%; background: var(--accent); opacity: 0.75; }
+.tree { list-style: none; margin: 0; padding-left: 1.15rem; border-left: 1px dashed var(--line); }
+.tree-top { padding-left: 0; border-left: none; }
+.tree-row { display: grid; grid-template-columns: 1.6em minmax(0, 1fr); align-items: start; padding: 0.18em 0.2em; }
+.tree-body { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.1rem 0.6rem; min-width: 0; }
+.tree-name { overflow-wrap: anywhere; min-width: 0; }
+.tree-facts { margin-left: auto; display: inline-flex; flex-wrap: wrap; gap: 0 0.7em; align-items: baseline; }
+.twist {
+  width: 1.6em; padding: 0.15em 0 0; line-height: 1.4; border: none; background: none; color: var(--muted); font-size: 0.9rem; cursor: pointer;
+}
+.twist:disabled { cursor: default; opacity: 0.5; }
+.tree-words { font-size: 0.85rem; padding: 0.2em 0 0.3em 1.8em; }
+.tree-words summary { cursor: pointer; color: var(--muted); }
+.tree-words .chips { margin-top: 0.3em; }
+
 @media (max-width: 1000px) {
+  .outline-columns { grid-template-columns: minmax(0, 1fr); }
+  .outline-detail { position: static; max-height: none; }
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); }
   .audit-columns, .map-columns { grid-template-columns: minmax(0, 1fr); }
@@ -214,6 +320,9 @@ button.cite { border: none; padding: 0 0.2em; background: none; }
   h1 { font-size: 1.25rem; overflow-wrap: anywhere; }
   .legend { gap: 0.4em 1em; }
   .row-card dl { grid-template-columns: 1fr; }
+  .outline-section, .outline-detail { padding-left: 0.8rem; padding-right: 0.8rem; }
+  .tree { padding-left: 0.7rem; }
+  .tree-facts { margin-left: 0; width: 100%; }
   .code-lines { max-height: 40vh; }
   pre, code, .hint, .meta, p { overflow-wrap: anywhere; }
 }

@@ -28,6 +28,7 @@ field, message, report, or label and understand it.
   | What-If test / Breakage report | Remove something and see which steps lose a fact they rely on |
   | Simplification card | A proposal to swap a group of steps for a shorter route |
   | Receipt | A record of one check: what was checked, by which checker, and the result |
+  | `Outline` | A result and every theorem and definition of its project that it rests on; each is a *part*, with the parts its statement mentions and its body uses |
 
 ## 2. Only Lean may say "proven"
 

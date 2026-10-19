@@ -154,7 +154,18 @@ Details: [`docs/decisions/0005-statement-checking.md`](docs/decisions/0005-state
 scry serve        # then open http://127.0.0.1:8765/
 ```
 
-A read-only workbench: follow an audit while it runs (each piece of evidence, labelled with
+Start with an **outline**: a result, the definitions you need to read what it claims, and how
+its proof is built from the theorems of its project, heaviest first, with the hypotheses its
+proofs never use. It is read from Lean's record of the compiled project:
+
+```bash
+scry lean-outline lean-projects/openai-math/lean/OAI/MathematicalPhysics/NavierStokes/VelocityDetection/MainResult.lean \
+  OAI.VelocityDetection.main_result -o lean-projects/maps/navier_stokes_main_result.outline.json
+```
+
+Details: [`docs/decisions/0008-outlines.md`](docs/decisions/0008-outlines.md).
+
+It is also a read-only workbench: follow an audit while it runs (each piece of evidence, labelled with
 who produced it; the helper's rows lighting up the Lean lines they are about), read benchmark
 results, and look at proof maps drawn as steps and arrows (in Lean maps, what each `have`
 writes inside itself starts folded into one box). It starts nothing, spends nothing
@@ -252,7 +263,7 @@ different facts. Deciding when two formulas mean the same thing is Lean's job.
 | 3 | Simplification cards checked by Lean before any swap | Done |
 | 4 | AI helper via OpenRouter that works with you on clearer proofs, tests your hunches, and lets Lean judge | Done (this checkpoint) |
 | 5 | Statement checking (does the formal statement say what the paper claims?) and Lean v4.34.1 / `openai/math` | Done (this checkpoint) |
-| 6 | Browser workbench, once the internals settle | Next |
+| 6 | Browser workbench: follow audits; outlines of whole results; step-by-step maps | In progress |
 
 ## For contributors and coding agents
 

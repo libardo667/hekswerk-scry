@@ -153,6 +153,22 @@ class TestStatementsWithLean(unittest.TestCase):
         self.assertFalse(report.proof_left_open)
 
 
+    def test_a_private_definition_is_part_of_a_statement_s_meaning(self) -> None:
+        # Lean names private declarations `_private.<module>.0.<name>`, which looked like a
+        # generated helper's name, so they were silently left off the list to read.
+        from tests.test_outline import FIXTURES
+
+        from hekswerk_scry.lean.statement import read_statement
+
+        ws = workspace()
+        folder = ws.root / ".scry-runs" / "lean-tests"
+        folder.mkdir(parents=True, exist_ok=True)
+        copy = folder / "Outline.lean"
+        shutil.copy(FIXTURES / "lean" / "Outline.lean", copy)
+        report = read_statement(ws, copy, "OutlineExample.double_eq", probes=False)
+        self.assertEqual([d.name.rsplit(".", 1)[-1] for d in report.definitions], ["double"])
+
+
 class TestAlphaProofWithLean(unittest.TestCase):
     def test_all_three_proofs_import_line_up_and_are_lean_checked(self) -> None:
         ws = workspace()
@@ -168,3 +184,30 @@ class TestAlphaProofWithLean(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOutlineWithLean(unittest.TestCase):
+    def test_the_exporter_makes_the_recorded_outline(self) -> None:
+        # tests/test_outline.py reads the exporter's recorded output; this keeps the record
+        # honest. Run on a copy in the workspace, as a person's file would be.
+        from tests.test_outline import FIXTURES, exporter_output
+
+        from hekswerk_scry.lean.outline import make_outline
+
+        ws = workspace()
+        folder = ws.root / ".scry-runs" / "lean-tests"
+        folder.mkdir(parents=True, exist_ok=True)
+        copy = folder / "Outline.lean"
+        shutil.copy(FIXTURES / "lean" / "Outline.lean", copy)
+        outline = make_outline(ws, copy, "OutlineExample.result")
+        recorded = exporter_output()
+        self.assertEqual(list(outline.parts), [p["id"] for p in recorded["parts"]])
+        for raw in recorded["parts"]:
+            part = outline.parts[raw["id"]]
+            self.assertEqual(
+                (part.kind, part.statement, part.statement_uses, part.body_uses,
+                 [(h.name, h.statement) for h in part.unused_hypotheses]),
+                (raw["kind"], raw["statement"], tuple(raw["statement_uses"]),
+                 tuple(raw["body_uses"]),
+                 [(h["name"], h["statement"]) for h in raw["unused_hypotheses"]]))
+        self.assertEqual(list(outline.axioms), recorded["axioms"])

@@ -1,0 +1,282 @@
+{
+ "version": 1,
+ "result": "OutlineExample.result",
+ "parts": [
+  {
+   "unused_hypotheses": [
+    {
+     "statement": "n ≠ 7",
+     "name": "_spare"
+    },
+    {
+     "statement": "m ≠ 3",
+     "name": null
+    }
+   ],
+   "statement_uses": [
+    "OutlineExample.parity",
+    "OutlineExample.swap",
+    "_private.0.OutlineExample.double",
+    "OutlineExample.Loose",
+    "OutlineExample.Pt"
+   ],
+   "statement": "∀ (n : Nat), 0 < n → n ≠ 7 → (∃ k, k < n ∧ OutlineExample.double k = 2 * k ∧ ∀ (m : Nat), m < n → m ≠ 3 → m ≤ n) ∧ swap (swap { x := n, y := n }) = { x := n, y := n } ∧ Loose n ∧ parity 0 = true ∧ { x := 1, y := 2 } ≠ { x := 2, y := 1 }",
+   "start": {
+    "line": 47,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.result",
+   "module": null,
+   "kind": "theorem",
+   "id": "OutlineExample.result",
+   "end": {
+    "line": 52,
+    "column": 15
+   },
+   "doc": null,
+   "body_uses": [
+    "OutlineExample.pts_differ",
+    "OutlineExample.parity",
+    "OutlineExample.swap_swap",
+    "OutlineExample.swap",
+    "_private.0.OutlineExample.double",
+    "OutlineExample.loose",
+    "OutlineExample.Loose",
+    "OutlineExample.double_eq",
+    "OutlineExample.Pt"
+   ]
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [],
+   "statement": "Nat → Bool",
+   "start": {
+    "line": 29,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.parity",
+   "module": null,
+   "kind": "definition",
+   "id": "OutlineExample.parity",
+   "end": {
+    "line": 31,
+    "column": 22
+   },
+   "doc": null,
+   "body_uses": []
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [
+    "OutlineExample.Pt"
+   ],
+   "statement": "Pt → Pt",
+   "start": {
+    "line": 25,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.swap",
+   "module": null,
+   "kind": "definition",
+   "id": "OutlineExample.swap",
+   "end": {
+    "line": 25,
+    "column": 36
+   },
+   "doc": null,
+   "body_uses": [
+    "OutlineExample.Pt"
+   ]
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [],
+   "statement": "Nat → Nat",
+   "start": {
+    "line": 27,
+    "column": 8
+   },
+   "private": true,
+   "name": "OutlineExample.double",
+   "module": null,
+   "kind": "definition",
+   "id": "_private.0.OutlineExample.double",
+   "end": {
+    "line": 27,
+    "column": 43
+   },
+   "doc": null,
+   "body_uses": []
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [],
+   "statement": "Nat → Prop",
+   "start": {
+    "line": 33,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.Loose",
+   "module": null,
+   "kind": "definition",
+   "id": "OutlineExample.Loose",
+   "end": {
+    "line": 33,
+    "column": 48
+   },
+   "doc": null,
+   "body_uses": []
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [],
+   "statement": "Type",
+   "start": {
+    "line": 20,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.Pt",
+   "module": null,
+   "kind": "structure",
+   "id": "OutlineExample.Pt",
+   "end": {
+    "line": 23,
+    "column": 22
+   },
+   "doc": "A point with two whole-number coordinates. ",
+   "body_uses": []
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [
+    "OutlineExample.Pt"
+   ],
+   "statement": "{ x := 1, y := 2 } ≠ { x := 2, y := 1 }",
+   "start": {
+    "line": 45,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.pts_differ",
+   "module": null,
+   "kind": "theorem",
+   "id": "OutlineExample.pts_differ",
+   "end": {
+    "line": 45,
+    "column": 56
+   },
+   "doc": null,
+   "body_uses": [
+    "OutlineExample.instDecidableEqPt",
+    "OutlineExample.Pt"
+   ]
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [
+    "OutlineExample.swap",
+    "OutlineExample.Pt"
+   ],
+   "statement": "∀ (p : Pt), swap (swap p) = p",
+   "start": {
+    "line": 37,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.swap_swap",
+   "module": null,
+   "kind": "theorem",
+   "id": "OutlineExample.swap_swap",
+   "end": {
+    "line": 39,
+    "column": 5
+   },
+   "doc": null,
+   "body_uses": [
+    "OutlineExample.swap",
+    "OutlineExample.Pt"
+   ]
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [
+    "OutlineExample.Loose"
+   ],
+   "statement": "∀ (n : Nat), Loose n",
+   "start": {
+    "line": 35,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.loose",
+   "module": null,
+   "kind": "theorem",
+   "id": "OutlineExample.loose",
+   "end": {
+    "line": 35,
+    "column": 61
+   },
+   "doc": null,
+   "body_uses": []
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [
+    "_private.0.OutlineExample.double"
+   ],
+   "statement": "∀ (n : Nat), OutlineExample.double n = 2 * n",
+   "start": {
+    "line": 41,
+    "column": 0
+   },
+   "private": false,
+   "name": "OutlineExample.double_eq",
+   "module": null,
+   "kind": "theorem",
+   "id": "OutlineExample.double_eq",
+   "end": {
+    "line": 43,
+    "column": 7
+   },
+   "doc": null,
+   "body_uses": [
+    "_private.0.OutlineExample.double"
+   ]
+  },
+  {
+   "unused_hypotheses": [],
+   "statement_uses": [
+    "OutlineExample.Pt"
+   ],
+   "statement": "DecidableEq Pt",
+   "start": {
+    "line": 23,
+    "column": 11
+   },
+   "private": false,
+   "name": "OutlineExample.instDecidableEqPt",
+   "module": null,
+   "kind": "instance",
+   "id": "OutlineExample.instDecidableEqPt",
+   "end": {
+    "line": 23,
+    "column": 22
+   },
+   "doc": null,
+   "body_uses": [
+    "OutlineExample.Pt"
+   ]
+  }
+ ],
+ "lean_version": "4.10.0-rc2",
+ "format": "hekswerk-scry/lean-outline",
+ "axioms": [
+  "propext",
+  "Quot.sound"
+ ]
+}

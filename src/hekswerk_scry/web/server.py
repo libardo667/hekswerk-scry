@@ -1,7 +1,7 @@
 """The browser workbench's server: a read-only window onto what Scry has done.
 
 `scry serve` shows audits as they run (from their run logs), benchmark results, audit
-reports, and proof maps. It changes nothing and starts nothing: no Lean runs, no model
+reports, outlines and proof maps. It changes nothing and starts nothing: no Lean runs, no model
 calls, no file writes. Starting work from the browser can come later.
 
 Safety:
@@ -19,6 +19,8 @@ Standard library only, like the rest of Scry's runtime.
 import json
 import mimetypes
 import re
+import threading
+from collections import deque
 from dataclasses import dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,7 +30,15 @@ from urllib.parse import parse_qs, urlparse
 
 from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, read_events
 from hekswerk_scry.checker import check_wiring, scan_proof_map
-from hekswerk_scry.files import FORMAT_NAME, proof_map_from_dict, proof_map_to_dict
+from hekswerk_scry.files import (
+    FORMAT_NAME,
+    OUTLINE_SUFFIX,
+    outline_from_dict,
+    proof_map_from_dict,
+    proof_map_to_dict,
+)
+from hekswerk_scry.lean.outline import changed_files
+from hekswerk_scry.models.outline import MEANING_KINDS, Outline
 from hekswerk_scry.web.access import TOKEN_HEADER, PublicAccess
 from hekswerk_scry.web.blocks import foldable_blocks
 
@@ -46,13 +56,17 @@ class NotAllowedError(ValueError):
 class Source:
     """A folder the workbench may read: audit runs, or proof maps."""
 
-    kind: str  # "runs" or "maps"
+    kind: str  # "runs" or "maps" (proof maps and outlines)
     root: Path
 
 
 class Library:
     def __init__(self, sources: list[Source]) -> None:
         self.sources = [Source(s.kind, s.root.resolve()) for s in sources]
+        # Outlines are large and slow to work through, so each is read once per version
+        # of its file (path, size and modification time).
+        self._outlines: dict[Path, tuple[tuple[int, int], Outline, dict[str, Any]]] = {}
+        self._outlines_lock = threading.Lock()
 
     # --- tokens --------------------------------------------------------------------
 
@@ -80,6 +94,7 @@ class Library:
     def overview(self) -> dict[str, Any]:
         runs: list[dict[str, Any]] = []
         maps: list[dict[str, Any]] = []
+        outlines: list[dict[str, Any]] = []
         for source in self.sources:
             if not source.root.is_dir():
                 continue
@@ -89,9 +104,12 @@ class Library:
                 folders |= {p.parent for p in source.root.rglob("*.md")}
                 runs += [self._folder(folder) for folder in sorted(folders)]
             else:
-                maps += [m for p in sorted(source.root.rglob("*.json")) if (m := self._map(p))]
+                for path in sorted(source.root.rglob("*.json")):
+                    entry = self._map(path)
+                    if entry is not None:
+                        (outlines if entry["kind"] == "outline" else maps).append(entry)
         runs.sort(key=lambda r: r["updated"], reverse=True)
-        return {"runs": runs, "maps": maps}
+        return {"runs": runs, "maps": maps, "outlines": outlines}
 
     def _folder(self, folder: Path) -> dict[str, Any]:
         logs = sorted(folder.glob(f"*{LOG_SUFFIX}"))
@@ -146,14 +164,25 @@ class Library:
         }
 
     def _map(self, path: Path) -> dict[str, Any] | None:
+        """A proof map or an outline, as listed; None for any other JSON file."""
+        if path.name.endswith(OUTLINE_SUFFIX):
+            try:
+                outline, _ = self._outline(path)
+            except (OSError, ValueError):
+                return None
+            return {"token": self.token(path), "name": path.name, "kind": "outline",
+                    "title": outline.parts[outline.result].name,
+                    "parts": len(outline.parts)}
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return None
         if not isinstance(data, dict) or data.get("format") != FORMAT_NAME:
             return None  # not a proof map; other JSON files are simply not listed
-        return {"token": self.token(path), "name": path.name,
-                "title": str(data.get("title", path.name))}
+        source = data.get("lean_source")
+        return {"token": self.token(path), "name": path.name, "kind": "map",
+                "title": str(data.get("title", path.name)),
+                "theorem": source.get("theorem") if isinstance(source, dict) else None}
 
     # --- one thing -------------------------------------------------------------------
 
@@ -200,6 +229,93 @@ class Library:
                 "unused_steps": [vars(u) for u in scan.unused_steps],
             },
         }
+
+
+    def outline(self, token: str) -> dict[str, Any]:
+        _, index = self._outline(self.resolve(token, suffixes=(OUTLINE_SUFFIX,)))
+        theorem_maps = {m["theorem"]: m["token"] for m in self.overview()["maps"]
+                        if m.get("theorem")}
+        return {**index, "maps": {part: theorem_maps[part] for part in index["ids"]
+                                  if part in theorem_maps}}
+
+    def outline_part(self, token: str, part_id: str) -> dict[str, Any]:
+        outline, _ = self._outline(self.resolve(token, suffixes=(OUTLINE_SUFFIX,)))
+        part = outline.parts.get(part_id)
+        if part is None:
+            raise NotAllowedError(f"The outline has no part '{part_id}'.")
+        return {"id": part.part_id, "name": part.name, "doc": part.doc,
+                "statement": part.statement, "source": part.source,
+                "unused_hypotheses": [vars(h) for h in part.unused_hypotheses],
+                "route": _route(outline, part_id)}
+
+    def _outline(self, path: Path) -> tuple[Outline, dict[str, Any]]:
+        stat = path.stat()
+        version = (stat.st_size, stat.st_mtime_ns)
+        with self._outlines_lock:
+            cached = self._outlines.get(path)
+            if cached is not None and cached[0] == version:
+                return cached[1], cached[2]
+        data = json.loads(path.read_text(encoding="utf-8"))
+        outline = outline_from_dict(data, source=path.name)
+        index = _outline_index(outline)
+        with self._outlines_lock:
+            self._outlines[path] = (version, outline, index)
+        return outline, index
+
+
+
+def _outline_index(outline: Outline) -> dict[str, Any]:
+    """Everything the outline view needs up front. To keep this small enough for a phone,
+    parts and files are referred to by their position in `ids` and `files`, a part's name is
+    left out when it is the same as its ID, and "used by" is left for the page to work out.
+    One part's text is fetched when it is chosen."""
+    ids = list(outline.parts)
+    number = {part_id: n for n, part_id in enumerate(ids)}
+    files = sorted({p.file for p in outline.parts.values() if p.file is not None})
+    file_number = {file: n for n, file in enumerate(files)}
+    rests_on = outline.rests_on()
+    parts = outline.parts
+    return {
+        "result": number[outline.result],
+        "lean_version": outline.lean_version,
+        "axioms": list(outline.axioms),
+        "changed_files": changed_files(outline),
+        "ids": ids,
+        "files": files,
+        "parts": [{
+            "name": None if p.name == p.part_id else p.name,
+            "kind": p.kind, "private": p.private,
+            "file": None if p.file is None else file_number[p.file],
+            "start_line": p.start_line, "lines": p.lines,
+            "statement_uses": [number[u] for u in p.statement_uses],
+            "body_uses": [number[u] for u in p.body_uses],
+            "rests_on": len(rests_on[p.part_id]),
+            "rests_on_lines": sum(parts[r].lines for r in rests_on[p.part_id]),
+            "unused": [vars(h) for h in p.unused_hypotheses],
+        } for p in parts.values()],
+        "claim": [number[c] for c in outline.claim()],
+        "meaning_kinds": sorted(MEANING_KINDS),
+    }
+
+
+def _route(outline: Outline, part_id: str) -> list[str]:
+    """A shortest chain of "uses" from the result to `part_id`, both included."""
+    came_from: dict[str, str | None] = {outline.result: None}
+    queue = deque([outline.result])
+    while queue:
+        here = queue.popleft()
+        if here == part_id:
+            break
+        for nxt in outline.parts[here].uses:
+            if nxt not in came_from:
+                came_from[nxt] = here
+                queue.append(nxt)
+    route: list[str] = []
+    step: str | None = part_id if part_id in came_from else None
+    while step is not None:
+        route.append(step)
+        step = came_from[step]
+    return route[::-1]
 
 
 def make_handler(library: Library, access: PublicAccess | None = None,
@@ -251,6 +367,10 @@ def make_handler(library: Library, access: PublicAccess | None = None,
                 return library.results(file)
             if name == "map":
                 return library.proof_map(file)
+            if name == "outline":
+                return library.outline(file)
+            if name == "outline-part":
+                return library.outline_part(file, query.get("part", ""))
             raise NotAllowedError(f"There is no '{name}' here.")
 
         def _static(self, path: str) -> None:

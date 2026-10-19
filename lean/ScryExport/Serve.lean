@@ -1,12 +1,13 @@
 import ScryExport.Load
 import ScryExport.Export
 import ScryExport.Statement
+import ScryExport.Outline
 
 /-!
 `scry-export --serve`: one Lean process that answers many requests, keeping imports loaded.
 
 Each request is one line of JSON on standard input:
-`{"id": ..., "mode": "check" | "export" | "statement" | "statement-probes", "file": ..., "theorem": ...}`.
+`{"id": ..., "mode": "check" | "export" | "statement" | "statement-probes" | "outline", "file": ..., "theorem": ...}`.
 Each reply is one line on standard output starting with `scry-reply `, then JSON with the
 same `id` and either `"result"` or `"error"`. Anything the file itself prints while Lean
 elaborates it is captured and returned in `"printed"`, never mixed into the replies.
@@ -33,6 +34,7 @@ unsafe def handle (loaded : ScryLoad.Loaded) (request : Json) : IO Json := do
   | "export" => ScryExport.exportTheorem file thm.toName (some loaded)
   | "statement" => ScryStatement.run file thm.toName false (some loaded)
   | "statement-probes" => ScryStatement.run file thm.toName true (some loaded)
+  | "outline" => ScryOutline.run file thm.toName (some loaded)
   | other => throw <| IO.userError s!"unknown mode '{other}'"
 
 unsafe def serve : IO UInt32 := do
