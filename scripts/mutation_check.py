@@ -217,7 +217,8 @@ MUTATIONS = [
      '        "lean_inputs": {},',
      "an earlier audit is reused for a copy that has since changed"),
     ("src/hekswerk_scry/ai/audit.py",
-     '        "papers": {label: sha(path.read_bytes()) for label, path in toolbox.paper_labels.items()},',
+     '        "papers": {label: sha(path.read_bytes())'
+     ' for label, path in toolbox.paper_labels.items()},',
      '        "papers": sorted(toolbox.paper_labels),',
      "an earlier audit is reused after a paper file changed"),
     ("src/hekswerk_scry/ai/benchmark.py",
