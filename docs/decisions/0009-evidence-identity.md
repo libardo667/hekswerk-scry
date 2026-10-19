@@ -96,9 +96,12 @@ when the list is cut off. Definition bodies are no longer clipped at 3,000 chara
   `landrun` and `lean4export`) would settle it.
 - **A person's verdict on each catch.** Scores are mechanical; nothing yet records a
   person's judgement of whether a catching row names the planted change.
-- **A replayable Truffet audit.** The first Truffet audit predates run logs, and it may have
-  read the wrong paper's introduction. Its supplementary Lean checks exist only as the
-  report's summary. A new run would record everything above; it would be a new run, not a
-  replay of the old one.
+- **Replaying a run.** The first Truffet audit predates run logs, and it may have read the
+  wrong paper's introduction; its supplementary Lean checks exist only as its report's
+  summary. It was run again on 2026-10-19, with everything above recorded, alongside the
+  three FourRowPermanent benchmark copies
+  ([`docs/examples/runs/2026-10-19`](../examples/runs/2026-10-19/README.md)). Those are new
+  runs, not replays of the old ones. Nothing yet re-checks a saved run's Lean claims
+  against today's files.
 - **Sibling challenges.** An audit isn't told which of the paper's other results are stated
   in other challenges, so it can report a result as missing that another challenge states.

@@ -13,12 +13,14 @@ from pathlib import Path
 from unittest import mock
 
 from hekswerk_scry.ai import audit
-from hekswerk_scry.ai.audit import ProofStatus, audit_challenge, check_solution
+from hekswerk_scry.ai.audit import ProofStatus, audit_challenge, audit_setup, check_solution
 from hekswerk_scry.lean import openai_math
 from hekswerk_scry.lean.openai_math import Challenge
 from hekswerk_scry.lean.statement import report_from_json
 from hekswerk_scry.lean.workspace import LeanWorkspace
+from tests.test_ai_helper import SETTINGS
 from tests.test_statement import EVIDENCE, raw
+from tests.test_statement_tools import ToolboxCase
 
 THEOREM = "OAI.TruffetV4Counterexample.finite_execution_not_optimal"
 SAYS_PROVED = "Lean, run here, accepts"
@@ -130,6 +132,23 @@ class TestWhatTheHelperIsTold(SolutionCase):
         prompt, status = self.prompt_for(checked)
         self.assertIn(checked.text, prompt)
         self.assertIs(status, checked)
+
+
+class TestAuditSetup(ToolboxCase):
+    """An audit's setup changes whenever something the audit could see changes."""
+
+    def test_editing_the_statement_or_a_paper_changes_the_setup(self) -> None:
+        client = mock.Mock(settings=SETTINGS)
+        before = audit_setup(client, self.box, "prompt")
+        self.assertEqual(before, audit_setup(client, self.box, "prompt"))
+        self.assertNotEqual(before, audit_setup(client, self.box, "another prompt"))
+        for path in (self.box.statement_file, *self.box.paper_files):
+            with self.subTest(path=path.name):
+                original = path.read_text(encoding="utf-8")
+                path.write_text(original + "% edited\n", encoding="utf-8")
+                self.assertNotEqual(before, audit_setup(client, self.box, "prompt"))
+                path.write_text(original, encoding="utf-8")
+                self.assertEqual(before, audit_setup(client, self.box, "prompt"))
 
 
 if __name__ == "__main__":
