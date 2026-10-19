@@ -111,7 +111,7 @@ from hekswerk_scry.text_reports import (
     render_wiring_report,
 )
 from hekswerk_scry.web.access import PublicAccess
-from hekswerk_scry.web.server import Library, Source, serve
+from hekswerk_scry.web.server import WORKBENCH, Library, Source, serve
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -511,10 +511,11 @@ def _serve(port: int, runs: list[str] | None, maps: list[str] | None,
     library = Library([Source("runs", f) for f in run_folders] +
                       [Source("maps", f) for f in map_folders])
     server = serve(library, port, access)
-    print(f"Scry workbench: http://127.0.0.1:{port}/  (read-only; Ctrl-C to stop)")
+    print(f"Scry workbench: http://127.0.0.1:{port}{WORKBENCH}  (read-only; Ctrl-C to stop)")
     if access is not None:
-        print(f"  also https://{access.host}/ for people signed in through Cloudflare Access "
-              f"({access.issuer})")
+        print(f"  also https://{access.host}{WORKBENCH} for people signed in through "
+              f"Cloudflare Access ({access.issuer}); its introduction, https://{access.host}/, "
+              "is open to anyone")
     for source in library.sources:
         shown = "" if source.root.is_dir() else "  (not there yet)"
         print(f"  {'audits' if source.kind == 'runs' else 'proof maps'}: {source.root}{shown}")

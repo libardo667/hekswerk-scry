@@ -92,6 +92,11 @@ conversation history is append-only.
   checked itself: signature against the team's published keys, audience, issuer, type and
   validity window. Never trust the tunnel alone, never add a second public name or another
   way in, and never bind to anything but 127.0.0.1.
+- The one exception is the introduction: the fixed files in `web/public/`, served at `/`
+  without a sign-in (see `docs/decisions/0010-a-public-introduction.md`). They are plain
+  pages about Scry. Never put anything from a run, proof, paper or model reply in them,
+  never make them depend on what the workbench was given, and never let them run scripts.
+  The workbench itself lives under `/workbench/`.
 - Audits write an append-only run log (`ai/run_log.py`). Watching must never change what
   the model sees.
 

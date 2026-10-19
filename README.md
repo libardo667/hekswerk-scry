@@ -8,7 +8,11 @@ map of steps, shows you where to look first, lets you poke at it to see what rel
 what, and lets you safely swap a tangled group of steps for a shorter route. It never
 claims more than it has actually checked.
 
-> **Status: Checkpoint 5.** Scry can turn a Lean proof into a proof map, ask Lean whether
+An introduction is at **https://scry.hekswerk.com**, open to anyone. The live workbench
+behind it shows Scry's real runs and needs a sign-in; ask for access at
+https://www.hekswerk.com/contact.
+
+> **Status: Checkpoint 6, in progress.** Scry can turn a Lean proof into a proof map, ask Lean whether
 > the theorem is proven, run What-If tests that Lean judges, and swap any fact's proof for a
 > new one, which Lean must accept before anything changes. An AI helper works through the
 > same tools with you. Scry also checks the other half of trust: whether a formal
@@ -16,6 +20,8 @@ claims more than it has actually checked.
 > (OpenAI's mathematics repository). Maps written by
 > hand (without Lean) can still only be *wiring checked*: Scry follows how the facts feed
 > into each other but does not read the math, so nothing in them counts as proven.
+> Outlines show a whole result at once, and a read-only browser workbench follows audits
+> as they run.
 
 ## Try it
 
@@ -161,7 +167,7 @@ and [`docs/decisions/0009-evidence-identity.md`](docs/decisions/0009-evidence-id
 ## Following along in the browser
 
 ```bash
-scry serve        # then open http://127.0.0.1:8765/
+scry serve        # then open http://127.0.0.1:8765/workbench/
 ```
 
 Start with an **outline**: a result, the definitions you need to read what it claims, and how
@@ -183,7 +189,9 @@ and changes nothing. Besides the bundled example, it shows the proof maps saved 
 `lean-projects/maps/` (for example `scry lean-import File.lean Name -o lean-projects/maps/name.json`);
 `--maps DIR` shows another folder instead. It can also be reached from a phone at a public
 name behind Cloudflare Access (`--public-host`, `--access-team`, `--access-audience`; set-up in
-the decision record). Details: [`docs/decisions/0007-the-workbench.md`](docs/decisions/0007-the-workbench.md).
+the decision record). There, only the introduction at `/` is open without a sign-in. Details:
+[`docs/decisions/0007-the-workbench.md`](docs/decisions/0007-the-workbench.md) and
+[`docs/decisions/0010-a-public-introduction.md`](docs/decisions/0010-a-public-introduction.md).
 
 ## Lean checks that cost seconds
 
@@ -274,6 +282,23 @@ different facts. Deciding when two formulas mean the same thing is Lean's job.
 | 4 | AI helper via OpenRouter that works with you on clearer proofs, tests your hunches, and lets Lean judge | Done (this checkpoint) |
 | 5 | Statement checking (does the formal statement say what the paper claims?) and Lean v4.34.1 / `openai/math` | Done (this checkpoint) |
 | 6 | Browser workbench: follow audits; outlines of whole results; step-by-step maps | In progress |
+
+## How it was built
+
+Scry is the work of Levi Banks ([Hekswerk](https://www.hekswerk.com),
+[@libardo667](https://github.com/libardo667)), who set its questions, architecture and
+standards of evidence. Coding agents and chatbots did most of the writing and gave second
+opinions: Claude Code (most of the code; its commits say so), Antigravity CLI, Gemini and
+ChatGPT. Outside reviews, and the changes they led to, are kept in `reviews/` and
+`docs/decisions/`. The rules in [`AGENTS.md`](AGENTS.md) are what keep that honest: only Lean
+says proven, tests must be able to fail, and `make mutation-check` breaks the code on purpose
+to confirm they do.
+
+## License
+
+Apache License 2.0 ([`LICENSE`](LICENSE)). Material from OpenAI's mathematics repository is
+used under its Apache-2.0 license; [`NOTICE`](NOTICE) says where. AlphaProof's proofs are not
+included: Scry downloads them on request.
 
 ## For contributors and coding agents
 

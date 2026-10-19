@@ -8,7 +8,9 @@ Safety:
 - It listens on 127.0.0.1 only, and refuses requests whose Host header names anything but
   this machine, so a web page elsewhere can't reach it through a DNS trick. The one
   exception, when it is set up, is a public name carried here by a Cloudflare Tunnel; those
-  requests are answered only with a valid Cloudflare Access sign-in (see `access.py`).
+  requests are answered only with a valid Cloudflare Access sign-in (see `access.py`),
+  except the introduction: a fixed page about Scry (`public/`), with nothing from a run, a
+  proof or a paper in it. The workbench itself is under /workbench/.
 - Every file it serves is named by a token, "<source>:<path inside it>", that must resolve
   to a file of the expected kind inside one of the folders it was given. Anything else is
   refused, with a plain message.
@@ -50,13 +52,34 @@ from hekswerk_scry.web.access import TOKEN_HEADER, PublicAccess
 from hekswerk_scry.web.blocks import foldable_blocks
 
 STATIC = Path(__file__).parent / "static"
+PUBLIC = Path(__file__).parent / "public"
+WORKBENCH = "/workbench/"
 RESULTS_FILE = "results.json"
 SUMMARY_FILE = "summary.md"
 _HOST = re.compile(r"^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$")
+_PUBLIC_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*\.(html|css|svg)$")
+# The introduction runs no scripts and loads nothing but its own files.
+_PUBLIC_POLICY = ("default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; "
+                  "form-action 'none'; frame-ancestors 'none'")
+_WORKBENCH_POLICY = ("default-src 'self'; style-src 'self'; script-src 'self'; "
+                     "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'")
 
 
 class NotAllowedError(ValueError):
     """A request for something the workbench won't show. The message says why."""
+
+
+def public_file(path: str) -> Path | None:
+    """The introduction's file at this address, or None. These are the only files the public
+    name serves without a sign-in: `/` is the introduction, and each other file sits directly
+    under `/` by its plain name."""
+    if not path.startswith("/"):
+        return None
+    name = "index.html" if path == "/" else path[1:]
+    if not _PUBLIC_NAME.match(name):
+        return None
+    file = PUBLIC / name
+    return file if file.is_file() else None
 
 
 @dataclass(frozen=True)
@@ -349,28 +372,35 @@ def make_handler(library: Library, access: PublicAccess | None = None,
             pass  # quiet: the terminal is for the person
 
         def do_GET(self) -> None:
-            refusal = self._refusal()
+            url = urlparse(self.path)
+            refusal = self._refusal(url.path)
             if refusal is not None:
                 self._send(HTTPStatus.FORBIDDEN, {"error": refusal})
                 return
-            url = urlparse(self.path)
             query = {k: v[0] for k, v in parse_qs(url.query).items()}
+            api = f"{WORKBENCH}api/"
             try:
-                if url.path.startswith("/api/"):
-                    self._send(HTTPStatus.OK, self._api(url.path[5:], query))
+                if url.path.startswith(api):
+                    self._send(HTTPStatus.OK, self._api(url.path[len(api):], query))
+                elif url.path == WORKBENCH.rstrip("/"):
+                    self._redirect(WORKBENCH)
+                elif url.path.startswith(WORKBENCH):
+                    self._static(url.path[len(WORKBENCH):])
                 else:
-                    self._static(url.path)
+                    self._public(url.path)
             except NotAllowedError as exc:
                 self._send(HTTPStatus.NOT_FOUND, {"error": str(exc)})
             except (ValueError, OSError) as exc:
                 self._send(HTTPStatus.BAD_REQUEST, {"error": f"Couldn't read that: {exc}"})
 
-        def _refusal(self) -> str | None:
+        def _refusal(self, path: str) -> str | None:
             hosts = self.headers.get_all("Host") or []
             host = hosts[0].strip().casefold() if len(hosts) == 1 else ""
             if _HOST.match(host):
                 return None
             if access is not None and host == access.host:
+                if public_file(path) is not None:
+                    return None
                 return access.refusal(self.headers.get_all(TOKEN_HEADER) or [])
             return "This workbench only answers requests addressed to this machine."
 
@@ -395,30 +425,41 @@ def make_handler(library: Library, access: PublicAccess | None = None,
                 return library.outline_part(file, query.get("part", ""))
             raise NotAllowedError(f"There is no '{name}' here.")
 
-        def _static(self, path: str) -> None:
-            name = "index.html" if path in ("", "/") else path.lstrip("/")
-            file = (STATIC / name).resolve()
+        def _static(self, name: str) -> None:
+            file = (STATIC / (name or "index.html")).resolve()
             if not file.is_relative_to(STATIC.resolve()) or not file.is_file():
+                raise NotAllowedError(f"There is no page '{WORKBENCH}{name}'.")
+            self._file(file, _WORKBENCH_POLICY)
+
+        def _public(self, path: str) -> None:
+            file = public_file(path)
+            if file is None:
                 raise NotAllowedError(f"There is no page '{path}'.")
-            body = file.read_bytes()
+            self._file(file, _PUBLIC_POLICY)
+
+        def _file(self, file: Path, policy: str) -> None:
             kind = mimetypes.guess_type(file.name)[0] or "application/octet-stream"
             if file.suffix == ".js":
                 kind = "text/javascript"
-            self._raw(HTTPStatus.OK, body, f"{kind}; charset=utf-8")
+            self._raw(HTTPStatus.OK, file.read_bytes(), f"{kind}; charset=utf-8", policy)
+
+        def _redirect(self, to: str) -> None:
+            self.send_response(HTTPStatus.MOVED_PERMANENTLY)
+            self.send_header("Location", to)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
 
         def _send(self, status: HTTPStatus, data: dict[str, Any]) -> None:
             body = json.dumps(data, ensure_ascii=False, default=str).encode("utf-8")
-            self._raw(status, body, "application/json; charset=utf-8")
+            self._raw(status, body, "application/json; charset=utf-8", _WORKBENCH_POLICY)
 
-        def _raw(self, status: HTTPStatus, body: bytes, kind: str) -> None:
+        def _raw(self, status: HTTPStatus, body: bytes, kind: str, policy: str) -> None:
             self.send_response(status)
             self.send_header("Content-Type", kind)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Content-Security-Policy",
-                             "default-src 'self'; style-src 'self'; script-src 'self'; "
-                             "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'")
+            self.send_header("Content-Security-Policy", policy)
             self.end_headers()
             self.wfile.write(body)
 

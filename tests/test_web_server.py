@@ -4,6 +4,7 @@ on a free port; no browser."""
 import http.client
 import itertools
 import json
+import re
 import shutil
 import tempfile
 import threading
@@ -14,12 +15,28 @@ from typing import Any
 from hekswerk_scry.ai.run_log import LOG_FORMAT, LOG_SUFFIX, RunLog
 from hekswerk_scry.files import save_outline
 from hekswerk_scry.web.access import TOKEN_HEADER
-from hekswerk_scry.web.server import Library, NotAllowedError, Source, serve
+from hekswerk_scry.web.server import (
+    PUBLIC,
+    STATIC,
+    WORKBENCH,
+    Library,
+    NotAllowedError,
+    Source,
+    serve,
+)
 from tests.test_outline import example_outline
 from tests.test_web_access import public_access
 from tests.test_web_access import token as sign_in
 
 EXAMPLES = Path(__file__).parents[1] / "src" / "hekswerk_scry" / "examples"
+API = f"{WORKBENCH}api/"
+API_NAMES = ("overview", "log", "text", "results", "map", "outline", "outline-part")
+PUBLIC_NAME = "scry.hekswerk.com"
+
+
+def named_files(page: bytes) -> list[str]:
+    """The files a page loads: its stylesheets, scripts and images."""
+    return re.findall(r'<(?:link|script|img)[^>]*\b(?:href|src)="([^"]+)"', page.decode())
 
 
 def write_log(path: Path, ending: str | None) -> None:
@@ -248,30 +265,52 @@ class TestServer(WorkbenchCase):
     def test_requests_for_other_sites_are_refused(self) -> None:
         for host in ("evil.example", "evil.example:80", "127.0.0.1.evil.example"):
             with self.subTest(host):
-                status, _, body = self.get("/api/overview", host=host)
+                status, _, body = self.get(f"{API}overview", host=host)
                 self.assertEqual(status, 403)
                 self.assertIn(b"addressed to this machine", body)
         for host in (f"localhost:{self.port}", f"127.0.0.1:{self.port}"):
-            self.assertEqual(self.get("/api/overview", host=host)[0], 200)
+            self.assertEqual(self.get(f"{API}overview", host=host)[0], 200)
 
     def test_pages_and_answers(self) -> None:
-        status, headers, body = self.get("/")
+        status, headers, page = self.get(WORKBENCH)
         self.assertEqual(status, 200)
-        self.assertIn(b'<script type="module" src="/app.js">', body)
         self.assertIn("script-src 'self'", headers["Content-Security-Policy"])
         self.assertEqual(headers["Cache-Control"], "no-store")
-        status, headers, _ = self.get("/app.js")
-        self.assertEqual((status, headers["Content-Type"]), (200, "text/javascript; charset=utf-8"))
-        status, data = self.json("/api/overview")
+        loads = named_files(page)
+        self.assertIn("app.js", loads)
+        for name in loads:
+            with self.subTest(name):
+                status, headers, _ = self.get(f"{WORKBENCH}{name}")
+                self.assertEqual(status, 200)
+        self.assertEqual(self.get(f"{WORKBENCH}app.js")[1]["Content-Type"],
+                         "text/javascript; charset=utf-8")
+        status, data = self.json(f"{API}overview")
         self.assertEqual((status, len(data["runs"])), (200, 1))
+        status, headers, _ = self.get(WORKBENCH.rstrip("/"))
+        self.assertEqual((status, headers["Location"]), (301, WORKBENCH))
+        self.assertEqual(self.get("/api/overview")[0], 404)  # the API is under the workbench
+
+    def test_the_introduction_is_a_fixed_page_that_runs_nothing(self) -> None:
+        status, headers, page = self.get("/")
+        self.assertEqual(status, 200)
+        self.assertEqual(page, (PUBLIC / "index.html").read_bytes())
+        policy = headers["Content-Security-Policy"]
+        self.assertIn("default-src 'none'", policy)
+        self.assertNotIn("script-src", policy)
+        self.assertNotIn(b"<script", page)
+        for name in named_files(page):
+            with self.subTest(name):
+                self.assertEqual(self.get(name)[0], 200)
 
     def test_refusals_are_plain_and_leak_nothing(self) -> None:
         for path in (
             "/../secret.md",
             "/%2e%2e/secret.md",
-            "/api/text?file=0:../secret.md",
-            "/api/log?file=0:x&after=-1",
-            "/api/nothing",
+            f"{WORKBENCH}../secret.md",
+            f"{WORKBENCH}%2e%2e/secret.md",
+            f"{API}text?file=0:../secret.md",
+            f"{API}log?file=0:x&after=-1",
+            f"{API}nothing",
         ):
             with self.subTest(path):
                 status, data = self.json(path)
@@ -294,26 +333,49 @@ class TestServerWithPublicName(TestServer):
         self.addCleanup(self.server.shutdown)
 
     def test_the_public_name_needs_a_valid_sign_in(self) -> None:
-        public = "scry.hekswerk.com"
-        status, _, body = self.get("/api/overview", host=public)
+        public = PUBLIC_NAME
+        status, _, body = self.get(f"{API}overview", host=public)
         self.assertEqual(status, 403)
         self.assertIn(b"Sign in through Cloudflare Access", body)
         expired = sign_in(claims={"exp": 0})
-        status, _, body = self.get("/api/overview", host=public, extra={TOKEN_HEADER: expired})
+        status, _, body = self.get(f"{API}overview", host=public, extra={TOKEN_HEADER: expired})
         self.assertEqual(status, 403)
         self.assertNotIn(b"runs", body)
-        status, _, body = self.get("/api/overview", host=public, extra={TOKEN_HEADER: sign_in()})
+        status, _, body = self.get(f"{API}overview", host=public,
+                                   extra={TOKEN_HEADER: sign_in()})
         self.assertEqual(status, 200)
         self.assertIn(b"runs", body)
-        status, _, _ = self.get("/", host="SCRY.hekswerk.com", extra={TOKEN_HEADER: sign_in()})
+        status, _, _ = self.get(WORKBENCH, host="SCRY.hekswerk.com",
+                                extra={TOKEN_HEADER: sign_in()})
         self.assertEqual(status, 200)
+
+    def test_without_a_sign_in_the_public_name_serves_the_introduction_and_nothing_else(
+            self) -> None:
+        # Python's server reads a path that starts "//" as starting "/".
+        public = [f"/{f.name}" for f in PUBLIC.iterdir()] + ["/", "//", "/intro.css?v=1"]
+        for path in public:
+            with self.subTest(path):
+                self.assertEqual(self.get(path, host=PUBLIC_NAME)[0], 200)
+        workbench = ([f"{WORKBENCH}{f.name}" for f in STATIC.iterdir()]
+                     + [f"/{f.name}" for f in STATIC.iterdir() if not (PUBLIC / f.name).exists()]
+                     + [f"{API}{name}" for name in API_NAMES]
+                     + [f"/api/{name}" for name in API_NAMES]
+                     + [WORKBENCH, WORKBENCH.rstrip("/"), "//workbench/", "/./intro.css",
+                        "/../static/app.js", "/../static/index.html", "/%2e%2e/static/app.js",
+                        f"{WORKBENCH}../public/index.html", "/index.html/..", "/missing.css",
+                        "/workbench.html", "/secret.md"])
+        for path in workbench:
+            with self.subTest(path):
+                status, _, body = self.get(path, host=PUBLIC_NAME)
+                self.assertEqual(status, 403)
+                self.assertIn(b"Sign in through Cloudflare Access", body)
 
     def test_a_sign_in_opens_only_the_public_name(self) -> None:
         for host in ("evil.example", "scry.hekswerk.com.evil.example", "workbench.hekswerk.com"):
             with self.subTest(host):
-                status, _, _ = self.get("/api/overview", host=host,
-                                        extra={TOKEN_HEADER: sign_in()})
-                self.assertEqual(status, 403)
+                for path in (f"{API}overview", "/"):
+                    status, _, _ = self.get(path, host=host, extra={TOKEN_HEADER: sign_in()})
+                    self.assertEqual(status, 403)
 
 
 class TestServerWithoutPublicName(WorkbenchCase):
@@ -324,7 +386,7 @@ class TestServerWithoutPublicName(WorkbenchCase):
         self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
         connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=10)
-        connection.request("GET", "/api/overview",
+        connection.request("GET", f"{API}overview",
                            headers={"Host": "scry.hekswerk.com", TOKEN_HEADER: sign_in()})
         self.assertEqual(connection.getresponse().status, 403)
         connection.close()

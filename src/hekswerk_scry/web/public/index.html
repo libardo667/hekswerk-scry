@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scry</title>
+  <meta name="description" content="A workbench for reading machine-written Lean proofs and checking that a formal statement says what its paper says.">
+  <link rel="stylesheet" href="/intro.css">
+</head>
+<body>
+  <header class="top">
+    <span class="brand">Scry</span>
+    <a class="top-link" href="https://github.com/libardo667/hekswerk-scry">Source code</a>
+  </header>
+
+  <main>
+    <section class="lead">
+      <h1>Reading machine-written proofs, and checking what they prove</h1>
+      <p class="sub">Scry is an open-source workbench for two questions a compiling Lean proof leaves to a person: <em>how does this proof work?</em> and <em>does its formal statement say what the paper claims?</em></p>
+      <div class="actions">
+        <a class="button primary" href="/workbench/">Open the workbench</a>
+        <a class="button" href="https://www.hekswerk.com/contact">Ask for access</a>
+      </div>
+      <p class="note">The workbench shows Scry's real runs and needs a sign-in. Everything on this page is open to anyone.</p>
+    </section>
+
+    <section>
+      <h2>The problem</h2>
+      <p>AI systems now write mathematics, and Lean proofs of it, faster than people can read them. OpenAI's <a href="https://github.com/openai/math">openai/math</a> repository alone holds about 720 manuscripts and some 26 million lines of Lean.</p>
+      <p>When Lean accepts a proof, it settles the <em>formal statement</em>, and nothing more. The statement can still say less than the paper: an extra assumption, a relaxed bound, a normalization dropped inside a definition. And a machine-written proof that Lean accepts can still be very hard for a person to follow.</p>
+    </section>
+
+    <section>
+      <h2>What Scry does</h2>
+      <ul class="cards">
+        <li>
+          <h3>Outlines of whole results</h3>
+          <p>A result and every theorem and definition it rests on. The outline separates what the theorem claims (the definitions you must read to check it) from how its proof is built. It also lists every assumption a proof never uses. openai/math's Navier–Stokes velocity result rests on 1,948 declarations across 152 files. Its outline loads as about 70 KB.</p>
+        </li>
+        <li>
+          <h3>Step-by-step maps</h3>
+          <p>A proof as steps joined by "uses a fact from" arrows, taken from Lean's own record of the finished proof. You can propose a shorter route to one fact. Lean checks the whole changed file before anything is written, and the original file is never touched.</p>
+        </li>
+        <li>
+          <h3>Statement checks</h3>
+          <p>Lean's kernel tests whether a statement's assumptions contradict each other, and whether its conclusion holds without them. An AI model compares the paper with the formal statement item by item. It can ask Lean to check claims of its own, and it must cite numbered evidence for everything it says.</p>
+        </li>
+        <li>
+          <h3>A measure of those checks</h3>
+          <p>Scry plants known differences into copies of real statements, then scores audits that don't know which copy they have. So far the test is small: six planted differences, three statements, one model, one try each. Every plant drew a row naming a difference at its lines, and none was passed as "matches". Three are scored "conflicting", because a "matches" row about another item covers the same line.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Who says what</h2>
+      <p>Every claim Scry shows says who made it.</p>
+      <dl class="labels">
+        <dt><span class="badge lean">Lean-checked</span></dt>
+        <dd>Only a real Lean run, ending normally, with no errors, no <code>sorry</code>, and only the three standard axioms.</dd>
+        <dt><span class="badge wiring">Wiring checked (not proven)</span></dt>
+        <dd>Scry followed which facts feed which steps. It did not read the math.</dd>
+        <dt><span class="badge ai">AI's reading</span></dt>
+        <dd>What a model concluded, with citations to the evidence it rests on: a Lean check, or a quoted passage of the paper.</dd>
+      </dl>
+      <p>Each Lean check records exactly which files it ran on, by SHA-256 fingerprint. A stored result is reused only while every one of those files is unchanged.</p>
+    </section>
+
+    <section>
+      <h2>Where it stands</h2>
+      <p>Scry has been built since October 17, 2026. Its tests are written so they can fail. A mutation check breaks the code in about a hundred known ways and confirms that the tests notice every one. The repository lists what isn't done yet:</p>
+      <ul>
+        <li>Scry doesn't yet run openai/math's own comparator, which checks that a solution states exactly the challenge's theorem.</li>
+        <li>Nothing yet records a mathematician's judgement of each benchmark row.</li>
+        <li>An audit isn't told which of a paper's other results are stated in other challenges.</li>
+      </ul>
+      <p>The benchmark is small, and its planted differences were written by the project itself. The next step is plants written and judged by mathematicians.</p>
+    </section>
+
+    <section>
+      <h2>How it was built</h2>
+      <p>Scry is the work of Levi Banks (<a href="https://www.hekswerk.com">Hekswerk</a>), who set its questions, its architecture and its standards of evidence. Coding agents and chatbots did most of the writing: Claude Code (most of the code), Antigravity CLI, Gemini and ChatGPT, each also a source of second opinions. Outside reviews are kept in the repository, with the changes they led to.</p>
+      <p>It is shared now so that the people who would use it, mathematicians and anyone checking AI-written mathematics, can say what it gets wrong.</p>
+    </section>
+
+    <section class="links">
+      <h2>Look closer</h2>
+      <ul>
+        <li><a href="https://github.com/libardo667/hekswerk-scry">Source code</a>, under the Apache License 2.0</li>
+        <li><a href="https://github.com/libardo667/hekswerk-scry/tree/main/docs/examples/runs/2026-10-19">Recent audits</a>, with their complete run logs and Lean receipts</li>
+        <li><a href="https://github.com/libardo667/hekswerk-scry/tree/main/docs/decisions">Design decisions</a>, each with the problem it answers</li>
+        <li><a href="https://www.hekswerk.com/contact">Ask for access to the workbench</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>Statements, papers and proofs from openai/math are used under its Apache-2.0 license. AlphaProof's published proofs are downloaded on request and not redistributed.</p>
+  </footer>
+</body>
+</html>

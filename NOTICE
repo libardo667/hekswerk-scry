@@ -1,0 +1,15 @@
+hekswerk-scry
+Copyright 2026 Levi Banks (Hekswerk)
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This repository includes material from OpenAI's mathematics repository,
+https://github.com/openai/math, licensed under the Apache License, Version 2.0:
+Lean statements and proofs, excerpts of papers, and scope notes, in
+docs/examples/, tests/fixtures/ and benchmarks/statement-plants.json, and
+statement copies that Scry's benchmark changes on purpose (each change is
+described in benchmarks/statement-plants.json). Proof maps and outlines made
+from those proofs hold Lean's own printing of them.
+
+AlphaProof's published proofs (Google DeepMind) are not included. Scry
+downloads them on request and checks them against a recorded fingerprint.

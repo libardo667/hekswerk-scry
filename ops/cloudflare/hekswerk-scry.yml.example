@@ -4,6 +4,14 @@ tunnel: <tunnel-id>
 credentials-file: /home/<you>/.cloudflared/<tunnel-id>.json
 
 ingress:
+  # The introduction (Scry's web/public/ files) is open to anyone. Scry serves only those
+  # files without a sign-in; this rule lets exactly those addresses through without one.
+  - hostname: scry.hekswerk.com
+    path: ^/([A-Za-z0-9][A-Za-z0-9_-]*\.(html|css|svg))?$
+    service: http://127.0.0.1:8765
+    originRequest:
+      httpHostHeader: scry.hekswerk.com
+  # Everything else, the workbench included, needs a Cloudflare Access sign-in.
   - hostname: scry.hekswerk.com
     service: http://127.0.0.1:8765
     originRequest:

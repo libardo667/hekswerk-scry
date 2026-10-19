@@ -27,7 +27,7 @@ export function fill(el, ...children) {
 
 export async function api(name, params = {}) {
   const query = new URLSearchParams(params).toString()
-  const response = await fetch(`/api/${name}${query ? '?' + query : ''}`)
+  const response = await fetch(`api/${name}${query ? '?' + query : ''}`)
   const data = await response.json()
   if (!response.ok) throw new Error(data.error || `The workbench answered ${response.status}.`)
   return data

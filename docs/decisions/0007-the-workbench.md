@@ -76,7 +76,9 @@ and the two user services are in `ops/cloudflare/`.
 Setting it up: create the Access application (self-hosted, `scry.hekswerk.com`, Google,
 one Allow policy for one email); `cloudflared tunnel create hekswerk-scry`;
 `cloudflared tunnel route dns hekswerk-scry scry.hekswerk.com`; fill in the templates; then
-`systemctl --user enable --now hekswerk-scry-serve hekswerk-scry-cloudflared`. Cloudflare
+`systemctl --user enable --now hekswerk-scry-serve hekswerk-scry-cloudflared`. Since
+2026-10-19 the workbench is under `/workbench/`, and the name's introduction at `/` is open to
+anyone ([0010](0010-a-public-introduction.md)). Cloudflare
 sees the traffic in transit; the workbench shows proofs, audits and reports, never keys.
 
 ## Not yet
