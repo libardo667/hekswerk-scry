@@ -98,10 +98,10 @@ when the list is cut off. Definition bodies are no longer clipped at 3,000 chara
   person's judgement of whether a catching row names the planted change.
 - **Replaying a run.** The first Truffet audit predates run logs, and it may have read the
   wrong paper's introduction; its supplementary Lean checks exist only as its report's
-  summary. It was run again on 2026-10-19, with everything above recorded, alongside the
-  three FourRowPermanent benchmark copies
-  ([`docs/examples/runs/2026-10-19`](../examples/runs/2026-10-19/README.md)). Those are new
-  runs, not replays of the old ones. Nothing yet re-checks a saved run's Lean claims
+  summary. It was run again on 2026-10-19, with everything above recorded, alongside all nine
+  benchmark copies (FourRowPermanent on 2026-10-19; FiniteCongruenceGraph and PlaneColoring on
+  2026-10-28; [`docs/examples/runs/2026-10-19`](../examples/runs/2026-10-19/README.md)). Those are
+  new runs, not replays of the old ones. Nothing yet re-checks a saved run's Lean claims
   against today's files.
 - **Sibling challenges.** An audit isn't told which of the paper's other results are stated
   in other challenges, so it can report a result as missing that another challenge states.

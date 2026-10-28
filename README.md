@@ -150,11 +150,13 @@ scry statement-benchmark                   # audit them blind and score (costs m
 
 - **Audits are measured:** `scry statement-benchmark` plants known differences into copies of
   real statements and scores blind audits of them. A score says only where an audit pointed:
-  "unclear" is not a catch, and a "matches" row on the same lines makes it "conflicting". First
-  run, re-scored under that rule: three caught, three conflicting (each time, a "matches" row
-  about another item on overlapping lines), none passed as "matches"
-  ([results](docs/examples/statement-benchmark-1.md)). An audit is reused only for an identical
-  setup (model, instructions, tools, statement and its imports, papers) that finished.
+  "unclear" is not a catch, and a "matches" row on the same lines makes it "conflicting". Across
+  both runs: three caught (each backed by a proof Lean's kernel accepted), three conflicting
+  (each time, a "matches" row about another item on overlapping lines), none passed as "matches"
+  ([first run](docs/examples/statement-benchmark-1.md),
+  [second run with full logs](docs/examples/runs/2026-10-19/README.md)). An audit is reused only
+  for an identical setup (model, instructions, tools, statement and its imports, papers) that
+  finished.
 
 - **Evidence says what it was checked against:** a stored Lean reading is reused only while
   the file, every project file it imports and the packages are unchanged; a probe counts only

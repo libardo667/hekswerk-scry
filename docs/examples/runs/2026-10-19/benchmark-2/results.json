@@ -2,6 +2,706 @@
   "format": "hekswerk-scry/benchmark-results",
   "version": 2,
   "challenges": {
+    "FiniteCongruenceGraph": [
+      {
+        "variant": "control",
+        "copy_sha256": "2ee495def2e1228bf13df520f6c66699ec22b2cd3bc1ae7383a30957aae9f967",
+        "planted_lines": null,
+        "score": null,
+        "also_in_control": false,
+        "cost_usd": 0.4728,
+        "hit_round_limit": false,
+        "ran_at": "2026-10-28 17:04:32 UTC",
+        "reused_from": null,
+        "setup": {
+          "model": "anthropic/claude-opus-5.5",
+          "effort": "high",
+          "provider": "https://openrouter.ai/api/v1",
+          "instructions_sha256": "9b791ca3dbeb6dbf61a1865f57c14efe6a40ce9fe6ed9116ac596dc9084a3ad0",
+          "request": "Audit this formal statement against the paper, and finish with the report.",
+          "rounds": 40,
+          "tools_sha256": "dfcd260f5cb4c6cef75a0a5c2bb1e7e8a57c0f1dfbda3cfab8148ca014187030",
+          "code_sha256": {
+            "audit.py": "f7f3edd29663d998726f063d39aaa93f276f6f018ca4b2869e1c46b4b8b63880",
+            "session.py": "9aafc6c0b4e08964b5433f28f68d66ebd23c1c7f2f53235b2978a341adba8939",
+            "tools.py": "4f75c80e1ec5cec7477327e451a58d208fb65ec44313d9183527286ee5d6a667",
+            "statement_tools.py": "5aab629a5a5f92b18a2b8854ea93e0693391596fbee0a9f21ede25e88028b8e5",
+            "openrouter.py": "bf4fd545e61fc8a3062768d49fda08c4dbaa5e77af93eb38e3fd9f275d7efbbf"
+          },
+          "statement_file": ".scry-runs/audit-copies/c95dbda0dc9d1476/FiniteCongruenceGraph.lean",
+          "lean_inputs": {
+            "files": {
+              ".scry-runs/audit-copies/c95dbda0dc9d1476/FiniteCongruenceGraph.lean": "2ee495def2e1228bf13df520f6c66699ec22b2cd3bc1ae7383a30957aae9f967"
+            },
+            "setup": {
+              "lakefile.lean": "4cca977ebece444b6c999d99755c1ad3c93119bafc127ea761f7f703c7279e74",
+              "lakefile.toml": "missing",
+              "lake-manifest.json": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+              "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+            },
+            "packages": {
+              "mathlib": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+              "checkdecls": "3d425859e73fcfbef85b9638c2a91708ef4a22d4",
+              "«doc-gen4»": "missing",
+              "PrimeCert": "0803c2f6bd289c09704c7d352bb8fcf770cbb9b2",
+              "LeanArchitect": "468e8f58fb4ad6e6ad672a08da6d0d0531e95a97",
+              "leancert": "7f91b6eb3567437f6cfac03ed279706603ee22f4",
+              "PrimeNumberTheoremAnd": "c39a751132c88b6e8080b74c74023fd95b3d8be0",
+              "belyi": "9ce4d3f793d3bc831f2fc7214b7dbad90ea012d8",
+              "«formal-schemes»": "missing",
+              "«elliptic-curves»": "missing",
+              "«tempered-fundamental-groups»": "missing",
+              "oka": "75dcdc3faadd10b986afb9283e89902bcdddecd4",
+              "«orbicurve-cores»": "missing",
+              "pi1": "ca7def953193f861a462aa0831eec8f0a31ff69f",
+              "heights": "721496ca4c158e511d25d8ccf6bfe8503eda73c1",
+              "genl": "ea2846c877d1e16d8f0b911a5fed07f5ee69eaaf",
+              "«tate-curves-theta»": "missing",
+              "iut": "d9465c111ec4073709f67e9fccec7e3eb374a816",
+              "gromov": "8db79f13cf211b570e3116301d91379fbc01cf3e",
+              "TauCeti": "3bed7e37f3c504a99e8c07e9f309540812a7aa90",
+              "SphereEversion": "9c53f91e2a281199163ecea04dc4976cb79e2076",
+              "«schoenflies-lean»": "missing",
+              "ClassFieldTheory": "2eb22d6485af45f29c5219de6c49f196a61c4f49",
+              "AINTLIB": "160e446617a2168c34c95bbe7a76c4105b392434",
+              "AbsorptionCutoff": "41c45c6d72e979419e46224bb7b4be5cee31f2b5",
+              "StrongPNT": "2f5835c322314f55f1026ec2f139d704b7c45c69",
+              "carleson": "306ae5b29300771aece1aa39f0a939183cc59486",
+              "«rellich-kondrachov»": "missing",
+              "Zeta3Irrational": "e8785315a01c8fbcddaa0fc03b3c8b29a61bc1f1",
+              "«fixed-point-theorems»": "missing",
+              "plausible": "118aa17ee84656b8bd727fef7c458ee8c833385c",
+              "LeanSearchClient": "ddf04cf3949fa556442341e87d47f9f6e6074707",
+              "importGraph": "e928b72544873815af278d38681b31c0293588e3",
+              "proofwidgets": "106ff4fafc74ef4ac99d81dbf3ab399118f497a5",
+              "aesop": "355695d523e41d0554926416cba2a2b3544fbbc9",
+              "Qq": "6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259",
+              "batteries": "f2effa3d803fda822b1f97b806c47cf2adfbcbc2",
+              "leansqlite": "f9cdb9eacb5c8b8ecc02ee9fd9e568d7d28c1416",
+              "Cli": "e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204",
+              "UnicodeBasic": "0e569d08b6443ce0908d356884c765397253e2f0",
+              "BibtexQuery": "4d8616fd4870d0a3453d845770833eac7951fe1c",
+              "MD4Lean": "31907cc18f48a95384f99cee5582c00fb39e0f67"
+            }
+          },
+          "lean_version": "leanprover/lean4:v4.34.1",
+          "exporter_sha256": "90de20250e7a92cd9d670462a01deca15160fa61562c73186bb650fd3a388684",
+          "claims_checked_under_sha256": "7497c172f03476d1ab47940c996fb578b1b6a273a7cc0de6311d6c9441e50113",
+          "papers": {
+            "figures/l7.tex": "a2779d74d18e74a72b59501a7630dd86f27e9255e06ba1d68600a145c3305aab",
+            "figures/patterns.tex": "886086ca119d1f7b522054f7c912ead7234010255d96d59b362c18e8c99a7814",
+            "figures/proof_overview.tex": "6a7e9147a44df713c41e0dc31e4086b4c9e4b3011d15fc4438d9c5520c42d139",
+            "figures/weighted_square.tex": "94ff644968ade84a7f66b7999c62d7bf0126c3b3ac505aad4bd25421b1003bac",
+            "paper.tex": "3632c0ce067e0b0fa193d9a97bef99c0902767bb0b921e8265733a321d6cd096",
+            "sections/affine.tex": "3bf7bd607edb9c6859ac3499e38498a27f39e95e8bdf152a74f38ca775144ccc",
+            "sections/alternating.tex": "1e60880227e7fd76f5bfb92f8578d403c62b29f9a29ea3546ed1fe04e1605a78",
+            "sections/bounded.tex": "caed3443b17bd175d4df542fd9ef478481305480e8140bb0f11bfa3e58c7f996",
+            "sections/classical.tex": "74ef542756645ee297f302ddec89366c31ad7b64cf9cb2b54b964d58f4e12146",
+            "sections/counting.tex": "c6f970b20a0bfee402da2e1e8714b9464cfd04548f6db88a1aaf85d9b7e2dea9",
+            "sections/diophantine.tex": "ca7b30ddeaed8d84c66947311765016d0b1ee45001bf2bd8f6a073175d938cd8",
+            "sections/forward_a.tex": "9197bff57b19970efcb32abd1df82f09d0cf807591b5cf0aac88a84044756302",
+            "sections/forward_b.tex": "b0f132399ff86f9f21780b8a56164d7235e7e64fe28bf295afee8ddaf27bc400",
+            "sections/graph.tex": "71550c8640aec4dbb24db2cd8964f43b526b37f0a54de876478a72d2b30c20ea",
+            "sections/introduction.tex": "a9072071c213b93f51893501ae4d7ba8c9741f60687a02ab6e65542983d9109b",
+            "sections/marker_setup.tex": "6ce04223ef882dfeca08956de02fee7208d0a737c2ceaa3168aa79b062aac9eb",
+            "sections/minimum.tex": "be50ac02a8e3db748e8566c625c56d65afd274d9e60b53d1f19bd7a7e314928c",
+            "sections/patterns.tex": "cbd6907e2ad523495050b84efeacb9f6f7ec649f41666ac782271731533372a4",
+            "sections/quantitative.tex": "7bf63313716786ba4c3915353f94fe06237b821f53bff07e6db47090552e7278",
+            "sections/reverse.tex": "ca5f708bf4d78ae39d6aa4b8594792580cb27ce6753a9a0d840ac58fd69b07e5",
+            "sections/small.tex": "231ac95a768d2812f34f2dd5038ab394fc60d208527cf52bd733eb41f936c135",
+            "sections/weighted.tex": "36e052ee7e47657519cdb13178233898d3cfcd998292f9b977d16ebde5b50b5b",
+            "sections/weights.tex": "67ffb21789793afdc20aa0db1eba2f75f25179ccea8d178a69b783737ab9b5e7"
+          }
+        },
+        "rows": [
+          {
+            "item": "Domain: finite nonempty lattice L with least element 0",
+            "paper_says": "\"Throughout this section, L is a finite nonempty lattice, with least element 0.\"",
+            "lean_says": "Lat : Type with Fintype, Lattice, OrderBot (OrderBot forces nonemptiness)",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              57,
+              58
+            ],
+            "evidence": [
+              "E1",
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Finite algebra",
+            "paper_says": "Nonempty finite set with a finite (possibly empty) list of total operations of finite nonnegative arity.",
+            "lean_says": "Algebra on carrier: numOps : ℕ, arity : Fin numOps → ℕ, op taking Fin arity → Carrier; carrier is Fin size with 0 < size.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              10,
+              13
+            ],
+            "evidence": [
+              "E4",
+              "E7"
+            ]
+          },
+          {
+            "item": "Congruences and their order",
+            "paper_says": "Con(A): lattice of all congruences (equivalences compatible with every operation), ordered by inclusion.",
+            "lean_says": "Congruence alg = Setoids compatible with each op coordinatewise; partial order inherited from Setoid, which is inclusion (checked).",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              15,
+              23
+            ],
+            "evidence": [
+              "E4",
+              "E9"
+            ]
+          },
+          {
+            "item": "Representability (L ≅ full Con(A))",
+            "paper_says": "\"L is the full congruence lattice of a finite algebra\"; L ≅ Con(A), onto the entire congruence lattice.",
+            "lean_says": "∃ size > 0, ∃ alg on Fin size, Nonempty (Lat ≃o Congruence alg). An order isomorphism of lattices is a lattice isomorphism.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              25,
+              26
+            ],
+            "evidence": [
+              "E3",
+              "E4",
+              "E7"
+            ]
+          },
+          {
+            "item": "L-colored complete graph and condition (i)",
+            "paper_says": "Finite nonempty vertex set A, symmetric d with d(p,p)=0; (i) p≠q ⇒ d(p,q)≠0 and d(p,q) ≤ d(p,u) ∨ d(u,q).",
+            "lean_says": "Vertices Fin size, size>0; color symmetric; color l r = ⊥ ↔ l = r; triangle inequality for all l r m.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              41,
+              45
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Condition (ii) reflection",
+            "paper_says": "Whenever a ≰ b, there are p,q with d(p,q) ≤ a and d(p,q) ≰ b.",
+            "lean_says": "∀ lower upper, ¬ lower ≤ upper → ∃ left right, color left right ≤ lower ∧ ¬ color left right ≤ upper.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              46,
+              47
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Admissible placements, Γ_S, condition (iii) connectivity",
+            "paper_says": "f:A→A admissible if d(f p, f q) ≤ d(p,q); Γ_S has adjacencies {f p, f q} for {p,q}∈S, f admissible; a_S = ⋁ d over S; for every nonempty edge set S, d(p,q) ≤ a_S ⇒ p,q in same component of Γ_S.",
+            "lean_says": "Admissible as stated; seeds is a nonempty Finset of ordered pairs; Marked l r iff some admissible placement maps some seed (e1,e2) to (l,r); Connected = EqvGen of Marked (symmetric-reflexive-transitive closure = same component); bound is seeds.sup of colors.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              28,
+              50
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Conclusion: biconditional",
+            "paper_says": "L is representable iff there is an L-colored complete graph satisfying (i)–(iii).",
+            "lean_says": "Representable Lat ↔ HasGraphWitness Lat (∃ size>0 and a coloring on Fin size satisfying IsGraphWitness).",
+            "verdict": "matches",
+            "affects_main_result": true,
+            "lean_lines": [
+              52,
+              58
+            ],
+            "evidence": [
+              "E1",
+              "E3",
+              "E4",
+              "E8"
+            ]
+          },
+          {
+            "item": "Remark that conditions are finite checks for fixed |A|",
+            "paper_says": "\"For each fixed |A|, these conditions involve only lattice inequalities, finite vertex labelings, and paths.\"",
+            "lean_says": "Not stated (informal remark).",
+            "verdict": "not in the formalization",
+            "affects_main_result": false,
+            "lean_lines": null,
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          }
+        ]
+      },
+      {
+        "variant": "one-direction",
+        "copy_sha256": "93ecc9a80e601482ff5adb356124a4a6ab4e6d3f9cf65772c5d7a64ef5522140",
+        "planted_lines": [
+          58,
+          58
+        ],
+        "score": "conflicting",
+        "also_in_control": false,
+        "cost_usd": 0.3975,
+        "hit_round_limit": false,
+        "ran_at": "2026-10-28 17:05:50 UTC",
+        "reused_from": null,
+        "setup": {
+          "model": "anthropic/claude-opus-5.5",
+          "effort": "high",
+          "provider": "https://openrouter.ai/api/v1",
+          "instructions_sha256": "2044dc352b1f404c79c7425e84253176528a6fc222498903f97dccc2698f34aa",
+          "request": "Audit this formal statement against the paper, and finish with the report.",
+          "rounds": 40,
+          "tools_sha256": "dfcd260f5cb4c6cef75a0a5c2bb1e7e8a57c0f1dfbda3cfab8148ca014187030",
+          "code_sha256": {
+            "audit.py": "f7f3edd29663d998726f063d39aaa93f276f6f018ca4b2869e1c46b4b8b63880",
+            "session.py": "9aafc6c0b4e08964b5433f28f68d66ebd23c1c7f2f53235b2978a341adba8939",
+            "tools.py": "4f75c80e1ec5cec7477327e451a58d208fb65ec44313d9183527286ee5d6a667",
+            "statement_tools.py": "5aab629a5a5f92b18a2b8854ea93e0693391596fbee0a9f21ede25e88028b8e5",
+            "openrouter.py": "bf4fd545e61fc8a3062768d49fda08c4dbaa5e77af93eb38e3fd9f275d7efbbf"
+          },
+          "statement_file": ".scry-runs/audit-copies/eed7636e0baf9bc0/FiniteCongruenceGraph.lean",
+          "lean_inputs": {
+            "files": {
+              ".scry-runs/audit-copies/eed7636e0baf9bc0/FiniteCongruenceGraph.lean": "93ecc9a80e601482ff5adb356124a4a6ab4e6d3f9cf65772c5d7a64ef5522140"
+            },
+            "setup": {
+              "lakefile.lean": "4cca977ebece444b6c999d99755c1ad3c93119bafc127ea761f7f703c7279e74",
+              "lakefile.toml": "missing",
+              "lake-manifest.json": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+              "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+            },
+            "packages": {
+              "mathlib": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+              "checkdecls": "3d425859e73fcfbef85b9638c2a91708ef4a22d4",
+              "«doc-gen4»": "missing",
+              "PrimeCert": "0803c2f6bd289c09704c7d352bb8fcf770cbb9b2",
+              "LeanArchitect": "468e8f58fb4ad6e6ad672a08da6d0d0531e95a97",
+              "leancert": "7f91b6eb3567437f6cfac03ed279706603ee22f4",
+              "PrimeNumberTheoremAnd": "c39a751132c88b6e8080b74c74023fd95b3d8be0",
+              "belyi": "9ce4d3f793d3bc831f2fc7214b7dbad90ea012d8",
+              "«formal-schemes»": "missing",
+              "«elliptic-curves»": "missing",
+              "«tempered-fundamental-groups»": "missing",
+              "oka": "75dcdc3faadd10b986afb9283e89902bcdddecd4",
+              "«orbicurve-cores»": "missing",
+              "pi1": "ca7def953193f861a462aa0831eec8f0a31ff69f",
+              "heights": "721496ca4c158e511d25d8ccf6bfe8503eda73c1",
+              "genl": "ea2846c877d1e16d8f0b911a5fed07f5ee69eaaf",
+              "«tate-curves-theta»": "missing",
+              "iut": "d9465c111ec4073709f67e9fccec7e3eb374a816",
+              "gromov": "8db79f13cf211b570e3116301d91379fbc01cf3e",
+              "TauCeti": "3bed7e37f3c504a99e8c07e9f309540812a7aa90",
+              "SphereEversion": "9c53f91e2a281199163ecea04dc4976cb79e2076",
+              "«schoenflies-lean»": "missing",
+              "ClassFieldTheory": "2eb22d6485af45f29c5219de6c49f196a61c4f49",
+              "AINTLIB": "160e446617a2168c34c95bbe7a76c4105b392434",
+              "AbsorptionCutoff": "41c45c6d72e979419e46224bb7b4be5cee31f2b5",
+              "StrongPNT": "2f5835c322314f55f1026ec2f139d704b7c45c69",
+              "carleson": "306ae5b29300771aece1aa39f0a939183cc59486",
+              "«rellich-kondrachov»": "missing",
+              "Zeta3Irrational": "e8785315a01c8fbcddaa0fc03b3c8b29a61bc1f1",
+              "«fixed-point-theorems»": "missing",
+              "plausible": "118aa17ee84656b8bd727fef7c458ee8c833385c",
+              "LeanSearchClient": "ddf04cf3949fa556442341e87d47f9f6e6074707",
+              "importGraph": "e928b72544873815af278d38681b31c0293588e3",
+              "proofwidgets": "106ff4fafc74ef4ac99d81dbf3ab399118f497a5",
+              "aesop": "355695d523e41d0554926416cba2a2b3544fbbc9",
+              "Qq": "6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259",
+              "batteries": "f2effa3d803fda822b1f97b806c47cf2adfbcbc2",
+              "leansqlite": "f9cdb9eacb5c8b8ecc02ee9fd9e568d7d28c1416",
+              "Cli": "e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204",
+              "UnicodeBasic": "0e569d08b6443ce0908d356884c765397253e2f0",
+              "BibtexQuery": "4d8616fd4870d0a3453d845770833eac7951fe1c",
+              "MD4Lean": "31907cc18f48a95384f99cee5582c00fb39e0f67"
+            }
+          },
+          "lean_version": "leanprover/lean4:v4.34.1",
+          "exporter_sha256": "90de20250e7a92cd9d670462a01deca15160fa61562c73186bb650fd3a388684",
+          "claims_checked_under_sha256": "7497c172f03476d1ab47940c996fb578b1b6a273a7cc0de6311d6c9441e50113",
+          "papers": {
+            "figures/l7.tex": "a2779d74d18e74a72b59501a7630dd86f27e9255e06ba1d68600a145c3305aab",
+            "figures/patterns.tex": "886086ca119d1f7b522054f7c912ead7234010255d96d59b362c18e8c99a7814",
+            "figures/proof_overview.tex": "6a7e9147a44df713c41e0dc31e4086b4c9e4b3011d15fc4438d9c5520c42d139",
+            "figures/weighted_square.tex": "94ff644968ade84a7f66b7999c62d7bf0126c3b3ac505aad4bd25421b1003bac",
+            "paper.tex": "3632c0ce067e0b0fa193d9a97bef99c0902767bb0b921e8265733a321d6cd096",
+            "sections/affine.tex": "3bf7bd607edb9c6859ac3499e38498a27f39e95e8bdf152a74f38ca775144ccc",
+            "sections/alternating.tex": "1e60880227e7fd76f5bfb92f8578d403c62b29f9a29ea3546ed1fe04e1605a78",
+            "sections/bounded.tex": "caed3443b17bd175d4df542fd9ef478481305480e8140bb0f11bfa3e58c7f996",
+            "sections/classical.tex": "74ef542756645ee297f302ddec89366c31ad7b64cf9cb2b54b964d58f4e12146",
+            "sections/counting.tex": "c6f970b20a0bfee402da2e1e8714b9464cfd04548f6db88a1aaf85d9b7e2dea9",
+            "sections/diophantine.tex": "ca7b30ddeaed8d84c66947311765016d0b1ee45001bf2bd8f6a073175d938cd8",
+            "sections/forward_a.tex": "9197bff57b19970efcb32abd1df82f09d0cf807591b5cf0aac88a84044756302",
+            "sections/forward_b.tex": "b0f132399ff86f9f21780b8a56164d7235e7e64fe28bf295afee8ddaf27bc400",
+            "sections/graph.tex": "71550c8640aec4dbb24db2cd8964f43b526b37f0a54de876478a72d2b30c20ea",
+            "sections/introduction.tex": "a9072071c213b93f51893501ae4d7ba8c9741f60687a02ab6e65542983d9109b",
+            "sections/marker_setup.tex": "6ce04223ef882dfeca08956de02fee7208d0a737c2ceaa3168aa79b062aac9eb",
+            "sections/minimum.tex": "be50ac02a8e3db748e8566c625c56d65afd274d9e60b53d1f19bd7a7e314928c",
+            "sections/patterns.tex": "cbd6907e2ad523495050b84efeacb9f6f7ec649f41666ac782271731533372a4",
+            "sections/quantitative.tex": "7bf63313716786ba4c3915353f94fe06237b821f53bff07e6db47090552e7278",
+            "sections/reverse.tex": "ca5f708bf4d78ae39d6aa4b8594792580cb27ce6753a9a0d840ac58fd69b07e5",
+            "sections/small.tex": "231ac95a768d2812f34f2dd5038ab394fc60d208527cf52bd733eb41f936c135",
+            "sections/weighted.tex": "36e052ee7e47657519cdb13178233898d3cfcd998292f9b977d16ebde5b50b5b",
+            "sections/weights.tex": "67ffb21789793afdc20aa0db1eba2f75f25179ccea8d178a69b783737ab9b5e7"
+          }
+        },
+        "rows": [
+          {
+            "item": "Direction of the theorem (iff vs one direction)",
+            "paper_says": "L is the full congruence lattice of a finite algebra if and only if a colored complete graph satisfying (i)-(iii) exists.",
+            "lean_says": "Only HasGraphWitness Lat → Representable Lat (the converse/sufficiency direction). The docstring says \"exactly when\" but the statement is one implication.",
+            "verdict": "Lean concludes less",
+            "affects_main_result": true,
+            "lean_lines": [
+              55,
+              59
+            ],
+            "evidence": [
+              "E1",
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Lattice L: finite nonempty lattice with least element",
+            "paper_says": "L is a finite nonempty lattice with least element 0.",
+            "lean_says": "Lat : Type with Fintype, Lattice, OrderBot (nonempty since ⊥ exists).",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              57,
+              58
+            ],
+            "evidence": [
+              "E1",
+              "E4"
+            ]
+          },
+          {
+            "item": "Representability (finite algebra, full congruence lattice)",
+            "paper_says": "Finite algebra = nonempty finite set with a finite (possibly empty) list of total operations of finite nonnegative arity; L ≅ Con(A), onto the entire congruence lattice.",
+            "lean_says": "∃ size>0, an Algebra on Fin size with numOps operations, each of arity (arity i) : ℕ, and an order isomorphism Lat ≃o Congruence alg, where Congruence = setoids compatible with every operation, ordered by inclusion.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              10,
+              26
+            ],
+            "evidence": [
+              "E3",
+              "E6"
+            ]
+          },
+          {
+            "item": "Colored complete graph: finite nonempty vertex set, symmetric d, d(p,p)=0, and (i) d(p,q)≠0 for p≠q",
+            "paper_says": "Finite nonempty A, symmetric d:A×A→L with d(p,p)=0; (i) p≠q ⇒ d(p,q)≠0.",
+            "lean_says": "Vertex set Fin size with 0<size; color symmetric; color l r = ⊥ ↔ l = r.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              41,
+              53
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Condition (i) triangle inequality",
+            "paper_says": "d(p,q) ≤ d(p,u) ∨ d(u,q) for all p,q,u.",
+            "lean_says": "∀ left right middle, color left right ≤ color left middle ⊔ color middle right.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              45,
+              45
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Condition (ii) reflection",
+            "paper_says": "Whenever a ≰ b, there are p,q with d(p,q) ≤ a and d(p,q) ≰ b.",
+            "lean_says": "∀ lower upper, ¬ lower ≤ upper → ∃ left right, color left right ≤ lower ∧ ¬ color left right ≤ upper.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              46,
+              47
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Admissible placements, Γ_S and condition (iii) connectivity",
+            "paper_says": "f:A→A admissible if d(f p, f q) ≤ d(p,q); Γ_S has marked adjacencies {f(p),f(q)} for {p,q}∈S, f admissible; for every nonempty edge set S, d(p,q) ≤ a_S = ⋁_S d ⇒ p,q in the same component of Γ_S.",
+            "lean_says": "Admissible placement as stated; Marked = image of a seed pair under an admissible placement; Connected = EqvGen of Marked; seeds is a nonempty Finset of ordered pairs; color l r ≤ seeds.sup color ⇒ Connected. Ordered vs unordered pairs makes no difference given symmetry of color and EqvGen.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              28,
+              50
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Hypotheses are satisfiable (one-element lattice)",
+            "paper_says": "The argument includes the one-element lattice, represented by the one-vertex graph.",
+            "lean_says": "Lean accepts that HasGraphWitness Unit holds with a one-vertex graph.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              52,
+              53
+            ],
+            "evidence": [
+              "E7",
+              "E4"
+            ]
+          }
+        ]
+      },
+      {
+        "variant": "placement-reversed",
+        "copy_sha256": "956c7ae3ddbfb1fdd4c19374d5323bea74b7bc83c6fc1d1fb2c52a68943478db",
+        "planted_lines": [
+          30,
+          30
+        ],
+        "score": "caught",
+        "also_in_control": false,
+        "cost_usd": 1.948,
+        "hit_round_limit": false,
+        "ran_at": "2026-10-28 17:07:03 UTC",
+        "reused_from": null,
+        "setup": {
+          "model": "anthropic/claude-opus-5.5",
+          "effort": "high",
+          "provider": "https://openrouter.ai/api/v1",
+          "instructions_sha256": "ae4d8cfd98d57eb607afaa9971682cf23d1bfb7d59fae966800488e5656a2c27",
+          "request": "Audit this formal statement against the paper, and finish with the report.",
+          "rounds": 40,
+          "tools_sha256": "dfcd260f5cb4c6cef75a0a5c2bb1e7e8a57c0f1dfbda3cfab8148ca014187030",
+          "code_sha256": {
+            "audit.py": "f7f3edd29663d998726f063d39aaa93f276f6f018ca4b2869e1c46b4b8b63880",
+            "session.py": "9aafc6c0b4e08964b5433f28f68d66ebd23c1c7f2f53235b2978a341adba8939",
+            "tools.py": "4f75c80e1ec5cec7477327e451a58d208fb65ec44313d9183527286ee5d6a667",
+            "statement_tools.py": "5aab629a5a5f92b18a2b8854ea93e0693391596fbee0a9f21ede25e88028b8e5",
+            "openrouter.py": "bf4fd545e61fc8a3062768d49fda08c4dbaa5e77af93eb38e3fd9f275d7efbbf"
+          },
+          "statement_file": ".scry-runs/audit-copies/ae46e617417e5655/FiniteCongruenceGraph.lean",
+          "lean_inputs": {
+            "files": {
+              ".scry-runs/audit-copies/ae46e617417e5655/FiniteCongruenceGraph.lean": "956c7ae3ddbfb1fdd4c19374d5323bea74b7bc83c6fc1d1fb2c52a68943478db"
+            },
+            "setup": {
+              "lakefile.lean": "4cca977ebece444b6c999d99755c1ad3c93119bafc127ea761f7f703c7279e74",
+              "lakefile.toml": "missing",
+              "lake-manifest.json": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+              "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+            },
+            "packages": {
+              "mathlib": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+              "checkdecls": "3d425859e73fcfbef85b9638c2a91708ef4a22d4",
+              "«doc-gen4»": "missing",
+              "PrimeCert": "0803c2f6bd289c09704c7d352bb8fcf770cbb9b2",
+              "LeanArchitect": "468e8f58fb4ad6e6ad672a08da6d0d0531e95a97",
+              "leancert": "7f91b6eb3567437f6cfac03ed279706603ee22f4",
+              "PrimeNumberTheoremAnd": "c39a751132c88b6e8080b74c74023fd95b3d8be0",
+              "belyi": "9ce4d3f793d3bc831f2fc7214b7dbad90ea012d8",
+              "«formal-schemes»": "missing",
+              "«elliptic-curves»": "missing",
+              "«tempered-fundamental-groups»": "missing",
+              "oka": "75dcdc3faadd10b986afb9283e89902bcdddecd4",
+              "«orbicurve-cores»": "missing",
+              "pi1": "ca7def953193f861a462aa0831eec8f0a31ff69f",
+              "heights": "721496ca4c158e511d25d8ccf6bfe8503eda73c1",
+              "genl": "ea2846c877d1e16d8f0b911a5fed07f5ee69eaaf",
+              "«tate-curves-theta»": "missing",
+              "iut": "d9465c111ec4073709f67e9fccec7e3eb374a816",
+              "gromov": "8db79f13cf211b570e3116301d91379fbc01cf3e",
+              "TauCeti": "3bed7e37f3c504a99e8c07e9f309540812a7aa90",
+              "SphereEversion": "9c53f91e2a281199163ecea04dc4976cb79e2076",
+              "«schoenflies-lean»": "missing",
+              "ClassFieldTheory": "2eb22d6485af45f29c5219de6c49f196a61c4f49",
+              "AINTLIB": "160e446617a2168c34c95bbe7a76c4105b392434",
+              "AbsorptionCutoff": "41c45c6d72e979419e46224bb7b4be5cee31f2b5",
+              "StrongPNT": "2f5835c322314f55f1026ec2f139d704b7c45c69",
+              "carleson": "306ae5b29300771aece1aa39f0a939183cc59486",
+              "«rellich-kondrachov»": "missing",
+              "Zeta3Irrational": "e8785315a01c8fbcddaa0fc03b3c8b29a61bc1f1",
+              "«fixed-point-theorems»": "missing",
+              "plausible": "118aa17ee84656b8bd727fef7c458ee8c833385c",
+              "LeanSearchClient": "ddf04cf3949fa556442341e87d47f9f6e6074707",
+              "importGraph": "e928b72544873815af278d38681b31c0293588e3",
+              "proofwidgets": "106ff4fafc74ef4ac99d81dbf3ab399118f497a5",
+              "aesop": "355695d523e41d0554926416cba2a2b3544fbbc9",
+              "Qq": "6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259",
+              "batteries": "f2effa3d803fda822b1f97b806c47cf2adfbcbc2",
+              "leansqlite": "f9cdb9eacb5c8b8ecc02ee9fd9e568d7d28c1416",
+              "Cli": "e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204",
+              "UnicodeBasic": "0e569d08b6443ce0908d356884c765397253e2f0",
+              "BibtexQuery": "4d8616fd4870d0a3453d845770833eac7951fe1c",
+              "MD4Lean": "31907cc18f48a95384f99cee5582c00fb39e0f67"
+            }
+          },
+          "lean_version": "leanprover/lean4:v4.34.1",
+          "exporter_sha256": "90de20250e7a92cd9d670462a01deca15160fa61562c73186bb650fd3a388684",
+          "claims_checked_under_sha256": "99038e8f89b19b912060480f765657c0ca5d07740db132d00ff6fbee50a5b111",
+          "papers": {
+            "figures/l7.tex": "a2779d74d18e74a72b59501a7630dd86f27e9255e06ba1d68600a145c3305aab",
+            "figures/patterns.tex": "886086ca119d1f7b522054f7c912ead7234010255d96d59b362c18e8c99a7814",
+            "figures/proof_overview.tex": "6a7e9147a44df713c41e0dc31e4086b4c9e4b3011d15fc4438d9c5520c42d139",
+            "figures/weighted_square.tex": "94ff644968ade84a7f66b7999c62d7bf0126c3b3ac505aad4bd25421b1003bac",
+            "paper.tex": "3632c0ce067e0b0fa193d9a97bef99c0902767bb0b921e8265733a321d6cd096",
+            "sections/affine.tex": "3bf7bd607edb9c6859ac3499e38498a27f39e95e8bdf152a74f38ca775144ccc",
+            "sections/alternating.tex": "1e60880227e7fd76f5bfb92f8578d403c62b29f9a29ea3546ed1fe04e1605a78",
+            "sections/bounded.tex": "caed3443b17bd175d4df542fd9ef478481305480e8140bb0f11bfa3e58c7f996",
+            "sections/classical.tex": "74ef542756645ee297f302ddec89366c31ad7b64cf9cb2b54b964d58f4e12146",
+            "sections/counting.tex": "c6f970b20a0bfee402da2e1e8714b9464cfd04548f6db88a1aaf85d9b7e2dea9",
+            "sections/diophantine.tex": "ca7b30ddeaed8d84c66947311765016d0b1ee45001bf2bd8f6a073175d938cd8",
+            "sections/forward_a.tex": "9197bff57b19970efcb32abd1df82f09d0cf807591b5cf0aac88a84044756302",
+            "sections/forward_b.tex": "b0f132399ff86f9f21780b8a56164d7235e7e64fe28bf295afee8ddaf27bc400",
+            "sections/graph.tex": "71550c8640aec4dbb24db2cd8964f43b526b37f0a54de876478a72d2b30c20ea",
+            "sections/introduction.tex": "a9072071c213b93f51893501ae4d7ba8c9741f60687a02ab6e65542983d9109b",
+            "sections/marker_setup.tex": "6ce04223ef882dfeca08956de02fee7208d0a737c2ceaa3168aa79b062aac9eb",
+            "sections/minimum.tex": "be50ac02a8e3db748e8566c625c56d65afd274d9e60b53d1f19bd7a7e314928c",
+            "sections/patterns.tex": "cbd6907e2ad523495050b84efeacb9f6f7ec649f41666ac782271731533372a4",
+            "sections/quantitative.tex": "7bf63313716786ba4c3915353f94fe06237b821f53bff07e6db47090552e7278",
+            "sections/reverse.tex": "ca5f708bf4d78ae39d6aa4b8594792580cb27ce6753a9a0d840ac58fd69b07e5",
+            "sections/small.tex": "231ac95a768d2812f34f2dd5038ab394fc60d208527cf52bd733eb41f936c135",
+            "sections/weighted.tex": "36e052ee7e47657519cdb13178233898d3cfcd998292f9b977d16ebde5b50b5b",
+            "sections/weights.tex": "67ffb21789793afdc20aa0db1eba2f75f25179ccea8d178a69b783737ab9b5e7"
+          }
+        },
+        "rows": [
+          {
+            "item": "Admissible placement (direction of inequality)",
+            "paper_says": "f is admissible if d'(f(p),f(q)) ≤ d(p,q) for all p,q (label-decreasing; translations of operations are admissible because they preserve every congruence).",
+            "lean_says": "Admissible color placement := ∀ left right, color left right ≤ color (placement left) (placement right) (label-increasing). With the ⊥-iff-equal condition such maps are injective, hence (on a finite set) colour-preserving automorphisms.",
+            "verdict": "differs",
+            "affects_main_result": true,
+            "lean_lines": [
+              28,
+              30
+            ],
+            "evidence": [
+              "E3",
+              "E4",
+              "E16",
+              "E15"
+            ]
+          },
+          {
+            "item": "Connectivity condition (iii) via Marked/Connected",
+            "paper_says": "For every nonempty edge set S, vertices p,q with d(p,q) ≤ a_S lie in the same component of Γ_S, whose adjacencies are images {f(p),f(q)} of edges of S under admissible (label-decreasing) self-maps.",
+            "lean_says": "For every nonempty Finset of ordered pairs, color l r ≤ sup implies EqvGen of Marked, where Marked uses the reversed Admissible. The structure (images of seeds, equivalence closure, a_S as a sup) matches, but the set of placements is only automorphisms, so the condition is strictly stronger. A concrete 4-vertex colouring satisfying the paper's condition fails Lean's.",
+            "verdict": "differs",
+            "affects_main_result": true,
+            "lean_lines": [
+              32,
+              50
+            ],
+            "evidence": [
+              "E3",
+              "E4",
+              "E15"
+            ]
+          },
+          {
+            "item": "Representability (finite algebra, full congruence lattice)",
+            "paper_says": "A finite algebra is a nonempty finite set with a finite (possibly empty) list of total operations of finite arity; L ≅ Con(A).",
+            "lean_says": "∃ size > 0, ∃ alg : Algebra (Fin size) (numOps : ℕ operations with arities in ℕ), Lat ≃o Congruence alg, where congruences are compatible setoids ordered as setoids.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              10,
+              26
+            ],
+            "evidence": [
+              "E3",
+              "E8"
+            ]
+          },
+          {
+            "item": "Lattice hypotheses",
+            "paper_says": "L is a finite nonempty lattice with least element 0.",
+            "lean_says": "Lat : Type with Fintype, Lattice, OrderBot (OrderBot forces nonemptiness).",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              57,
+              58
+            ],
+            "evidence": [
+              "E1",
+              "E4"
+            ]
+          },
+          {
+            "item": "Coloured complete graph, condition (i), condition (ii)",
+            "paper_says": "Finite nonempty vertex set, symmetric d with d(p,p)=0; (i) p≠q ⇒ d(p,q)≠0 and triangle inequality d(p,q) ≤ d(p,u) ∨ d(u,q); (ii) a ≰ b ⇒ ∃ p,q with d(p,q) ≤ a, d(p,q) ≰ b.",
+            "lean_says": "Carrier Fin size with 0 < size; symmetry; color l r = ⊥ ↔ l = r; color l r ≤ color l m ⊔ color m r; reflection condition identical.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              41,
+              53
+            ],
+            "evidence": [
+              "E3",
+              "E4"
+            ]
+          },
+          {
+            "item": "Conclusion (biconditional)",
+            "paper_says": "L is the full congruence lattice of a finite algebra iff a coloured graph satisfying (i)–(iii) with label-decreasing placements exists.",
+            "lean_says": "Representable Lat ↔ HasGraphWitness Lat, with HasGraphWitness using the label-increasing (automorphism-only) connectivity. That amounts to saying L is the congruence lattice of a finite permutation-group action, which the paper never claims for an individual lattice (it notes that Pálfy–Pudlák is not a per-lattice equivalence). The ← direction is weaker than the paper's; the → direction is stronger and not supported by the paper's proof.",
+            "verdict": "differs",
+            "affects_main_result": true,
+            "lean_lines": [
+              57,
+              58
+            ],
+            "evidence": [
+              "E1",
+              "E4",
+              "E8",
+              "E15",
+              "E16"
+            ]
+          }
+        ]
+      }
+    ],
     "FourRowPermanent": [
       {
         "variant": "control",
@@ -12,7 +712,7 @@
         "cost_usd": 0.3287,
         "hit_round_limit": false,
         "ran_at": "2026-10-19 15:09:23 UTC",
-        "reused_from": null,
+        "reused_from": "2026-10-19 15:09:23 UTC",
         "setup": {
           "model": "anthropic/claude-opus-5.5",
           "effort": "high",
@@ -303,7 +1003,7 @@
         "cost_usd": 0.3881,
         "hit_round_limit": false,
         "ran_at": "2026-10-19 15:10:25 UTC",
-        "reused_from": null,
+        "reused_from": "2026-10-19 15:10:25 UTC",
         "setup": {
           "model": "anthropic/claude-opus-5.5",
           "effort": "high",
@@ -607,7 +1307,7 @@
         "cost_usd": 1.2972,
         "hit_round_limit": false,
         "ran_at": "2026-10-19 15:11:46 UTC",
-        "reused_from": null,
+        "reused_from": "2026-10-19 15:11:46 UTC",
         "setup": {
           "model": "anthropic/claude-opus-5.5",
           "effort": "high",
@@ -895,6 +1595,515 @@
             "evidence": [
               "E2",
               "E4"
+            ]
+          }
+        ]
+      }
+    ],
+    "PlaneColoring": [
+      {
+        "variant": "control",
+        "copy_sha256": "868e71b127ba5bc82474130618483289ac29cc58c45898eb0216199080c9dc37",
+        "planted_lines": null,
+        "score": null,
+        "also_in_control": false,
+        "cost_usd": 0.2855,
+        "hit_round_limit": false,
+        "ran_at": "2026-10-28 17:11:29 UTC",
+        "reused_from": null,
+        "setup": {
+          "model": "anthropic/claude-opus-5.5",
+          "effort": "high",
+          "provider": "https://openrouter.ai/api/v1",
+          "instructions_sha256": "690836171d52ae2813421a29b10f157ca89384bdcea37a3effc9c116ccb612f3",
+          "request": "Audit this formal statement against the paper, and finish with the report.",
+          "rounds": 40,
+          "tools_sha256": "dfcd260f5cb4c6cef75a0a5c2bb1e7e8a57c0f1dfbda3cfab8148ca014187030",
+          "code_sha256": {
+            "audit.py": "f7f3edd29663d998726f063d39aaa93f276f6f018ca4b2869e1c46b4b8b63880",
+            "session.py": "9aafc6c0b4e08964b5433f28f68d66ebd23c1c7f2f53235b2978a341adba8939",
+            "tools.py": "4f75c80e1ec5cec7477327e451a58d208fb65ec44313d9183527286ee5d6a667",
+            "statement_tools.py": "5aab629a5a5f92b18a2b8854ea93e0693391596fbee0a9f21ede25e88028b8e5",
+            "openrouter.py": "bf4fd545e61fc8a3062768d49fda08c4dbaa5e77af93eb38e3fd9f275d7efbbf"
+          },
+          "statement_file": ".scry-runs/audit-copies/edf6dff93e95bb6d/PlaneColoring.lean",
+          "lean_inputs": {
+            "files": {
+              ".scry-runs/audit-copies/edf6dff93e95bb6d/PlaneColoring.lean": "868e71b127ba5bc82474130618483289ac29cc58c45898eb0216199080c9dc37"
+            },
+            "setup": {
+              "lakefile.lean": "4cca977ebece444b6c999d99755c1ad3c93119bafc127ea761f7f703c7279e74",
+              "lakefile.toml": "missing",
+              "lake-manifest.json": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+              "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+            },
+            "packages": {
+              "mathlib": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+              "checkdecls": "3d425859e73fcfbef85b9638c2a91708ef4a22d4",
+              "«doc-gen4»": "missing",
+              "PrimeCert": "0803c2f6bd289c09704c7d352bb8fcf770cbb9b2",
+              "LeanArchitect": "468e8f58fb4ad6e6ad672a08da6d0d0531e95a97",
+              "leancert": "7f91b6eb3567437f6cfac03ed279706603ee22f4",
+              "PrimeNumberTheoremAnd": "c39a751132c88b6e8080b74c74023fd95b3d8be0",
+              "belyi": "9ce4d3f793d3bc831f2fc7214b7dbad90ea012d8",
+              "«formal-schemes»": "missing",
+              "«elliptic-curves»": "missing",
+              "«tempered-fundamental-groups»": "missing",
+              "oka": "75dcdc3faadd10b986afb9283e89902bcdddecd4",
+              "«orbicurve-cores»": "missing",
+              "pi1": "ca7def953193f861a462aa0831eec8f0a31ff69f",
+              "heights": "721496ca4c158e511d25d8ccf6bfe8503eda73c1",
+              "genl": "ea2846c877d1e16d8f0b911a5fed07f5ee69eaaf",
+              "«tate-curves-theta»": "missing",
+              "iut": "d9465c111ec4073709f67e9fccec7e3eb374a816",
+              "gromov": "8db79f13cf211b570e3116301d91379fbc01cf3e",
+              "TauCeti": "3bed7e37f3c504a99e8c07e9f309540812a7aa90",
+              "SphereEversion": "9c53f91e2a281199163ecea04dc4976cb79e2076",
+              "«schoenflies-lean»": "missing",
+              "ClassFieldTheory": "2eb22d6485af45f29c5219de6c49f196a61c4f49",
+              "AINTLIB": "160e446617a2168c34c95bbe7a76c4105b392434",
+              "AbsorptionCutoff": "41c45c6d72e979419e46224bb7b4be5cee31f2b5",
+              "StrongPNT": "2f5835c322314f55f1026ec2f139d704b7c45c69",
+              "carleson": "306ae5b29300771aece1aa39f0a939183cc59486",
+              "«rellich-kondrachov»": "missing",
+              "Zeta3Irrational": "e8785315a01c8fbcddaa0fc03b3c8b29a61bc1f1",
+              "«fixed-point-theorems»": "missing",
+              "plausible": "118aa17ee84656b8bd727fef7c458ee8c833385c",
+              "LeanSearchClient": "ddf04cf3949fa556442341e87d47f9f6e6074707",
+              "importGraph": "e928b72544873815af278d38681b31c0293588e3",
+              "proofwidgets": "106ff4fafc74ef4ac99d81dbf3ab399118f497a5",
+              "aesop": "355695d523e41d0554926416cba2a2b3544fbbc9",
+              "Qq": "6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259",
+              "batteries": "f2effa3d803fda822b1f97b806c47cf2adfbcbc2",
+              "leansqlite": "f9cdb9eacb5c8b8ecc02ee9fd9e568d7d28c1416",
+              "Cli": "e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204",
+              "UnicodeBasic": "0e569d08b6443ce0908d356884c765397253e2f0",
+              "BibtexQuery": "4d8616fd4870d0a3453d845770833eac7951fe1c",
+              "MD4Lean": "31907cc18f48a95384f99cee5582c00fb39e0f67"
+            }
+          },
+          "lean_version": "leanprover/lean4:v4.34.1",
+          "exporter_sha256": "90de20250e7a92cd9d670462a01deca15160fa61562c73186bb650fd3a388684",
+          "claims_checked_under_sha256": "a3468121b196ae1d36ef447421bf5ddd32ab8153113c9baa741635178ce370ef",
+          "papers": {
+            "main.tex": "c6ab6417b431f9e4453cc36d913fddc4d16cdd3e44c7edabd757f573eeb00857",
+            "figures/exclusion-continuum.tex": "5b28f07d3566b77aee829a1c3da02d429b663f5f43f01f623f93b8bfdedb14f0",
+            "figures/moser-placement.tex": "fc922e1b0363f164b5d078d2c6929b327b486dd7445e5210bfd97a216c008e9e",
+            "figures/proof-flow.tex": "90ec0d8055d9872be5361904f8cbbc1e7f3d30dbb1c36970fdce36cc6f0b0886",
+            "preamble.tex": "46d99692158be68c0190f8ca73a409a2a3a56f9860ef368febfec3ae10b0d988",
+            "sections/angular.tex": "63dbb1f99bfabfbae18ddd3f3b6c254057154ed089d6b4222f826992958e0dde",
+            "sections/interfaces.tex": "c57d511a7edf4fd64bd62c44a9a3a522c6d7ed006b350079684c1aa778535083",
+            "sections/introduction.tex": "41222c5b4e8be3352a08fa554116285007268c841216432fa8aab62208a96e1a",
+            "sections/palettes.tex": "1fa752e99164406129f2ac309140cb88fd3770afc3fc48ba4bd6c4e8039d38cc",
+            "sections/rigidity.tex": "8179491289c3cb4b80161765a8752c22b7fec2bfecc710f017b73badbd84b98d",
+            "sections/spectral.tex": "d54575f425834aa5bb5e0ad03e5e725fb3eb1caeeb12e7029a518e27759a801f",
+            "sections/transfer.tex": "5610271f15cc2573a7e9c4d602a345d515baddd4dcb1324947ecb1ffec410cdb",
+            "sections/transitions.tex": "454b03701a6a37818ccd7e9a1cba65a1b2cc86a6e9f4d604957a17da1584f7c2"
+          }
+        },
+        "rows": [
+          {
+            "item": "Ambient space and distance",
+            "paper_says": "Proper k-coloring of R^2 with ‖x−y‖=1 (Euclidean norm).",
+            "lean_says": "Plane := EuclideanSpace ℝ (Fin 2); dist is the Euclidean (L2) distance.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              9,
+              9
+            ],
+            "evidence": [
+              "E4",
+              "E5",
+              "E7",
+              "E8"
+            ]
+          },
+          {
+            "item": "Definition of proper k-coloring",
+            "paper_says": "A function c: R^2 → {1,…,k} with c(x)≠c(y) whenever ‖x−y‖=1; no regularity on color classes.",
+            "lean_says": "∃ c : Plane → Fin k, ∀ x y, dist x y = 1 → c x ≠ c y; arbitrary function, no measurability.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              11,
+              13
+            ],
+            "evidence": [
+              "E3",
+              "E5",
+              "E7",
+              "E9"
+            ]
+          },
+          {
+            "item": "Conclusion: upper bound χ(R^2) ≤ 7",
+            "paper_says": "Theorem 1: no proper five-coloring; consequently 6 ≤ χ(R^2) ≤ 7. The upper bound is proved by the hexagonal 7-coloring.",
+            "lean_says": "ProperColoring 7: a proper 7-coloring of the plane exists.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              15,
+              15
+            ],
+            "evidence": [
+              "E1",
+              "E5",
+              "E7"
+            ]
+          },
+          {
+            "item": "Main claim: no proper five-coloring (χ ≥ 6)",
+            "paper_says": "The Euclidean plane has no proper five-coloring, even with arbitrary color classes.",
+            "lean_says": "Not stated; the file contains only properColoring_seven.",
+            "verdict": "not in the formalization",
+            "affects_main_result": true,
+            "lean_lines": null,
+            "evidence": [
+              "E1",
+              "E5",
+              "E7"
+            ]
+          }
+        ]
+      },
+      {
+        "variant": "line-not-plane",
+        "copy_sha256": "78b5a6d9c062226a36a3b5de2379d69acec836bc7af08b4b6a580a2eb269e8ee",
+        "planted_lines": [
+          9,
+          9
+        ],
+        "score": "caught",
+        "also_in_control": false,
+        "cost_usd": 0.3783,
+        "hit_round_limit": false,
+        "ran_at": "2026-10-28 17:12:18 UTC",
+        "reused_from": null,
+        "setup": {
+          "model": "anthropic/claude-opus-5.5",
+          "effort": "high",
+          "provider": "https://openrouter.ai/api/v1",
+          "instructions_sha256": "f4613cf778d568a2fb71088a5f85e71f3ebd0f6c22f58193b0489b5ab09bae6f",
+          "request": "Audit this formal statement against the paper, and finish with the report.",
+          "rounds": 40,
+          "tools_sha256": "dfcd260f5cb4c6cef75a0a5c2bb1e7e8a57c0f1dfbda3cfab8148ca014187030",
+          "code_sha256": {
+            "audit.py": "f7f3edd29663d998726f063d39aaa93f276f6f018ca4b2869e1c46b4b8b63880",
+            "session.py": "9aafc6c0b4e08964b5433f28f68d66ebd23c1c7f2f53235b2978a341adba8939",
+            "tools.py": "4f75c80e1ec5cec7477327e451a58d208fb65ec44313d9183527286ee5d6a667",
+            "statement_tools.py": "5aab629a5a5f92b18a2b8854ea93e0693391596fbee0a9f21ede25e88028b8e5",
+            "openrouter.py": "bf4fd545e61fc8a3062768d49fda08c4dbaa5e77af93eb38e3fd9f275d7efbbf"
+          },
+          "statement_file": ".scry-runs/audit-copies/d37f72d59a1388e2/PlaneColoring.lean",
+          "lean_inputs": {
+            "files": {
+              ".scry-runs/audit-copies/d37f72d59a1388e2/PlaneColoring.lean": "78b5a6d9c062226a36a3b5de2379d69acec836bc7af08b4b6a580a2eb269e8ee"
+            },
+            "setup": {
+              "lakefile.lean": "4cca977ebece444b6c999d99755c1ad3c93119bafc127ea761f7f703c7279e74",
+              "lakefile.toml": "missing",
+              "lake-manifest.json": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+              "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+            },
+            "packages": {
+              "mathlib": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+              "checkdecls": "3d425859e73fcfbef85b9638c2a91708ef4a22d4",
+              "«doc-gen4»": "missing",
+              "PrimeCert": "0803c2f6bd289c09704c7d352bb8fcf770cbb9b2",
+              "LeanArchitect": "468e8f58fb4ad6e6ad672a08da6d0d0531e95a97",
+              "leancert": "7f91b6eb3567437f6cfac03ed279706603ee22f4",
+              "PrimeNumberTheoremAnd": "c39a751132c88b6e8080b74c74023fd95b3d8be0",
+              "belyi": "9ce4d3f793d3bc831f2fc7214b7dbad90ea012d8",
+              "«formal-schemes»": "missing",
+              "«elliptic-curves»": "missing",
+              "«tempered-fundamental-groups»": "missing",
+              "oka": "75dcdc3faadd10b986afb9283e89902bcdddecd4",
+              "«orbicurve-cores»": "missing",
+              "pi1": "ca7def953193f861a462aa0831eec8f0a31ff69f",
+              "heights": "721496ca4c158e511d25d8ccf6bfe8503eda73c1",
+              "genl": "ea2846c877d1e16d8f0b911a5fed07f5ee69eaaf",
+              "«tate-curves-theta»": "missing",
+              "iut": "d9465c111ec4073709f67e9fccec7e3eb374a816",
+              "gromov": "8db79f13cf211b570e3116301d91379fbc01cf3e",
+              "TauCeti": "3bed7e37f3c504a99e8c07e9f309540812a7aa90",
+              "SphereEversion": "9c53f91e2a281199163ecea04dc4976cb79e2076",
+              "«schoenflies-lean»": "missing",
+              "ClassFieldTheory": "2eb22d6485af45f29c5219de6c49f196a61c4f49",
+              "AINTLIB": "160e446617a2168c34c95bbe7a76c4105b392434",
+              "AbsorptionCutoff": "41c45c6d72e979419e46224bb7b4be5cee31f2b5",
+              "StrongPNT": "2f5835c322314f55f1026ec2f139d704b7c45c69",
+              "carleson": "306ae5b29300771aece1aa39f0a939183cc59486",
+              "«rellich-kondrachov»": "missing",
+              "Zeta3Irrational": "e8785315a01c8fbcddaa0fc03b3c8b29a61bc1f1",
+              "«fixed-point-theorems»": "missing",
+              "plausible": "118aa17ee84656b8bd727fef7c458ee8c833385c",
+              "LeanSearchClient": "ddf04cf3949fa556442341e87d47f9f6e6074707",
+              "importGraph": "e928b72544873815af278d38681b31c0293588e3",
+              "proofwidgets": "106ff4fafc74ef4ac99d81dbf3ab399118f497a5",
+              "aesop": "355695d523e41d0554926416cba2a2b3544fbbc9",
+              "Qq": "6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259",
+              "batteries": "f2effa3d803fda822b1f97b806c47cf2adfbcbc2",
+              "leansqlite": "f9cdb9eacb5c8b8ecc02ee9fd9e568d7d28c1416",
+              "Cli": "e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204",
+              "UnicodeBasic": "0e569d08b6443ce0908d356884c765397253e2f0",
+              "BibtexQuery": "4d8616fd4870d0a3453d845770833eac7951fe1c",
+              "MD4Lean": "31907cc18f48a95384f99cee5582c00fb39e0f67"
+            }
+          },
+          "lean_version": "leanprover/lean4:v4.34.1",
+          "exporter_sha256": "90de20250e7a92cd9d670462a01deca15160fa61562c73186bb650fd3a388684",
+          "claims_checked_under_sha256": "735e75012949e583850ef564059a4ef3b98d767a60d201b6780494dc26826912",
+          "papers": {
+            "main.tex": "c6ab6417b431f9e4453cc36d913fddc4d16cdd3e44c7edabd757f573eeb00857",
+            "figures/exclusion-continuum.tex": "5b28f07d3566b77aee829a1c3da02d429b663f5f43f01f623f93b8bfdedb14f0",
+            "figures/moser-placement.tex": "fc922e1b0363f164b5d078d2c6929b327b486dd7445e5210bfd97a216c008e9e",
+            "figures/proof-flow.tex": "90ec0d8055d9872be5361904f8cbbc1e7f3d30dbb1c36970fdce36cc6f0b0886",
+            "preamble.tex": "46d99692158be68c0190f8ca73a409a2a3a56f9860ef368febfec3ae10b0d988",
+            "sections/angular.tex": "63dbb1f99bfabfbae18ddd3f3b6c254057154ed089d6b4222f826992958e0dde",
+            "sections/interfaces.tex": "c57d511a7edf4fd64bd62c44a9a3a522c6d7ed006b350079684c1aa778535083",
+            "sections/introduction.tex": "41222c5b4e8be3352a08fa554116285007268c841216432fa8aab62208a96e1a",
+            "sections/palettes.tex": "1fa752e99164406129f2ac309140cb88fd3770afc3fc48ba4bd6c4e8039d38cc",
+            "sections/rigidity.tex": "8179491289c3cb4b80161765a8752c22b7fec2bfecc710f017b73badbd84b98d",
+            "sections/spectral.tex": "d54575f425834aa5bb5e0ad03e5e725fb3eb1caeeb12e7029a518e27759a801f",
+            "sections/transfer.tex": "5610271f15cc2573a7e9c4d602a345d515baddd4dcb1324947ecb1ffec410cdb",
+            "sections/transitions.tex": "454b03701a6a37818ccd7e9a1cba65a1b2cc86a6e9f4d604957a17da1584f7c2"
+          }
+        },
+        "rows": [
+          {
+            "item": "Ambient space (\"Plane\")",
+            "paper_says": "Colorings are of the Euclidean plane, c : ℝ² → {1,…,k} [E7].",
+            "lean_says": "Plane := EuclideanSpace ℝ (Fin 1), i.e. the real line; Lean confirms finrank ℝ Plane = 1.",
+            "verdict": "differs",
+            "affects_main_result": true,
+            "lean_lines": [
+              9,
+              9
+            ],
+            "evidence": [
+              "E4",
+              "E5",
+              "E9",
+              "E7"
+            ]
+          },
+          {
+            "item": "Main conclusion (direction of the bound)",
+            "paper_says": "Theorem 1.1: \"The Euclidean plane has no proper five-coloring, even when arbitrary color classes are allowed. Consequently 6 ≤ χ(ℝ²) ≤ 7.\" The new content is the non-existence of a 5-coloring [E7].",
+            "lean_says": "ProperColoring 7: there exists a 7-coloring with no monochromatic unit-distance pair. This is only an existence (upper-bound) statement; nothing about the non-existence of a 5-coloring is stated.",
+            "verdict": "Lean concludes less",
+            "affects_main_result": true,
+            "lean_lines": [
+              15,
+              15
+            ],
+            "evidence": [
+              "E1",
+              "E5",
+              "E7"
+            ]
+          },
+          {
+            "item": "Upper bound χ ≤ 7 (Isbell hexagonal coloring)",
+            "paper_says": "For the upper bound, a hexagonal coloring with circumradius 2/5 and an index-7 sublattice gives a proper seven-coloring of ℝ² [E8].",
+            "lean_says": "A 7-coloring exists, but on ℝ¹. There it is trivial: Lean accepts a 2-coloring by the parity of ⌊x⌋, so no hexagonal construction is needed.",
+            "verdict": "differs",
+            "affects_main_result": false,
+            "lean_lines": [
+              11,
+              15
+            ],
+            "evidence": [
+              "E8",
+              "E11",
+              "E5"
+            ]
+          },
+          {
+            "item": "Definition of a proper k-coloring",
+            "paper_says": "A function c into {1,…,k} with c(x) ≠ c(y) whenever ‖x−y‖ = 1, with no regularity on the color classes [E7].",
+            "lean_says": "∃ c : Plane → Fin k, ∀ x y, dist x y = 1 → c x ≠ c y. Arbitrary functions, Euclidean distance. This matches apart from the domain.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              11,
+              13
+            ],
+            "evidence": [
+              "E3",
+              "E5",
+              "E7"
+            ]
+          }
+        ]
+      },
+      {
+        "variant": "bounded-region",
+        "copy_sha256": "e65516ad2279d41264117c4f712d4b8a0dbc315bf90ece10cdc1482055304bcc",
+        "planted_lines": [
+          13,
+          13
+        ],
+        "score": "conflicting",
+        "also_in_control": false,
+        "cost_usd": 0.2517,
+        "hit_round_limit": false,
+        "ran_at": "2026-10-28 17:13:28 UTC",
+        "reused_from": null,
+        "setup": {
+          "model": "anthropic/claude-opus-5.5",
+          "effort": "high",
+          "provider": "https://openrouter.ai/api/v1",
+          "instructions_sha256": "746914af856f996f80a4a7865485274050a5bd0be9ec76ed827b1970e666163e",
+          "request": "Audit this formal statement against the paper, and finish with the report.",
+          "rounds": 40,
+          "tools_sha256": "dfcd260f5cb4c6cef75a0a5c2bb1e7e8a57c0f1dfbda3cfab8148ca014187030",
+          "code_sha256": {
+            "audit.py": "f7f3edd29663d998726f063d39aaa93f276f6f018ca4b2869e1c46b4b8b63880",
+            "session.py": "9aafc6c0b4e08964b5433f28f68d66ebd23c1c7f2f53235b2978a341adba8939",
+            "tools.py": "4f75c80e1ec5cec7477327e451a58d208fb65ec44313d9183527286ee5d6a667",
+            "statement_tools.py": "5aab629a5a5f92b18a2b8854ea93e0693391596fbee0a9f21ede25e88028b8e5",
+            "openrouter.py": "bf4fd545e61fc8a3062768d49fda08c4dbaa5e77af93eb38e3fd9f275d7efbbf"
+          },
+          "statement_file": ".scry-runs/audit-copies/7733717ae6a9ff2d/PlaneColoring.lean",
+          "lean_inputs": {
+            "files": {
+              ".scry-runs/audit-copies/7733717ae6a9ff2d/PlaneColoring.lean": "e65516ad2279d41264117c4f712d4b8a0dbc315bf90ece10cdc1482055304bcc"
+            },
+            "setup": {
+              "lakefile.lean": "4cca977ebece444b6c999d99755c1ad3c93119bafc127ea761f7f703c7279e74",
+              "lakefile.toml": "missing",
+              "lake-manifest.json": "cf6105a25d9dca2f166b241d9191bd12c7e13305890dc9c4d0952351cccc0794",
+              "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+            },
+            "packages": {
+              "mathlib": "d13f23b723b8a846827a245b89c10fc7d3f11612",
+              "checkdecls": "3d425859e73fcfbef85b9638c2a91708ef4a22d4",
+              "«doc-gen4»": "missing",
+              "PrimeCert": "0803c2f6bd289c09704c7d352bb8fcf770cbb9b2",
+              "LeanArchitect": "468e8f58fb4ad6e6ad672a08da6d0d0531e95a97",
+              "leancert": "7f91b6eb3567437f6cfac03ed279706603ee22f4",
+              "PrimeNumberTheoremAnd": "c39a751132c88b6e8080b74c74023fd95b3d8be0",
+              "belyi": "9ce4d3f793d3bc831f2fc7214b7dbad90ea012d8",
+              "«formal-schemes»": "missing",
+              "«elliptic-curves»": "missing",
+              "«tempered-fundamental-groups»": "missing",
+              "oka": "75dcdc3faadd10b986afb9283e89902bcdddecd4",
+              "«orbicurve-cores»": "missing",
+              "pi1": "ca7def953193f861a462aa0831eec8f0a31ff69f",
+              "heights": "721496ca4c158e511d25d8ccf6bfe8503eda73c1",
+              "genl": "ea2846c877d1e16d8f0b911a5fed07f5ee69eaaf",
+              "«tate-curves-theta»": "missing",
+              "iut": "d9465c111ec4073709f67e9fccec7e3eb374a816",
+              "gromov": "8db79f13cf211b570e3116301d91379fbc01cf3e",
+              "TauCeti": "3bed7e37f3c504a99e8c07e9f309540812a7aa90",
+              "SphereEversion": "9c53f91e2a281199163ecea04dc4976cb79e2076",
+              "«schoenflies-lean»": "missing",
+              "ClassFieldTheory": "2eb22d6485af45f29c5219de6c49f196a61c4f49",
+              "AINTLIB": "160e446617a2168c34c95bbe7a76c4105b392434",
+              "AbsorptionCutoff": "41c45c6d72e979419e46224bb7b4be5cee31f2b5",
+              "StrongPNT": "2f5835c322314f55f1026ec2f139d704b7c45c69",
+              "carleson": "306ae5b29300771aece1aa39f0a939183cc59486",
+              "«rellich-kondrachov»": "missing",
+              "Zeta3Irrational": "e8785315a01c8fbcddaa0fc03b3c8b29a61bc1f1",
+              "«fixed-point-theorems»": "missing",
+              "plausible": "118aa17ee84656b8bd727fef7c458ee8c833385c",
+              "LeanSearchClient": "ddf04cf3949fa556442341e87d47f9f6e6074707",
+              "importGraph": "e928b72544873815af278d38681b31c0293588e3",
+              "proofwidgets": "106ff4fafc74ef4ac99d81dbf3ab399118f497a5",
+              "aesop": "355695d523e41d0554926416cba2a2b3544fbbc9",
+              "Qq": "6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259",
+              "batteries": "f2effa3d803fda822b1f97b806c47cf2adfbcbc2",
+              "leansqlite": "f9cdb9eacb5c8b8ecc02ee9fd9e568d7d28c1416",
+              "Cli": "e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204",
+              "UnicodeBasic": "0e569d08b6443ce0908d356884c765397253e2f0",
+              "BibtexQuery": "4d8616fd4870d0a3453d845770833eac7951fe1c",
+              "MD4Lean": "31907cc18f48a95384f99cee5582c00fb39e0f67"
+            }
+          },
+          "lean_version": "leanprover/lean4:v4.34.1",
+          "exporter_sha256": "90de20250e7a92cd9d670462a01deca15160fa61562c73186bb650fd3a388684",
+          "claims_checked_under_sha256": "738422895fc038afc699b9c960a32daca329f976edfafbfc6596c61ea58793dd",
+          "papers": {
+            "main.tex": "c6ab6417b431f9e4453cc36d913fddc4d16cdd3e44c7edabd757f573eeb00857",
+            "figures/exclusion-continuum.tex": "5b28f07d3566b77aee829a1c3da02d429b663f5f43f01f623f93b8bfdedb14f0",
+            "figures/moser-placement.tex": "fc922e1b0363f164b5d078d2c6929b327b486dd7445e5210bfd97a216c008e9e",
+            "figures/proof-flow.tex": "90ec0d8055d9872be5361904f8cbbc1e7f3d30dbb1c36970fdce36cc6f0b0886",
+            "preamble.tex": "46d99692158be68c0190f8ca73a409a2a3a56f9860ef368febfec3ae10b0d988",
+            "sections/angular.tex": "63dbb1f99bfabfbae18ddd3f3b6c254057154ed089d6b4222f826992958e0dde",
+            "sections/interfaces.tex": "c57d511a7edf4fd64bd62c44a9a3a522c6d7ed006b350079684c1aa778535083",
+            "sections/introduction.tex": "41222c5b4e8be3352a08fa554116285007268c841216432fa8aab62208a96e1a",
+            "sections/palettes.tex": "1fa752e99164406129f2ac309140cb88fd3770afc3fc48ba4bd6c4e8039d38cc",
+            "sections/rigidity.tex": "8179491289c3cb4b80161765a8752c22b7fec2bfecc710f017b73badbd84b98d",
+            "sections/spectral.tex": "d54575f425834aa5bb5e0ad03e5e725fb3eb1caeeb12e7029a518e27759a801f",
+            "sections/transfer.tex": "5610271f15cc2573a7e9c4d602a345d515baddd4dcb1324947ecb1ffec410cdb",
+            "sections/transitions.tex": "454b03701a6a37818ccd7e9a1cba65a1b2cc86a6e9f4d604957a17da1584f7c2"
+          }
+        },
+        "rows": [
+          {
+            "item": "Main claim: no proper five-coloring (6 ≤ χ)",
+            "paper_says": "Theorem 1.1: The Euclidean plane has no proper five-coloring, even with arbitrary color classes; consequently 6 ≤ χ(R²) ≤ 7.",
+            "lean_says": "Only the statement ProperColoring 7 is formalized; there is no statement about five colors.",
+            "verdict": "not in the formalization",
+            "affects_main_result": true,
+            "lean_lines": [
+              15,
+              15
+            ],
+            "evidence": [
+              "E1",
+              "E6",
+              "E8"
+            ]
+          },
+          {
+            "item": "Domain of coloring constraint (upper bound χ ≤ 7)",
+            "paper_says": "A proper seven-coloring of all of R², with all boundaries included (Hadwiger hexagonal construction).",
+            "lean_says": "A map c : Plane → Fin 7 such that c x ≠ c y only for unit-distance pairs with ‖x‖ ≤ 100 and ‖y‖ ≤ 100.",
+            "verdict": "Lean concludes less",
+            "affects_main_result": false,
+            "lean_lines": [
+              11,
+              13
+            ],
+            "evidence": [
+              "E3",
+              "E6",
+              "E7",
+              "E9"
+            ]
+          },
+          {
+            "item": "Plane and distance",
+            "paper_says": "Euclidean plane R² with the Euclidean unit distance.",
+            "lean_says": "Plane = EuclideanSpace ℝ (Fin 2), with its L2 dist.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              9,
+              9
+            ],
+            "evidence": [
+              "E4",
+              "E6"
+            ]
+          },
+          {
+            "item": "Number of colors / arbitrary color classes",
+            "paper_says": "Seven colors, arbitrary (not necessarily measurable) classes.",
+            "lean_says": "c : Plane → Fin 7, any function, no measurability required.",
+            "verdict": "matches",
+            "affects_main_result": false,
+            "lean_lines": [
+              12,
+              15
+            ],
+            "evidence": [
+              "E6",
+              "E7",
+              "E8"
             ]
           }
         ]
